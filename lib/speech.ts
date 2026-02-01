@@ -18,21 +18,20 @@ class SpeechService {
     // Load voices - they may load async
     const loadVoices = () => {
       this.voices = window.speechSynthesis.getVoices();
-      // Prefer English voices
-      this.preferredVoice =
-        this.voices.find((v) => v.lang.startsWith("en") && v.localService) ||
-        this.voices.find((v) => v.lang.startsWith("en")) ||
-        this.voices[0] ||
-        null;
-
       this.initialized = this.voices.length > 0;
 
       if (this.initialized) {
+        console.log("[Speech] Voices loaded:", this.voices.length);
+        // Log available Chinese voices
+        const chineseVoices = this.voices.filter(
+          (v) =>
+            v.lang.includes("zh") ||
+            v.lang.includes("yue") ||
+            v.lang.includes("cmn"),
+        );
         console.log(
-          "[Speech] Voices loaded:",
-          this.voices.length,
-          "Preferred:",
-          this.preferredVoice?.name,
+          "[Speech] Chinese voices available:",
+          chineseVoices.map((v) => `${v.name} (${v.lang})`),
         );
       }
     };
@@ -43,6 +42,40 @@ class SpeechService {
     // Also listen for voices changed event (Chrome/Safari loads async)
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  private selectVoice(
+    text: string,
+    langCode?: string,
+  ): SpeechSynthesisVoice | null {
+    // Detect if text contains Chinese characters
+    const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+
+    if (langCode) {
+      // Use provided language code
+      return (
+        this.voices.find((v) => v.lang === langCode) ||
+        this.voices.find((v) => v.lang.startsWith(langCode.split("-")[0])) ||
+        null
+      );
+    } else if (hasChinese) {
+      // Auto-detect Chinese - prefer Cantonese (yue/zh-HK), then Mandarin
+      return (
+        this.voices.find((v) => v.lang.includes("yue")) ||
+        this.voices.find((v) => v.lang === "zh-HK") ||
+        this.voices.find((v) => v.lang === "zh-TW") ||
+        this.voices.find((v) => v.lang === "zh-CN") ||
+        this.voices.find((v) => v.lang.startsWith("zh")) ||
+        null
+      );
+    } else {
+      // English text
+      return (
+        this.voices.find((v) => v.lang.startsWith("en") && v.localService) ||
+        this.voices.find((v) => v.lang.startsWith("en")) ||
+        null
+      );
     }
   }
 
@@ -57,6 +90,7 @@ class SpeechService {
       rate?: number;
       pitch?: number;
       volume?: number;
+      lang?: string;
       onStart?: () => void;
       onEnd?: () => void;
       onError?: (error: string) => void;
@@ -71,6 +105,7 @@ class SpeechService {
       rate = 0.8,
       pitch = 1.1,
       volume = 1,
+      lang,
       onStart,
       onEnd,
       onError,
@@ -78,52 +113,53 @@ class SpeechService {
 
     try {
       // Force load voices synchronously if not already loaded
-      // This is critical for Chrome - voices must be available immediately
       if (!this.initialized || this.voices.length === 0) {
         this.voices = window.speechSynthesis.getVoices();
-        if (this.voices.length > 0) {
-          this.preferredVoice =
-            this.voices.find(
-              (v) => v.lang.startsWith("en") && v.localService,
-            ) ||
-            this.voices.find((v) => v.lang.startsWith("en")) ||
-            this.voices[0] ||
-            null;
-          this.initialized = true;
+        this.initialized = this.voices.length > 0;
+        if (this.initialized) {
           console.log(
             "[Speech] Voices loaded synchronously:",
             this.voices.length,
-            "Preferred:",
-            this.preferredVoice?.name,
           );
         } else {
           console.warn("[Speech] No voices available yet - speaking anyway");
         }
       }
 
-      // Cancel any ongoing speech only if actually speaking or pending
+      // Cancel any ongoing speech
       if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
         console.log("[Speech] Canceling previous speech");
         window.speechSynthesis.cancel();
-        // Give a tiny moment for cancel to complete
-        // This prevents Chrome from interrupting the next utterance
       }
 
-      console.log("[Speech] Speaking:", text.substring(0, 20) + "...");
+      console.log("[Speech] Speaking:", text.substring(0, 30) + "...");
 
       // Create utterance
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = rate;
       utterance.pitch = pitch;
       utterance.volume = volume;
-      utterance.lang = "en-US";
 
-      // Set preferred voice if available
-      if (this.preferredVoice) {
-        utterance.voice = this.preferredVoice;
-        console.log("[Speech] Using voice:", this.preferredVoice.name);
+      // Select appropriate voice based on text content or provided lang
+      const selectedVoice = this.selectVoice(text, lang);
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
+        console.log(
+          "[Speech] Using voice:",
+          selectedVoice.name,
+          "Lang:",
+          selectedVoice.lang,
+        );
       } else {
-        console.log("[Speech] No preferred voice set - using default");
+        // Detect language from text
+        const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+        utterance.lang = hasChinese ? "zh-HK" : "en-US";
+        console.log(
+          "[Speech] No voice found, using default lang:",
+          utterance.lang,
+        );
       }
 
       utterance.onstart = () => {

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Nunito, Noto_Sans_TC } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
@@ -11,10 +11,16 @@ const nunito = Nunito({
   variable: "--font-nunito",
 });
 
+const notoSansTC = Noto_Sans_TC({
+  subsets: ["chinese-traditional"],
+  weight: ["400", "500", "700"],
+  variable: "--font-noto-sans-tc",
+});
+
 export const metadata: Metadata = {
-  title: "WordWorld - Learn New Words Every Day!",
+  title: "WordWorld - 學習新詞語！Learn New Words Every Day!",
   description:
-    "A fun and interactive vocabulary learning platform for preschoolers",
+    "A fun and interactive Cantonese vocabulary learning platform for preschoolers - 幼兒粵語詞彙學習平台",
   generator: "v0.app",
   icons: {
     icon: [
@@ -41,8 +47,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${nunito.className} font-sans antialiased`}>
+    <html lang="zh-HK">
+      <body
+        className={`${nunito.variable} ${notoSansTC.variable} font-sans antialiased`}
+      >
         <AuthProvider>{children}</AuthProvider>
         <Analytics />
       </body>

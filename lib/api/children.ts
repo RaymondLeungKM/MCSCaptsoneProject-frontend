@@ -2,7 +2,7 @@
  * Children API
  */
 import { apiRequest } from "./client";
-import type { ChildProfile } from "../types";
+import type { ChildProfile, LanguagePreference } from "../types";
 
 export interface ChildCreateRequest {
   name: string;
@@ -13,6 +13,7 @@ export interface ChildCreateRequest {
   attention_span?: number;
   preferred_time_of_day?: "morning" | "afternoon" | "evening";
   interests?: string[];
+  language_preference?: LanguagePreference;
 }
 
 export interface ChildResponse {
@@ -33,6 +34,7 @@ export interface ChildResponse {
   created_at: string;
   last_active?: string;
   interests: string[];
+  language_preference?: LanguagePreference;
 }
 
 /**
@@ -102,5 +104,6 @@ export function toChildProfile(response: ChildResponse): ChildProfile {
     learningStyle: response.learning_style,
     attentionSpan: response.attention_span,
     preferredTimeOfDay: response.preferred_time_of_day,
+    languagePreference: response.language_preference || "cantonese",
   };
 }

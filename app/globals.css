@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -43,7 +43,7 @@
   --sidebar-accent-foreground: oklch(0.3 0.08 165);
   --sidebar-border: oklch(0.9 0.02 280);
   --sidebar-ring: oklch(0.7 0.18 45);
-  
+
   /* Custom colors for the platform */
   --sunny: oklch(0.9 0.15 90);
   --coral: oklch(0.7 0.18 45);
@@ -88,8 +88,10 @@
 }
 
 @theme inline {
-  --font-sans: 'Nunito', 'Nunito Fallback', sans-serif;
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans:
+    var(--font-nunito), "Nunito", var(--font-noto-sans-tc), "Noto Sans TC",
+    "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
   /* Custom playful colors */
   --color-sunny: var(--sunny);
   --color-coral: var(--coral);

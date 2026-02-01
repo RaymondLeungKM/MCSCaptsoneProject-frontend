@@ -21,9 +21,17 @@ import {
   toWord,
   toCategory,
   toChildProfile,
+  updateChild,
 } from "@/lib/api";
 import { games, stories } from "@/lib/mock-data";
-import type { Word, Category, Game, Story, ChildProfile } from "@/lib/types";
+import type {
+  Word,
+  Category,
+  Game,
+  Story,
+  ChildProfile,
+  LanguagePreference,
+} from "@/lib/types";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -38,6 +46,10 @@ import { ProfileView } from "@/components/views/profile-view";
 import { WordLearningModal } from "@/components/modals/word-learning-modal";
 import { StoryReaderModal } from "@/components/modals/story-reader-modal";
 import { DialogicStoryModal } from "@/components/modals/dialogic-story-modal";
+import { LanguageSelector } from "@/components/language-selector";
+import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
+import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
+import type { GeneratedStory } from "@/lib/types";
 
 export default function HomePage() {
   const router = useRouter();
@@ -50,6 +62,8 @@ export default function HomePage() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [useDialogicReading, setUseDialogicReading] = useState(true);
   const [hideNav, setHideNav] = useState(false);
+  const [selectedBedtimeStory, setSelectedBedtimeStory] =
+    useState<GeneratedStory | null>(null);
 
   // API data states
   const [children, setChildren] = useState<ChildProfile[]>([]);
@@ -336,6 +350,32 @@ export default function HomePage() {
     }
   }
 
+  const handleLanguageChange = async (language: LanguagePreference) => {
+    if (!selectedChild) return;
+
+    console.log("[Language] Changing to:", language);
+    console.log(
+      "[Language] Current child language:",
+      selectedChild.languagePreference,
+    );
+
+    try {
+      await updateChild(selectedChild.id, {
+        language_preference: language,
+      });
+
+      // Update local state
+      const updatedChild = { ...selectedChild, languagePreference: language };
+      console.log("[Language] Updated to:", updatedChild.languagePreference);
+      setSelectedChild(updatedChild);
+      setChildren(
+        children.map((c) => (c.id === selectedChild.id ? updatedChild : c)),
+      );
+    } catch (err) {
+      console.error("Failed to update language preference:", err);
+    }
+  };
+
   const handleLearnWord = (word: Word) => {
     setSelectedWord(word);
   };
@@ -367,6 +407,7 @@ export default function HomePage() {
           game={selectedGame}
           words={words}
           onBack={() => setSelectedGame(null)}
+          languagePreference={selectedChild?.languagePreference || "cantonese"}
         />
       );
     }
@@ -382,12 +423,31 @@ export default function HomePage() {
               />
             )}
             {wordOfDay && (
-              <WordOfTheDay word={wordOfDay} onLearnMore={handleLearnWord} />
+              <WordOfTheDay
+                word={wordOfDay}
+                onLearnMore={handleLearnWord}
+                languagePreference={
+                  selectedChild?.languagePreference || "cantonese"
+                }
+              />
             )}
             <StoriesList stories={stories} onReadStory={handleReadStory} />
+            {selectedChild && (
+              <BedtimeStoryGenerator
+                childId={selectedChild.id}
+                childName={selectedChild.name}
+                languagePreference={
+                  selectedChild.languagePreference || "cantonese"
+                }
+                onStoryGenerated={setSelectedBedtimeStory}
+              />
+            )}
             <CategoryGrid
               categories={categories}
               onCategorySelect={handleCategorySelect}
+              languagePreference={
+                selectedChild?.languagePreference || "cantonese"
+              }
             />
             <GamesList games={games} onPlayGame={handlePlayGame} />
           </div>
@@ -398,10 +458,21 @@ export default function HomePage() {
             categories={categories}
             words={words}
             onSelectWord={handleLearnWord}
+            languagePreference={
+              selectedChild?.languagePreference || "cantonese"
+            }
           />
         );
       case "games":
-        return <GamesView games={games} words={words} />;
+        return (
+          <GamesView
+            games={games}
+            words={words}
+            languagePreference={
+              selectedChild?.languagePreference || "cantonese"
+            }
+          />
+        );
       case "rewards":
         return selectedChild ? <RewardsView profile={selectedChild} /> : null;
       case "profile":
@@ -446,6 +517,14 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="max-w-lg mx-auto px-4 py-2">
+          <LanguageSelector
+            currentLanguage={selectedChild?.languagePreference || "cantonese"}
+            onChange={handleLanguageChange}
+          />
+        </div>
+      </div>
       <main
         className={`max-w-lg mx-auto px-4 pt-4 ${hideNav ? "pb-4" : "pb-24"}`}
       >
@@ -462,6 +541,7 @@ export default function HomePage() {
           onClose={() => setSelectedWord(null)}
           onComplete={refreshChildData}
           childId={selectedChild.id}
+          languagePreference={selectedChild.languagePreference || "cantonese"}
         />
       )}
 
@@ -476,6 +556,14 @@ export default function HomePage() {
         <StoryReaderModal
           story={selectedStory}
           onClose={() => setSelectedStory(null)}
+        />
+      )}
+
+      {selectedBedtimeStory && selectedChild && (
+        <BedtimeStoryReader
+          story={selectedBedtimeStory}
+          onClose={() => setSelectedBedtimeStory(null)}
+          languagePreference={selectedChild.languagePreference || "cantonese"}
         />
       )}
     </div>

@@ -1,28 +1,68 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { User, Target, Bell, Clock, Shield, Palette, Save } from 'lucide-react';
-import type { ChildProfile } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { useState } from "react";
+import { User, Target, Bell, Clock, Shield, Palette, Save } from "lucide-react";
+import type { ChildProfile } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ParentalControlsSettings } from "./parental-controls";
 
 interface SettingsTabProps {
   profile: ChildProfile;
 }
 
-const interestOptions = ['Animals', 'Food', 'Colors', 'Nature', 'Vehicles', 'Family', 'Space', 'Music'];
+const interestOptions = [
+  "Animals",
+  "Food",
+  "Colors",
+  "Nature",
+  "Vehicles",
+  "Family",
+  "Space",
+  "Music",
+];
 
 export function SettingsTab({ profile }: SettingsTabProps) {
+  // If we have a real child ID (not mock), use the parental controls component
+  const isMockData =
+    !profile.id ||
+    profile.id === "1" ||
+    profile.id === "mock-child-id" ||
+    profile.id.length < 10;
+
+  if (!isMockData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Settings for {profile.name}</h2>
+            <p className="text-muted-foreground">
+              Manage learning preferences and parental controls
+            </p>
+          </div>
+        </div>
+        <ParentalControlsSettings childId={profile.id} />
+      </div>
+    );
+  }
+
+  // Otherwise show the mock settings
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(profile.age);
   const [dailyGoal, setDailyGoal] = useState(profile.dailyGoal);
   const [interests, setInterests] = useState(profile.interests);
   const [notifications, setNotifications] = useState(true);
-  const [reminderTime, setReminderTime] = useState('09:00');
+  const [reminderTime, setReminderTime] = useState("09:00");
   const [screenTimeLimit, setScreenTimeLimit] = useState(30);
   const [parentalControls, setParentalControls] = useState(true);
 
@@ -30,14 +70,23 @@ export function SettingsTab({ profile }: SettingsTabProps) {
     setInterests((prev) =>
       prev.includes(interest)
         ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
+        : [...prev, interest],
     );
   };
 
   const handleSave = () => {
     // In a real app, this would save to the database
-    console.log('[v0] Saving settings:', { name, age, dailyGoal, interests, notifications, reminderTime, screenTimeLimit, parentalControls });
-    alert('Settings saved!');
+    console.log("[v0] Saving settings:", {
+      name,
+      age,
+      dailyGoal,
+      interests,
+      notifications,
+      reminderTime,
+      screenTimeLimit,
+      parentalControls,
+    });
+    alert("Settings saved!");
   };
 
   return (
@@ -88,7 +137,9 @@ export function SettingsTab({ profile }: SettingsTabProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Daily Word Goal</Label>
-              <span className="font-bold text-foreground">{dailyGoal} words</span>
+              <span className="font-bold text-foreground">
+                {dailyGoal} words
+              </span>
             </div>
             <Slider
               value={[dailyGoal]}
@@ -124,8 +175,8 @@ export function SettingsTab({ profile }: SettingsTabProps) {
                 onClick={() => toggleInterest(interest)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   interests.includes(interest)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 {interest}
@@ -147,11 +198,16 @@ export function SettingsTab({ profile }: SettingsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-foreground">Daily Reminders</p>
-              <p className="text-sm text-muted-foreground">Get reminded to practice</p>
+              <p className="text-sm text-muted-foreground">
+                Get reminded to practice
+              </p>
             </div>
-            <Switch checked={notifications} onCheckedChange={setNotifications} />
+            <Switch
+              checked={notifications}
+              onCheckedChange={setNotifications}
+            />
           </div>
-          
+
           {notifications && (
             <div className="space-y-2">
               <Label htmlFor="reminder-time">Reminder Time</Label>
@@ -179,16 +235,23 @@ export function SettingsTab({ profile }: SettingsTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-foreground">Screen Time Limit</p>
-              <p className="text-sm text-muted-foreground">Limit daily app usage</p>
+              <p className="text-sm text-muted-foreground">
+                Limit daily app usage
+              </p>
             </div>
-            <Switch checked={parentalControls} onCheckedChange={setParentalControls} />
+            <Switch
+              checked={parentalControls}
+              onCheckedChange={setParentalControls}
+            />
           </div>
 
           {parentalControls && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Maximum Time</Label>
-                <span className="font-bold text-foreground">{screenTimeLimit} minutes</span>
+                <span className="font-bold text-foreground">
+                  {screenTimeLimit} minutes
+                </span>
               </div>
               <Slider
                 value={[screenTimeLimit]}
@@ -204,7 +267,7 @@ export function SettingsTab({ profile }: SettingsTabProps) {
       </Card>
 
       {/* Save Button */}
-      <Button 
+      <Button
         onClick={handleSave}
         className="w-full h-12 text-base font-bold gap-2"
         size="lg"

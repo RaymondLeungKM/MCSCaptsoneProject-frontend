@@ -2,22 +2,45 @@
 
 import { useState } from "react";
 import { Volume2, ChevronRight, Sparkles } from "lucide-react";
-import type { Word } from "@/lib/types";
+import type { Word, LanguagePreference } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/lib/speech";
+import {
+  getWordText,
+  getDefinition,
+  getPronunciation,
+  getSpeechText,
+} from "@/lib/language-utils";
 
 interface WordOfTheDayProps {
   word: Word;
   onLearnMore: (word: Word) => void;
+  languagePreference?: LanguagePreference;
 }
 
-export function WordOfTheDay({ word, onLearnMore }: WordOfTheDayProps) {
+export function WordOfTheDay({
+  word,
+  onLearnMore,
+  languagePreference = "cantonese",
+}: WordOfTheDayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const { speak } = useSpeech();
 
+  console.log("[WordOfTheDay] Language:", languagePreference);
+  console.log("[WordOfTheDay] Word data:", {
+    word: word.word,
+    word_cantonese: word.word_cantonese,
+    jyutping: word.jyutping,
+  });
+
+  const wordText = getWordText(word, languagePreference);
+  const definition = getDefinition(word, languagePreference);
+  const pronunciation = getPronunciation(word, languagePreference);
+  const speechText = getSpeechText(word, languagePreference);
+
   const playPronunciation = () => {
-    speak(word.word, {
+    speak(speechText, {
       rate: 0.7,
       pitch: 1.2,
       onStart: () => setIsPlaying(true),
@@ -54,14 +77,14 @@ export function WordOfTheDay({ word, onLearnMore }: WordOfTheDayProps) {
         <div className="flex-1 min-w-0">
           {/* Word */}
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-2xl font-bold text-foreground">{word.word}</h3>
+            <h3 className="text-2xl font-bold text-foreground">{wordText}</h3>
             <button
               onClick={playPronunciation}
               className={cn(
                 "p-2 rounded-full bg-primary/10 hover:bg-primary/20 transition-all",
                 isPlaying && "animate-pulse bg-primary/30",
               )}
-              aria-label={`Listen to pronunciation of ${word.word}`}
+              aria-label={`Listen to pronunciation of ${wordText}`}
             >
               <Volume2
                 className={cn(
@@ -73,13 +96,15 @@ export function WordOfTheDay({ word, onLearnMore }: WordOfTheDayProps) {
           </div>
 
           {/* Pronunciation */}
-          <p className="text-sm text-muted-foreground mb-2 font-mono">
-            /{word.pronunciation}/
-          </p>
+          {pronunciation && (
+            <p className="text-sm text-muted-foreground mb-2 font-mono">
+              {pronunciation}
+            </p>
+          )}
 
           {/* Simple Definition */}
           <p className="text-sm text-foreground leading-relaxed line-clamp-2">
-            {word.definition}
+            {definition}
           </p>
 
           {/* Learning status */}

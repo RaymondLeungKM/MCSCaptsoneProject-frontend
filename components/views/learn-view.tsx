@@ -2,18 +2,29 @@
 
 import { useState } from "react";
 import { Volume2, ChevronRight, ArrowLeft, Star, Check } from "lucide-react";
-import type { Category, Word } from "@/lib/types";
+import type { Category, Word, LanguagePreference } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSpeech } from "@/lib/speech";
+import {
+  getWordText,
+  getCategoryName,
+  getSpeechText,
+} from "@/lib/language-utils";
 
 interface LearnViewProps {
   categories: Category[];
   words: Word[];
   onSelectWord: (word: Word) => void;
+  languagePreference?: LanguagePreference;
 }
 
-export function LearnView({ categories, words, onSelectWord }: LearnViewProps) {
+export function LearnView({
+  categories,
+  words,
+  onSelectWord,
+  languagePreference = "cantonese",
+}: LearnViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
@@ -23,14 +34,16 @@ export function LearnView({ categories, words, onSelectWord }: LearnViewProps) {
     ? words.filter((w) => w.categoryName === selectedCategory.name)
     : [];
 
-  const playWord = (word: string) => {
-    speak(word, {
+  const playWord = (word: Word) => {
+    const speechText = getSpeechText(word, languagePreference);
+    speak(speechText, {
       rate: 0.7,
       pitch: 1.2,
     });
   };
 
   if (selectedCategory) {
+    const categoryName = getCategoryName(selectedCategory, languagePreference);
     return (
       <div className="flex flex-col gap-4">
         {/* Header */}
@@ -45,84 +58,91 @@ export function LearnView({ categories, words, onSelectWord }: LearnViewProps) {
           <div className="flex items-center gap-2">
             <span className="text-3xl">{selectedCategory.icon}</span>
             <h1 className="text-2xl font-bold text-foreground">
-              {selectedCategory.name}
+              {categoryName}
             </h1>
           </div>
         </div>
 
         {/* Words Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {categoryWords.map((word) => (
-            <div
-              key={word.id}
-              onClick={() => onSelectWord(word)}
-              className={cn(
-                "relative flex flex-col items-center p-4 rounded-2xl cursor-pointer",
-                "border-4 shadow-md transition-all duration-200",
-                "hover:scale-105 active:scale-95 hover:shadow-lg",
-                selectedCategory.color,
-                word.mastered
-                  ? "border-mint"
-                  : "border-primary/20 hover:border-primary/40",
-              )}
-            >
-              {word.mastered && (
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-mint flex items-center justify-center">
-                  <Check className="w-4 h-4 text-card" />
-                </div>
-              )}
-
-              {/* XP Badge for new words */}
-              {word.exposureCount === 0 && (
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-sunny text-xs font-bold text-foreground shadow-md flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-current" />
-                  +10 XP
-                </div>
-              )}
-
+          {categoryWords.map((word) => {
+            const wordText = getWordText(word, languagePreference);
+            return (
               <div
+                key={word.id}
+                onClick={() => onSelectWord(word)}
                 className={cn(
-                  "w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-2",
+                  "relative flex flex-col items-center p-4 rounded-2xl cursor-pointer",
+                  "border-4 shadow-md transition-all duration-200",
+                  "hover:scale-105 active:scale-95 hover:shadow-lg",
                   selectedCategory.color,
+                  word.mastered
+                    ? "border-mint"
+                    : "border-primary/20 hover:border-primary/40",
                 )}
               >
-                {word.image}
-              </div>
+                {word.mastered && (
+                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-mint flex items-center justify-center">
+                    <Check className="w-4 h-4 text-card" />
+                  </div>
+                )}
 
-              <p className="font-bold text-foreground">{word.word}</p>
+                {/* XP Badge for new words */}
+                {word.exposureCount === 0 && (
+                  <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-sunny text-xs font-bold text-foreground shadow-md flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-current" />
+                    +10 XP
+                  </div>
+                )}
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playWord(word.word);
-                }}
-                className="mt-2 p-2 rounded-full bg-primary/10 hover:bg-primary/20"
-                aria-label={`Listen to ${word.word}`}
-              >
-                <Volume2 className="w-4 h-4 text-primary" />
-              </button>
-
-              {/* Exposure indicator */}
-              <div className="flex flex-col items-center gap-1 mt-2">
-                <div className="flex gap-1">
-                  {[...Array(6)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={cn(
-                        "w-3 h-3",
-                        i < word.exposureCount
-                          ? "text-sunny fill-sunny"
-                          : "text-muted",
-                      )}
-                    />
-                  ))}
+                <div
+                  className={cn(
+                    "w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-2",
+                    selectedCategory.color,
+                  )}
+                >
+                  {word.image}
                 </div>
-                {word.exposureCount > 0 && (
-                  <p className="text-xs text-muted-foreground">Practice mode</p>
-                )}
+
+                <p className="font-bold text-foreground text-center">
+                  {wordText}
+                </p>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    playWord(word);
+                  }}
+                  className="mt-2 p-2 rounded-full bg-primary/10 hover:bg-primary/20"
+                  aria-label={`Listen to ${wordText}`}
+                >
+                  <Volume2 className="w-4 h-4 text-primary" />
+                </button>
+
+                {/* Exposure indicator */}
+                <div className="flex flex-col items-center gap-1 mt-2">
+                  <div className="flex gap-1">
+                    {[...Array(6)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={cn(
+                          "w-3 h-3",
+                          i < word.exposureCount
+                            ? "text-sunny fill-sunny"
+                            : "text-muted",
+                        )}
+                      />
+                    ))}
+                  </div>
+                  {word.exposureCount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Practice mode
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {categoryWords.length === 0 && (
@@ -149,34 +169,37 @@ export function LearnView({ categories, words, onSelectWord }: LearnViewProps) {
       </p>
 
       <div className="flex flex-col gap-3">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category)}
-            className={cn(
-              "flex items-center gap-4 p-4 rounded-2xl w-full text-left",
-              "border-4 border-transparent transition-all duration-200",
-              "hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg",
-              category.color,
-              "hover:border-foreground/20",
-            )}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-card/50 flex items-center justify-center text-3xl shadow-inner">
-              {category.icon}
-            </div>
+        {categories.map((category) => {
+          const categoryName = getCategoryName(category, languagePreference);
+          return (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category)}
+              className={cn(
+                "flex items-center gap-4 p-4 rounded-2xl w-full text-left",
+                "border-4 border-transparent transition-all duration-200",
+                "hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg",
+                category.color,
+                "hover:border-foreground/20",
+              )}
+            >
+              <div className="w-14 h-14 rounded-2xl bg-card/50 flex items-center justify-center text-3xl shadow-inner">
+                {category.icon}
+              </div>
 
-            <div className="flex-1">
-              <h3 className="font-bold text-foreground text-lg">
-                {category.name}
-              </h3>
-              <p className="text-sm text-foreground/70">
-                {category.wordCount} words to learn
-              </p>
-            </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-foreground text-lg">
+                  {categoryName}
+                </h3>
+                <p className="text-sm text-foreground/70">
+                  {category.wordCount} words to learn
+                </p>
+              </div>
 
-            <ChevronRight className="w-6 h-6 text-foreground/50" />
-          </button>
-        ))}
+              <ChevronRight className="w-6 h-6 text-foreground/50" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

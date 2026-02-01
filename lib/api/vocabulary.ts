@@ -7,15 +7,21 @@ import type { Word, Category } from "../types";
 export interface WordResponse {
   id: string;
   word: string;
+  word_cantonese?: string;
+  jyutping?: string;
   category: string;
   category_name?: string;
+  category_name_cantonese?: string;
   pronunciation?: string;
   definition: string;
+  definition_cantonese?: string;
   example: string;
+  example_cantonese?: string;
   difficulty: "easy" | "medium" | "hard";
   physical_action?: string;
   image_url?: string;
   audio_url?: string;
+  audio_url_english?: string;
   contexts: string[];
   related_words: string[];
   total_exposures: number;
@@ -43,8 +49,11 @@ export interface WordProgressResponse {
 export interface CategoryResponse {
   id: string;
   name: string;
+  name_cantonese?: string;
   icon: string;
   color: string;
+  description?: string;
+  description_cantonese?: string;
   word_count: number;
   is_active: boolean;
 }
@@ -125,12 +134,17 @@ export function toWord(
   return {
     id: response.id,
     word: response.word,
+    word_cantonese: response.word_cantonese,
+    jyutping: response.jyutping,
     image: response.image_url || "",
     category: response.category,
     categoryName: response.category_name,
+    category_name_cantonese: response.category_name_cantonese,
     pronunciation: response.pronunciation || "",
     definition: response.definition,
+    definition_cantonese: response.definition_cantonese,
     example: response.example,
+    example_cantonese: response.example_cantonese,
     difficulty: response.difficulty,
     mastered: progress?.mastered || false,
     exposureCount: progress?.exposure_count || 0,
@@ -140,6 +154,8 @@ export function toWord(
     physicalAction: response.physical_action,
     contexts: response.contexts,
     relatedWords: response.related_words,
+    audio_url: response.audio_url,
+    audio_url_english: response.audio_url_english,
   };
 }
 
@@ -150,8 +166,11 @@ export function toCategory(response: CategoryResponse): Category {
   return {
     id: response.id,
     name: response.name,
+    name_cantonese: response.name_cantonese,
     icon: response.icon,
     color: response.color,
+    description: response.description,
+    description_cantonese: response.description_cantonese,
     wordCount: response.word_count,
   };
 }

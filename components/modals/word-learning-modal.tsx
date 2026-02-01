@@ -10,17 +10,24 @@ import {
   Check,
   Repeat,
 } from "lucide-react";
-import type { Word } from "@/lib/types";
+import type { Word, LanguagePreference } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSpeech } from "@/lib/speech";
 import { updateWordProgress } from "@/lib/api/vocabulary";
+import {
+  getWordText,
+  getDefinition,
+  getExample,
+  getSpeechText,
+} from "@/lib/language-utils";
 
 interface WordLearningModalProps {
   word: Word;
   onClose: () => void;
   onComplete?: () => void;
   childId: string;
+  languagePreference?: LanguagePreference;
 }
 
 type Step = "intro" | "listen" | "repeat" | "example" | "complete";
@@ -30,14 +37,20 @@ export function WordLearningModal({
   onClose,
   onComplete,
   childId,
+  languagePreference = "cantonese",
 }: WordLearningModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>("intro");
   const [isPlaying, setIsPlaying] = useState(false);
   const { speak } = useSpeech();
   const progressRecorded = useRef(false);
 
+  const wordText = getWordText(word, languagePreference);
+  const definition = getDefinition(word, languagePreference);
+  const example = getExample(word, languagePreference);
+  const speechText = getSpeechText(word, languagePreference);
+
   const playWord = () => {
-    speak(word.word, {
+    speak(speechText, {
       rate: 0.6,
       pitch: 1.1,
       onStart: () => setIsPlaying(true),
@@ -68,7 +81,7 @@ export function WordLearningModal({
   }, [currentStep, word.id, word.exposureCount, childId]);
 
   const playExample = () => {
-    speak(word.example, {
+    speak(example, {
       rate: 0.7,
       pitch: 1.1,
       onStart: () => setIsPlaying(true),
@@ -154,9 +167,9 @@ export function WordLearningModal({
                 {getCategoryEmoji()}
               </div>
               <h2 className="text-3xl font-bold text-foreground mb-2">
-                {word.word}
+                {wordText}
               </h2>
-              <p className="text-lg text-muted-foreground">{word.definition}</p>
+              <p className="text-lg text-muted-foreground">{definition}</p>
               <div className="flex items-center gap-2 mt-4">
                 <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
                   {word.categoryName}
@@ -198,7 +211,7 @@ export function WordLearningModal({
                 />
               </button>
               <h2 className="text-3xl font-bold text-foreground mt-6">
-                {word.word}
+                {wordText}
               </h2>
               <p className="text-lg text-muted-foreground font-mono mt-2">
                 /{word.pronunciation}/
@@ -216,13 +229,13 @@ export function WordLearningModal({
                 <Repeat className="w-16 h-16 text-sky" />
               </div>
               <h2 className="text-3xl font-bold text-foreground mb-2">
-                {word.word}
+                {wordText}
               </h2>
               <p className="text-muted-foreground font-mono mb-4">
                 /{word.pronunciation}/
               </p>
               <p className="text-foreground">
-                Say it out loud: <strong>{word.word}</strong>
+                Say it out loud: <strong>{wordText}</strong>
               </p>
               <button
                 onClick={playWord}
@@ -241,7 +254,7 @@ export function WordLearningModal({
               </p>
               <div className="bg-sunny/20 rounded-2xl p-6 w-full max-w-sm border-4 border-sunny/30">
                 <p className="text-xl text-foreground leading-relaxed">
-                  &ldquo;{word.example}&rdquo;
+                  &ldquo;{example}&rdquo;
                 </p>
               </div>
               <button
@@ -256,7 +269,7 @@ export function WordLearningModal({
                 Listen to sentence
               </button>
               <p className="text-sm text-muted-foreground mt-4">
-                Try making your own sentence with <strong>{word.word}</strong>!
+                Try making your own sentence with <strong>{wordText}</strong>!
               </p>
             </div>
           )}
@@ -270,7 +283,7 @@ export function WordLearningModal({
                 Great Job!
               </h2>
               <p className="text-lg text-muted-foreground mb-6">
-                You learned a new word: <strong>{word.word}</strong>
+                You learned a new word: <strong>{wordText}</strong>
               </p>
               <div className="flex items-center gap-2 bg-sunny/30 px-4 py-2 rounded-full">
                 <Star className="w-5 h-5 text-sunny fill-sunny" />

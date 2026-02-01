@@ -19,11 +19,47 @@ import {
   dailyMissions,
   words,
 } from "@/lib/mock-data";
+import { getChildren, toChildProfile, type ChildResponse } from "@/lib/api";
+import { getAuthToken } from "@/lib/api/client";
+import type { ChildProfile } from "@/lib/types";
 
 export default function ParentDashboard() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [hideNav, setHideNav] = useState(false);
+  const [currentChild, setCurrentChild] = useState<ChildProfile>(childProfile);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real children on mount
+  useEffect(() => {
+    async function loadChildren() {
+      try {
+        // Only fetch if user is logged in
+        const token = getAuthToken();
+        if (!token) {
+          console.log("No auth token, using mock data");
+          setLoading(false);
+          return;
+        }
+
+        const children = await getChildren();
+        if (children && children.length > 0) {
+          // Use the first child
+          const child = toChildProfile(children[0]);
+          setCurrentChild(child);
+          console.log("Loaded real child:", child.name, child.id);
+        } else {
+          console.log("No children found, using mock data");
+        }
+      } catch (error) {
+        console.error("Failed to load children:", error);
+        // Keep using mock data on error
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadChildren();
+  }, []);
 
   // Handle query parameters
   useEffect(() => {
@@ -53,7 +89,7 @@ export default function ParentDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
-        return <OverviewTab profile={childProfile} stats={progressStats} />;
+        return <OverviewTab profile={currentChild} stats={progressStats} />;
       case "progress":
         return <ProgressTab stats={progressStats} words={words} />;
       case "missions":
@@ -63,7 +99,7 @@ export default function ParentDashboard() {
       case "insights":
         return <InsightsTab />;
       case "settings":
-        return <SettingsTab profile={childProfile} />;
+        return <SettingsTab profile={currentChild} />;
       default:
         return null;
     }
@@ -80,7 +116,7 @@ export default function ParentDashboard() {
                   Parent Dashboard
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Track {childProfile.name}&apos;s progress
+                  Track {currentChild.name}&apos;s progress
                 </p>
               </div>
               <a

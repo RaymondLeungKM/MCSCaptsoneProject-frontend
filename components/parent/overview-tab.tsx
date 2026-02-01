@@ -1,9 +1,17 @@
-'use client';
+"use client";
 
-import { Flame, BookOpen, Trophy, Target, TrendingUp, Calendar } from 'lucide-react';
-import type { ChildProfile, ProgressStats } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import {
+  Flame,
+  BookOpen,
+  Trophy,
+  Target,
+  TrendingUp,
+  Calendar,
+} from "lucide-react";
+import type { ChildProfile, ProgressStats } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { AnalyticsDashboard } from "./analytics-dashboard";
 
 interface OverviewTabProps {
   profile: ChildProfile;
@@ -11,6 +19,21 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ profile, stats }: OverviewTabProps) {
+  // If we have a real child ID (not mock or undefined), use the analytics dashboard
+  // Mock child ID is "1" in mock-data.ts, so check for actual database UUIDs
+  const isMockData =
+    !profile.id ||
+    profile.id === "1" ||
+    profile.id === "mock-child-id" ||
+    profile.id.length < 10; // Real UUIDs are longer
+
+  if (!isMockData) {
+    console.log("Using real analytics dashboard for child:", profile.id);
+    return <AnalyticsDashboard childId={profile.id} />;
+  }
+
+  console.log("Using mock overview for demo/unauthenticated user");
+  // Otherwise show the mock overview
   const dailyProgress = (profile.todayProgress / profile.dailyGoal) * 100;
   const overallProgress = (stats.masteredWords / stats.totalWords) * 100;
 
@@ -25,7 +48,9 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
                 <Flame className="w-5 h-5 text-coral" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{profile.currentStreak}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {profile.currentStreak}
+                </p>
                 <p className="text-xs text-muted-foreground">Day Streak</p>
               </div>
             </div>
@@ -39,7 +64,9 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
                 <BookOpen className="w-5 h-5 text-mint" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.masteredWords}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.masteredWords}
+                </p>
                 <p className="text-xs text-muted-foreground">Words Mastered</p>
               </div>
             </div>
@@ -53,7 +80,9 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
                 <Trophy className="w-5 h-5 text-sunny" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{profile.level}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {profile.level}
+                </p>
                 <p className="text-xs text-muted-foreground">Current Level</p>
               </div>
             </div>
@@ -67,8 +96,12 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
                 <Target className="w-5 h-5 text-sky" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{profile.todayProgress}/{profile.dailyGoal}</p>
-                <p className="text-xs text-muted-foreground">Today&apos;s Goal</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {profile.todayProgress}/{profile.dailyGoal}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Today&apos;s Goal
+                </p>
               </div>
             </div>
           </CardContent>
@@ -88,14 +121,18 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Words learned today</span>
-                  <span className="font-bold text-foreground">{profile.todayProgress} of {profile.dailyGoal}</span>
+                  <span className="text-muted-foreground">
+                    Words learned today
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {profile.todayProgress} of {profile.dailyGoal}
+                  </span>
                 </div>
                 <Progress value={dailyProgress} className="h-3" />
               </div>
               <p className="text-sm text-muted-foreground">
-                {dailyProgress >= 100 
-                  ? 'Daily goal achieved! Great job!' 
+                {dailyProgress >= 100
+                  ? "Daily goal achieved! Great job!"
                   : `${profile.dailyGoal - profile.todayProgress} more words to reach today's goal.`}
               </p>
             </div>
@@ -113,13 +150,18 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Total vocabulary mastered</span>
-                  <span className="font-bold text-foreground">{stats.masteredWords} of {stats.totalWords}</span>
+                  <span className="text-muted-foreground">
+                    Total vocabulary mastered
+                  </span>
+                  <span className="font-bold text-foreground">
+                    {stats.masteredWords} of {stats.totalWords}
+                  </span>
                 </div>
                 <Progress value={overallProgress} className="h-3" />
               </div>
               <p className="text-sm text-muted-foreground">
-                {profile.name} has mastered {Math.round(overallProgress)}% of the available vocabulary.
+                {profile.name} has mastered {Math.round(overallProgress)}% of
+                the available vocabulary.
               </p>
             </div>
           </CardContent>
@@ -136,16 +178,26 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-2 h-32">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-              <div key={day} className="flex-1 flex flex-col items-center gap-2">
-                <div className="w-full bg-muted rounded-t-lg relative" style={{ height: '100%' }}>
-                  <div 
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
+              <div
+                key={day}
+                className="flex-1 flex flex-col items-center gap-2"
+              >
+                <div
+                  className="w-full bg-muted rounded-t-lg relative"
+                  style={{ height: "100%" }}
+                >
+                  <div
                     className="absolute bottom-0 w-full bg-primary rounded-t-lg transition-all"
-                    style={{ height: `${(stats.weeklyProgress[i] / Math.max(...stats.weeklyProgress)) * 100}%` }}
+                    style={{
+                      height: `${(stats.weeklyProgress[i] / Math.max(...stats.weeklyProgress)) * 100}%`,
+                    }}
                   />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-foreground">{stats.weeklyProgress[i]}</p>
+                  <p className="text-xs font-bold text-foreground">
+                    {stats.weeklyProgress[i]}
+                  </p>
                   <p className="text-xs text-muted-foreground">{day}</p>
                 </div>
               </div>
@@ -164,7 +216,9 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
             {stats.categoryProgress.map((cat) => (
               <div key={cat.category}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-foreground font-medium">{cat.category}</span>
+                  <span className="text-foreground font-medium">
+                    {cat.category}
+                  </span>
                   <span className="text-muted-foreground">{cat.progress}%</span>
                 </div>
                 <Progress value={cat.progress} className="h-2" />
