@@ -7,7 +7,12 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { getCurrentUser, logout as apiLogout, getAuthToken } from "@/lib/api";
+import {
+  getCurrentUser,
+  logout as apiLogout,
+  getAuthToken,
+  setAuthToken,
+} from "@/lib/api";
 
 interface User {
   id: string;
@@ -33,8 +38,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuth();
+    bootstrapAuthFromUrl();
   }, []);
+
+  function bootstrapAuthFromUrl() {
+    if (typeof window === "undefined") {
+      void checkAuth();
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const sessionToken =
+      url.searchParams.get("session_token") ||
+      url.searchParams.get("token") ||
+      url.searchParams.get("auth_token");
+
+    if (sessionToken) {
+      setAuthToken(sessionToken);
+
+      url.searchParams.delete("session_token");
+      url.searchParams.delete("token");
+      url.searchParams.delete("auth_token");
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    void checkAuth();
+  }
 
   async function checkAuth() {
     const token = getAuthToken();

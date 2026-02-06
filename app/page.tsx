@@ -4,7 +4,7 @@
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ChildNavigation } from "@/components/child/navigation";
 import { ProfileHeader } from "@/components/child/profile-header";
@@ -47,11 +47,11 @@ import { WordLearningModal } from "@/components/modals/word-learning-modal";
 import { StoryReaderModal } from "@/components/modals/story-reader-modal";
 import { DialogicStoryModal } from "@/components/modals/dialogic-story-modal";
 import { LanguageSelector } from "@/components/language-selector";
-import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
 import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
+import { StoriesView } from "@/components/views/stories-view";
 import type { GeneratedStory } from "@/lib/types";
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -60,6 +60,9 @@ export default function HomePage() {
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  );
   const [useDialogicReading, setUseDialogicReading] = useState(true);
   const [hideNav, setHideNav] = useState(false);
   const [selectedBedtimeStory, setSelectedBedtimeStory] =
@@ -91,7 +94,9 @@ export default function HomePage() {
     const viewParam = searchParams.get("view") || searchParams.get("tab");
     if (
       viewParam &&
-      ["home", "learn", "games", "rewards", "profile"].includes(viewParam)
+      ["home", "learn", "stories", "games", "rewards", "profile"].includes(
+        viewParam,
+      )
     ) {
       setActiveTab(viewParam);
     }
@@ -382,6 +387,7 @@ export default function HomePage() {
 
   const handleCategorySelect = (category: Category) => {
     console.log("[v0] Selected category:", category.name);
+    setSelectedCategory(category);
     setActiveTab("learn");
   };
 
@@ -432,16 +438,6 @@ export default function HomePage() {
               />
             )}
             <StoriesList stories={stories} onReadStory={handleReadStory} />
-            {selectedChild && (
-              <BedtimeStoryGenerator
-                childId={selectedChild.id}
-                childName={selectedChild.name}
-                languagePreference={
-                  selectedChild.languagePreference || "cantonese"
-                }
-                onStoryGenerated={setSelectedBedtimeStory}
-              />
-            )}
             <CategoryGrid
               categories={categories}
               onCategorySelect={handleCategorySelect}
@@ -458,11 +454,21 @@ export default function HomePage() {
             categories={categories}
             words={words}
             onSelectWord={handleLearnWord}
+            initialCategory={selectedCategory}
             languagePreference={
               selectedChild?.languagePreference || "cantonese"
             }
           />
         );
+      case "stories":
+        return selectedChild ? (
+          <StoriesView
+            childId={selectedChild.id}
+            childName={selectedChild.name}
+            languagePreference={selectedChild.languagePreference || "cantonese"}
+            onReadStory={setSelectedBedtimeStory}
+          />
+        ) : null;
       case "games":
         return (
           <GamesView
@@ -559,13 +565,28 @@ export default function HomePage() {
         />
       )}
 
-      {selectedBedtimeStory && selectedChild && (
+      {selectedChild && (
         <BedtimeStoryReader
           story={selectedBedtimeStory}
+          isOpen={!!selectedBedtimeStory}
           onClose={() => setSelectedBedtimeStory(null)}
           languagePreference={selectedChild.languagePreference || "cantonese"}
         />
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      }
+    >
+      <HomePageContent />
+    </Suspense>
   );
 }

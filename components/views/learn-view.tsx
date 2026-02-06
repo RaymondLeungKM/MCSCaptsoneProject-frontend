@@ -16,6 +16,7 @@ interface LearnViewProps {
   categories: Category[];
   words: Word[];
   onSelectWord: (word: Word) => void;
+  initialCategory?: Category | null;
   languagePreference?: LanguagePreference;
 }
 
@@ -23,10 +24,11 @@ export function LearnView({
   categories,
   words,
   onSelectWord,
+  initialCategory = null,
   languagePreference = "cantonese",
 }: LearnViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null,
+    initialCategory,
   );
   const { speak } = useSpeech();
 
@@ -97,11 +99,19 @@ export function LearnView({
 
                 <div
                   className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center text-4xl mb-2",
+                    "w-16 h-16 rounded-2xl flex items-center justify-center mb-2 overflow-hidden",
                     selectedCategory.color,
                   )}
                 >
-                  {word.image}
+                  {word.image && word.image.startsWith("http") ? (
+                    <img
+                      src={word.image}
+                      alt={word.word}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl">{word.image || "📝"}</span>
+                  )}
                 </div>
 
                 <p className="font-bold text-foreground text-center">

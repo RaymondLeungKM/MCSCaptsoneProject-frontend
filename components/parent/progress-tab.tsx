@@ -1,25 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, Check, Clock, Star, Volume2 } from "lucide-react";
 import type { ProgressStats, Word } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/lib/speech";
+import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
+import { getAuthToken } from "@/lib/api/client";
 
 interface ProgressTabProps {
+  childId: string;
   stats: ProgressStats;
   words: Word[];
 }
 
-export function ProgressTab({ stats, words }: ProgressTabProps) {
+export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
+  const [realWords, setRealWords] = useState<Word[]>(words);
+  const [realStats, setRealStats] = useState<ProgressStats>(stats);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "mastered" | "learning">("all");
   const { speak } = useSpeech();
 
-  const filteredWords = words.filter((word) => {
+  // Check if we have a real child ID (not mock)
+  const isMockData =
+    !childId ||
+    childId === "1" ||
+    childId === "mock-child-id" ||
+    childId.length < 10;
+
+  // Fetch real data if we have a real child ID
+  useEffect(() => {
+    async function loadRealData() {
+      if (isMockData) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const token = getAuthToken();
+        if (!token) {
+          console.log("No auth token, using mock data");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch all words with progress for this child
+        const wordsData = await getWordsWithProgress(childId);
+        const loadedWords = wordsData.map((w) => toWord(w, w.progress));
+
+        // Calculate real stats from loaded words
+        const totalWords = loadedWords.length;
+        const masteredWords = loadedWords.filter((w) => w.mastered).length;
+
+        setRealWords(loadedWords);
+        setRealStats({
+          totalWords,
+          masteredWords,
+          weeklyProgress: [], // Not needed for progress tab
+          categoryProgress: [], // Not needed for progress tab
+        });
+
+        console.log(`Loaded ${totalWords} words, ${masteredWords} mastered`);
+      } catch (error) {
+        console.error("Failed to load word progress:", error);
+        // Keep using mock data on error
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRealData();
+  }, [childId, isMockData]);
+
+  const filteredWords = realWords.filter((word) => {
     const matchesSearch = word.word
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -37,6 +95,19 @@ export function ProgressTab({ stats, words }: ProgressTabProps) {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
@@ -44,7 +115,7 @@ export function ProgressTab({ stats, words }: ProgressTabProps) {
         <Card className="border-2">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-foreground">
-              {stats.totalWords}
+              {realStats.totalWords}
             </p>
             <p className="text-sm text-muted-foreground">Total Words</p>
           </CardContent>
@@ -52,7 +123,7 @@ export function ProgressTab({ stats, words }: ProgressTabProps) {
         <Card className="border-2 border-mint/50">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-mint">
-              {stats.masteredWords}
+              {realStats.masteredWords}
             </p>
             <p className="text-sm text-muted-foreground">Mastered</p>
           </CardContent>
@@ -60,7 +131,7 @@ export function ProgressTab({ stats, words }: ProgressTabProps) {
         <Card className="border-2 border-sunny/50">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-sunny">
-              {stats.totalWords - stats.masteredWords}
+              {realStats.totalWords - realStats.masteredWords}
             </p>
             <p className="text-sm text-muted-foreground">In Progress</p>
           </CardContent>

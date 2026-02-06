@@ -50,6 +50,16 @@
   --mint: oklch(0.85 0.1 165);
   --sky: oklch(0.85 0.12 230);
   --lavender: oklch(0.85 0.1 300);
+  --rose: oklch(0.8 0.15 15);
+  --amber: oklch(0.85 0.15 70);
+  --teal: oklch(0.8 0.12 180);
+  --indigo: oklch(0.75 0.15 270);
+  --emerald: oklch(0.8 0.15 155);
+  --pink: oklch(0.85 0.15 340);
+  --cyan: oklch(0.85 0.12 200);
+  --ocean: oklch(0.7 0.15 240);
+  --peach: oklch(0.85 0.12 50);
+  --slate: oklch(0.7 0.05 250);
 }
 
 .dark {
@@ -98,6 +108,16 @@
   --color-mint: var(--mint);
   --color-sky: var(--sky);
   --color-lavender: var(--lavender);
+  --color-rose: var(--rose);
+  --color-amber: var(--amber);
+  --color-teal: var(--teal);
+  --color-indigo: var(--indigo);
+  --color-emerald: var(--emerald);
+  --color-pink: var(--pink);
+  --color-cyan: var(--cyan);
+  --color-ocean: var(--ocean);
+  --color-peach: var(--peach);
+  --color-slate: var(--slate);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -143,4 +163,183 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Safelist category background colors to ensure they're included in build */
+@layer utilities {
+  .bg-sunny {
+    background-color: var(--color-sunny);
+  }
+  .bg-coral {
+    background-color: var(--color-coral);
+  }
+  .bg-mint {
+    background-color: var(--color-mint);
+  }
+  .bg-sky {
+    background-color: var(--color-sky);
+  }
+  .bg-lavender {
+    background-color: var(--color-lavender);
+  }
+  .bg-rose {
+    background-color: var(--color-rose);
+  }
+  .bg-amber {
+    background-color: var(--color-amber);
+  }
+  .bg-teal {
+    background-color: var(--color-teal);
+  }
+  .bg-indigo {
+    background-color: var(--color-indigo);
+  }
+  .bg-emerald {
+    background-color: var(--color-emerald);
+  }
+  .bg-pink {
+    background-color: var(--color-pink);
+  }
+  .bg-cyan {
+    background-color: var(--color-cyan);
+  }
+  .bg-ocean {
+    background-color: var(--color-ocean);
+  }
+  .bg-peach {
+    background-color: var(--color-peach);
+  }
+  .bg-slate {
+    background-color: var(--color-slate);
+  }
+
+  /* Tailwind standard colors for categories */
+  .bg-rose-400 {
+    background-color: rgb(251 113 133);
+  }
+  .bg-amber-400 {
+    background-color: rgb(251 191 36);
+  }
+  .bg-teal-400 {
+    background-color: rgb(45 212 191);
+  }
+  .bg-indigo-400 {
+    background-color: rgb(129 140 248);
+  }
+  .bg-emerald-400 {
+    background-color: rgb(52 211 153);
+  }
+  .bg-pink-400 {
+    background-color: rgb(244 114 182);
+  }
+  .bg-cyan-400 {
+    background-color: rgb(34 211 238);
+  }
+  .bg-slate-400 {
+    background-color: rgb(148 163 184);
+  }
+}
+
+/* Animation for fade-in effect */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Custom scrollbar styling for story reader and dialogs */
+.custom-scrollbar::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track,
+.scrollbar-thin::-webkit-scrollbar-track,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+  background: linear-gradient(
+    to right,
+    rgba(243, 232, 255, 0.5),
+    rgba(251, 207, 232, 0.5)
+  );
+  border-radius: 10px;
+  margin: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.scrollbar-thin::-webkit-scrollbar-thumb,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(168, 85, 247, 0.8),
+    rgba(236, 72, 153, 0.8)
+  );
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.scrollbar-thin::-webkit-scrollbar-thumb:hover,
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(147, 51, 234, 1),
+    rgba(219, 39, 119, 1)
+  );
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-track,
+.dark .scrollbar-thin::-webkit-scrollbar-track,
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+  background: linear-gradient(
+    to right,
+    rgba(88, 28, 135, 0.3),
+    rgba(131, 24, 67, 0.3)
+  );
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+.dark .scrollbar-thin::-webkit-scrollbar-thumb,
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(168, 85, 247, 0.6),
+    rgba(236, 72, 153, 0.6)
+  );
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(168, 85, 247, 0.9),
+    rgba(236, 72, 153, 0.9)
+  );
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar,
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.8) rgba(243, 232, 255, 0.5);
+}
+
+.dark .custom-scrollbar,
+.dark .scrollbar-thin {
+  scrollbar-color: rgba(168, 85, 247, 0.6) rgba(88, 28, 135, 0.3);
 }

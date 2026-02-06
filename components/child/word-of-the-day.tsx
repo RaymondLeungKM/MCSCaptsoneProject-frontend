@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Volume2, ChevronRight, Sparkles } from "lucide-react";
+import { Volume2, ChevronRight, Sparkles, Star } from "lucide-react";
 import type { Word, LanguagePreference } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -70,8 +70,16 @@ export function WordOfTheDay({
 
       <div className="flex gap-4">
         {/* Word Image */}
-        <div className="w-28 h-28 rounded-2xl bg-sunny/30 flex items-center justify-center text-6xl border-4 border-sunny/50 shadow-inner flex-shrink-0">
-          {word.image}
+        <div className="w-28 h-28 rounded-2xl bg-sunny/30 flex items-center justify-center border-4 border-sunny/50 shadow-inner flex-shrink-0 overflow-hidden">
+          {word.image && word.image.startsWith("http") ? (
+            <img
+              src={word.image}
+              alt={word.word}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-6xl">{word.image || "📝"}</span>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">

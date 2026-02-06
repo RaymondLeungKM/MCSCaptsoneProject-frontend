@@ -35,13 +35,22 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [charts, setCharts] = useState<AnalyticsCharts | null>(null);
   const [period, setPeriod] = useState<"week" | "month" | "all">("week");
   const [loading, setLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
-  }, [childId, period]);
+  }, [childId]);
+
+  useEffect(() => {
+    if (summary) {
+      loadCharts();
+    }
+  }, [period]);
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [summaryData, chartsData] = await Promise.all([
         getDashboardSummary(childId),
@@ -49,10 +58,85 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
       ]);
       setSummary(summaryData);
       setCharts(chartsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load analytics:", error);
+      const errorMessage =
+        error?.message ||
+        "Failed to load analytics data. Please check your connection and try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCharts = async () => {
+    setChartsLoading(true);
+    try {
+      const chartsData = await getAnalyticsCharts(childId, period);
+      setCharts(chartsData);
+    } catch (error: any) {
+      console.error("Failed to load charts:", error);
+    } finally {
+      setChartsLoading(false);
+    }
+  };
+
+  // Aggregate data based on period
+  const getAggregatedData = () => {
+    if (!charts) return { labels: [], values: [] };
+
+    const { dates, words_learned } = charts.time_series;
+
+    if (period === "week") {
+      // Show all 7 days for week view
+      return {
+        labels: dates.map((date) =>
+          new Date(date).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          }),
+        ),
+        values: words_learned,
+      };
+    } else if (period === "month") {
+      // Aggregate into weeks for 30-day view
+      const weeklyData: { [key: string]: number } = {};
+
+      dates.forEach((date, i) => {
+        const d = new Date(date);
+        // Get the start of the week (Sunday)
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        const weekKey = weekStart.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+
+        weeklyData[weekKey] = (weeklyData[weekKey] || 0) + words_learned[i];
+      });
+
+      return {
+        labels: Object.keys(weeklyData),
+        values: Object.values(weeklyData),
+      };
+    } else {
+      // Aggregate into months for all-time view
+      const monthlyData: { [key: string]: number } = {};
+
+      dates.forEach((date, i) => {
+        const monthKey = new Date(date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+        });
+
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + words_learned[i];
+      });
+
+      return {
+        labels: Object.keys(monthlyData),
+        values: Object.values(monthlyData),
+      };
     }
   };
 
@@ -62,6 +146,23 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+        <h3 className="mb-2 text-lg font-semibold text-red-900">
+          Unable to Load Analytics
+        </h3>
+        <p className="mb-4 text-sm text-red-700">{error}</p>
+        <button
+          onClick={loadData}
+          className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -148,31 +249,69 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         </div>
       </div>
 
-      {/* Simple Text-Based Charts (placeholder for future chart library) */}
+      {/* Words Learned Over Time Chart */}
       <Card className="p-6">
-        <h4 className="font-semibold mb-4">Words Learned Over Time</h4>
-        <div className="space-y-2">
-          {charts.time_series.dates.map((date, i) => (
-            <div key={date} className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground w-24">
-                {new Date(date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-              <div className="flex-1 bg-muted rounded-full h-6 overflow-hidden">
-                <div
-                  className="bg-blue-500 h-full flex items-center justify-end px-2 text-xs text-white font-medium"
-                  style={{
-                    width: `${Math.max(10, (charts.time_series.words_learned[i] / Math.max(...charts.time_series.words_learned)) * 100)}%`,
-                  }}
-                >
-                  {charts.time_series.words_learned[i]}
-                </div>
-              </div>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-semibold">Words Learned Over Time</h4>
+          {!chartsLoading && charts && (
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">
+                {charts.time_series.words_learned.reduce((a, b) => a + b, 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">Total Words</p>
             </div>
-          ))}
+          )}
         </div>
+
+        {chartsLoading ? (
+          // Skeleton loading animation
+          <div className="space-y-3">
+            {[...Array(period === "week" ? 7 : period === "month" ? 5 : 6)].map(
+              (_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="flex-1 h-8 rounded-full" />
+                </div>
+              ),
+            )}
+          </div>
+        ) : charts ? (
+          (() => {
+            const { labels, values } = getAggregatedData();
+            const maxValue = Math.max(...values, 1);
+
+            return (
+              <div className="space-y-3">
+                {labels.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No learning activity yet</p>
+                    <p className="text-sm mt-1">
+                      Start learning to see your progress!
+                    </p>
+                  </div>
+                ) : (
+                  labels.map((label, i) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-24 text-right flex-shrink-0">
+                        {label}
+                      </span>
+                      <div className="flex-1 bg-muted rounded-full h-8 overflow-hidden relative">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-full flex items-center justify-end px-3 text-sm text-white font-medium transition-all duration-300"
+                          style={{
+                            width: `${Math.max(8, (values[i] / maxValue) * 100)}%`,
+                          }}
+                        >
+                          {values[i] > 0 && values[i]}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            );
+          })()
+        ) : null}
       </Card>
 
       {/* Category Progress */}

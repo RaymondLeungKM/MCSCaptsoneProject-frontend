@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   Brain,
@@ -13,14 +13,63 @@ import {
 import type { ChildProfile, Word, LearningSession } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   generateParentInsights,
   getAdaptiveLearningRecommendation,
 } from "@/lib/adaptive-learning";
-import { words, childProfile } from "@/lib/mock-data";
+import { words as mockWords, childProfile } from "@/lib/mock-data";
+import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
+import { getAuthToken } from "@/lib/api/client";
 
-export function InsightsTab() {
+interface InsightsTabProps {
+  childId?: string;
+}
+
+export function InsightsTab({ childId }: InsightsTabProps = {}) {
   const [profile] = useState<ChildProfile>(childProfile);
+  const [words, setWords] = useState<Word[]>(mockWords);
+  const [loading, setLoading] = useState(true);
+
+  // Check if we have a real child ID (not mock)
+  const isMockData =
+    !childId ||
+    childId === "1" ||
+    childId === "mock-child-id" ||
+    childId.length < 10;
+
+  // Fetch real data if we have a real child ID
+  useEffect(() => {
+    async function loadRealData() {
+      if (isMockData) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const token = getAuthToken();
+        if (!token) {
+          console.log("No auth token, using mock data");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch all words with progress for this child
+        const wordsData = await getWordsWithProgress(childId);
+        const loadedWords = wordsData.map((w) => toWord(w, w.progress));
+
+        setWords(loadedWords);
+        console.log(`Loaded ${loadedWords.length} words for insights`);
+      } catch (error) {
+        console.error("Failed to load words for insights:", error);
+        // Keep using mock data on error
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRealData();
+  }, [childId, isMockData]);
 
   // Mock recent sessions data
   const recentSessions: LearningSession[] = [
@@ -46,6 +95,20 @@ export function InsightsTab() {
   ).length;
   const needingExposure = words.filter((w) => w.exposureCount < 6).length;
   const wellLearned = words.filter((w) => w.exposureCount >= 6).length;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

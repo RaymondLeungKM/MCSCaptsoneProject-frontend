@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { register as apiRegister, login as apiLogin } from "@/lib/api";
+import { register as apiRegister } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
@@ -47,14 +47,11 @@ export default function RegisterPage() {
 
     try {
       // Register user
-      await apiRegister({
+      const response = await apiRegister({
         email,
         full_name: fullName,
         password,
       });
-
-      // Auto-login after registration
-      const response = await apiLogin({ email, password });
       await login(response.access_token);
 
       // Redirect to home

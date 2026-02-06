@@ -10,6 +10,118 @@ The website supports iframe embedding and provides a bidirectional communication
 - Synchronize user/child IDs
 - Receive progress updates
 - Control the view/tab displayed
+- Authenticate users via token parameter
+
+---
+
+## Authentication for Mobile Apps
+
+### Token-Based Authentication (Bypassing Login Page)
+
+Mobile apps can authenticate users directly without requiring them to log in again on the website. The website accepts authentication tokens via URL parameters.
+
+#### Supported Token Parameters
+
+- `token` - JWT access token
+- `session_token` - Alternative token parameter name
+- `auth_token` - Alternative token parameter name
+
+#### Usage
+
+```javascript
+// After user logs in to mobile app, open iframe with token
+const jwtToken = await mobileAppLogin(email, password);
+const iframeUrl = `https://your-domain.com?token=${jwtToken}&hideNav=true&view=home`;
+
+// The website will automatically:
+// 1. Extract the token from URL
+// 2. Store it in localStorage
+// 3. Remove it from URL (for security)
+// 4. Authenticate all subsequent API calls
+```
+
+#### Implementation Details
+
+The frontend automatically:
+
+1. Checks for `token`, `session_token`, or `auth_token` in URL parameters on page load
+2. Stores the token in `localStorage` under `auth_token` key
+3. Removes the token from the URL for security
+4. Includes the token in `Authorization: Bearer <token>` header for all API requests
+
+This means once a user is authenticated via token parameter, all backend API calls will be automatically authenticated.
+
+---
+
+### Mobile App Registration Flow
+
+When a user creates an account through your mobile app:
+
+**Backend Endpoint:** `POST /api/v1/auth/register`
+
+**Request:**
+
+```json
+{
+  "email": "parent@example.com",
+  "password": "securePassword123",
+  "full_name": "John Doe"
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "user": {
+    "id": "user-uuid",
+    "email": "parent@example.com",
+    "full_name": "John Doe",
+    "role": "parent",
+    "is_active": true,
+    "created_at": "2026-02-07T10:30:00Z"
+  }
+}
+```
+
+**Key Points:**
+
+- Registration returns `access_token` immediately - no need for separate login
+- Store this token in your mobile app
+- Use this token to authenticate iframe and API calls
+- Token is a JWT (JSON Web Token) valid for authenticated requests
+
+**Example Flow:**
+
+```javascript
+// 1. User registers in mobile app
+const response = await fetch(
+  "https://api.your-domain.com/api/v1/auth/register",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email,
+      password: password,
+      full_name: fullName,
+    }),
+  },
+);
+
+const data = await response.json();
+const token = data.access_token;
+
+// 2. Store token in mobile app
+await SecureStore.setItemAsync("auth_token", token);
+
+// 3. Open iframe with token
+const iframeUrl = `https://your-domain.com?token=${token}&hideNav=true`;
+loadIframe(iframeUrl);
+```
+
+---
 
 ## Embedding the Website
 
@@ -209,9 +321,73 @@ Sent when the website needs user authentication (respond with `SET_USER` message
 
 ---
 
-## Backend API Endpoint
+## Backend API Endpoints
 
-### POST `/api/vocabulary/external/word-learned`
+### 1. Image Upload (New!)
+
+**POST `/api/v1/uploads/upload-image`**
+
+Upload an image file directly from mobile device (e.g., camera photo).
+
+**Request:**
+
+- Content-Type: `multipart/form-data`
+- Authentication: Required (Bearer token in Authorization header)
+- File field name: `file`
+- Supported formats: JPG, JPEG, PNG, GIF, WEBP
+- Max size: 10MB
+
+**Example (JavaScript/React Native):**
+
+```javascript
+// Upload image from camera
+async function uploadImage(imageUri) {
+  const formData = new FormData();
+  formData.append("file", {
+    uri: imageUri,
+    type: "image/jpeg",
+    name: "photo.jpg",
+  });
+
+  const response = await fetch(
+    "https://api.your-domain.com/api/v1/uploads/upload-image",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: formData,
+    },
+  );
+
+  return await response.json();
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "image_url": "https://api.your-domain.com/uploads/images/abc123.jpg",
+  "filename": "abc123.jpg",
+  "size": 123456,
+  "content_type": "image/jpeg"
+}
+```
+
+**Usage Flow:**
+
+1. Mobile app captures photo with camera
+2. Mobile app uploads file to this endpoint
+3. Endpoint returns `image_url`
+4. Mobile app uses `image_url` with `/vocabulary/external/word-learned` endpoint
+
+---
+
+### 2. Word Learning from External Sources
+
+**POST `/api/v1/vocabulary/external/word-learned`**
 
 Record word learning from external sources (mobile app).
 
@@ -225,7 +401,7 @@ Record word learning from external sources (mobile app).
   "timestamp": "2026-01-28T10:30:00Z",
   "source": "object_detection", // Required
   "confidence": 0.95, // Optional (0-1)
-  "image_url": "https://...", // Optional
+  "image_url": "https://...", // Optional - use URL from upload endpoint
   "metadata": {} // Optional
 }
 ```
@@ -253,25 +429,79 @@ Record word learning from external sources (mobile app).
 - XP (10 points) is only awarded on the **first exposure** to a word
 - Subsequent exposures increase the exposure count but don't award XP
 - Progress is tracked with modality-specific counters (visual, auditory, kinesthetic)
+- If word doesn't exist in vocabulary, it will be created automatically in the "general" category
+
+---
+
+## Complete Mobile Object Detection Flow
+
+Here's the complete flow for object detection with image upload:
+
+```javascript
+// 1. Capture photo from mobile camera
+const imageUri = await capturePhoto();
+
+// 2. Upload image to get URL
+const uploadResult = await uploadImage(imageUri);
+const imageUrl = uploadResult.image_url;
+
+// 3. Perform object detection (locally or via cloud service)
+const detectionResult = await detectObject(imageUri);
+
+// 4. Record word learning with backend
+const response = await fetch(
+  "https://api.your-domain.com/api/v1/vocabulary/external/word-learned",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({
+      word: detectionResult.label,
+      child_id: currentChildId,
+      timestamp: new Date().toISOString(),
+      source: "object_detection",
+      confidence: detectionResult.confidence,
+      image_url: imageUrl, // URL from step 2
+      metadata: {
+        detectionModel: "yolov8",
+        processingTime: detectionResult.processingTime,
+      },
+    }),
+  },
+);
+
+const result = await response.json();
+
+// 5. Update UI with results
+showReward(`+${result.xp_awarded} XP!`);
+updateProgress(result.level, result.total_xp);
+```
 
 ---
 
 ## User Authentication Synchronization
 
-### Option 1: Shared JWT Token
+**Recommended Approach:** Use the Token-Based Authentication (see top of document).
 
-If the mobile app and website share the same authentication backend:
+The platform supports shared JWT token authentication between mobile app and website:
 
-1. Mobile app authenticates with backend
-2. Mobile app gets JWT token
-3. Mobile app passes token to website via URL parameter or postMessage
-4. Website uses token for API calls
+1. Mobile app authenticates with backend (login or register)
+2. Backend returns JWT token
+3. Mobile app passes token to website via URL parameter: `?token={jwtToken}`
+4. Website automatically stores and uses token for all API calls
 
 ```javascript
-// URL parameter approach
-const iframeUrl = `https://your-domain.com?token=${jwtToken}&childId=${childId}`;
+// After mobile app authentication
+const iframeUrl = `https://your-domain.com?token=${jwtToken}&view=home&hideNav=true`;
+```
 
-// Or postMessage approach
+**Alternative (postMessage):**
+
+If you can't use URL parameters, you can send authentication info via postMessage:
+
+```javascript
 iframe.contentWindow.postMessage(
   {
     type: "SET_USER",
@@ -282,45 +512,7 @@ iframe.contentWindow.postMessage(
 );
 ```
 
-### Option 2: Separate Authentication
-
-If using separate authentication systems:
-
-1. Mobile app authenticates user
-2. Mobile app creates/links user in website's backend
-3. Mobile app passes user/child IDs to website
-4. Website authenticates with its own system
-
----
-
-## Example: Object Detection Flow
-
-```javascript
-// 1. Mobile app performs object detection
-const detectionResult = await detectObject(imageData);
-
-// 2. Send to website
-iframe.contentWindow.postMessage(
-  {
-    type: "WORD_LEARNED",
-    word: detectionResult.label, // e.g., "elephant"
-    timestamp: new Date().toISOString(),
-    source: "object_detection",
-    confidence: detectionResult.confidence,
-    imageUrl: detectionResult.imageUrl,
-  },
-  "*",
-);
-
-// 3. Listen for progress update
-window.addEventListener("message", (event) => {
-  if (event.data.type === "PROGRESS_UPDATED") {
-    // Update mobile app UI with new XP, level, etc.
-    updateProgressBar(event.data.xp, event.data.level);
-    showToast(`+${event.data.xp} XP! Level ${event.data.level}`);
-  }
-});
-```
+**Note:** The postMessage approach requires the iframe to already be loaded and authenticated separately. The URL token parameter approach is simpler and more secure.
 
 ---
 

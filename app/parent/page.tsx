@@ -4,7 +4,7 @@
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ParentNavigation } from "@/components/parent/navigation";
 import { OverviewTab } from "@/components/parent/overview-tab";
@@ -23,11 +23,11 @@ import { getChildren, toChildProfile, type ChildResponse } from "@/lib/api";
 import { getAuthToken } from "@/lib/api/client";
 import type { ChildProfile } from "@/lib/types";
 
-export default function ParentDashboard() {
+function ParentDashboardContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [hideNav, setHideNav] = useState(false);
-  const [currentChild, setCurrentChild] = useState<ChildProfile>(childProfile);
+  const [currentChild, setCurrentChild] = useState<ChildProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch real children on mount
@@ -38,6 +38,7 @@ export default function ParentDashboard() {
         const token = getAuthToken();
         if (!token) {
           console.log("No auth token, using mock data");
+          setCurrentChild(childProfile);
           setLoading(false);
           return;
         }
@@ -50,10 +51,12 @@ export default function ParentDashboard() {
           console.log("Loaded real child:", child.name, child.id);
         } else {
           console.log("No children found, using mock data");
+          setCurrentChild(childProfile);
         }
       } catch (error) {
         console.error("Failed to load children:", error);
-        // Keep using mock data on error
+        // Use mock data on error
+        setCurrentChild(childProfile);
       } finally {
         setLoading(false);
       }
@@ -86,18 +89,36 @@ export default function ParentDashboard() {
     }
   }, [searchParams]);
 
+  // Show loading spinner while fetching data
+  if (loading || !currentChild) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return <OverviewTab profile={currentChild} stats={progressStats} />;
       case "progress":
-        return <ProgressTab stats={progressStats} words={words} />;
+        return (
+          <ProgressTab
+            childId={currentChild.id}
+            stats={progressStats}
+            words={words}
+          />
+        );
       case "missions":
         return <MissionsTab missions={dailyMissions} />;
       case "offline":
         return <OfflineMissionsTab />;
       case "insights":
-        return <InsightsTab />;
+        return <InsightsTab childId={currentChild.id} />;
       case "settings":
         return <SettingsTab profile={currentChild} />;
       default:
@@ -136,5 +157,19 @@ export default function ParentDashboard() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">{renderContent()}</main>
     </div>
+  );
+}
+
+export default function ParentDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      }
+    >
+      <ParentDashboardContent />
+    </Suspense>
   );
 }

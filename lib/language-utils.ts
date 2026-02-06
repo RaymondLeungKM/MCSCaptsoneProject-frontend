@@ -49,11 +49,14 @@ export function getExample(
 ): string {
   switch (language) {
     case "cantonese":
-      return word.example_cantonese || word.example;
+      // If no Cantonese example, create a simple one using the word
+      return (
+        word.example_cantonese || `我見到${word.word_cantonese || word.word}。`
+      );
     case "bilingual":
       return word.example_cantonese
         ? `${word.example_cantonese} / ${word.example}`
-        : word.example;
+        : `${word.word_cantonese || word.word} / ${word.example}`;
     case "english":
     default:
       return word.example;

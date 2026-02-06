@@ -14,6 +14,12 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface RegisterResponse {
+  access_token: string;
+  token_type: string;
+  user: UserResponse;
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
@@ -31,11 +37,18 @@ export interface UserResponse {
 /**
  * Register a new user
  */
-export async function register(data: RegisterRequest): Promise<UserResponse> {
-  return apiRequest<UserResponse>("/auth/register", {
+export async function register(
+  data: RegisterRequest,
+): Promise<RegisterResponse> {
+  const response = await apiRequest<RegisterResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
   });
+
+  // Store token
+  setAuthToken(response.access_token);
+
+  return response;
 }
 
 /**

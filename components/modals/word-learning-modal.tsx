@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSpeech } from "@/lib/speech";
 import { updateWordProgress } from "@/lib/api/vocabulary";
+import { trackDailyWord } from "@/lib/api/bedtime-stories";
+import { AISentences } from "@/components/child/ai-sentences";
 import {
   getWordText,
   getDefinition,
@@ -30,7 +32,13 @@ interface WordLearningModalProps {
   languagePreference?: LanguagePreference;
 }
 
-type Step = "intro" | "listen" | "repeat" | "example" | "complete";
+type Step =
+  | "intro"
+  | "listen"
+  | "repeat"
+  | "example"
+  | "ai-sentences"
+  | "complete";
 
 export function WordLearningModal({
   word,
@@ -68,10 +76,30 @@ export function WordLearningModal({
       if (currentStep === "complete" && !progressRecorded.current) {
         progressRecorded.current = true;
         try {
+          // Update general word progress
           await updateWordProgress(word.id, childId, {
             exposure_count: (word.exposureCount || 0) + 1,
           });
-          console.log("Progress recorded successfully");
+
+          // Track word for daily story generation
+          await trackDailyWord({
+            child_id: childId,
+            word_id: word.id,
+            date: new Date().toISOString(),
+            exposure_count: 1,
+            used_actively: false,
+            mastery_confidence: 0.5,
+            learned_context: {
+              activity: "word_learning",
+              source: "vocabulary_explorer",
+            },
+            include_in_story: true,
+            story_priority: 5,
+          });
+
+          console.log(
+            "Progress recorded successfully (word progress + daily tracking)",
+          );
         } catch (error) {
           console.error("Failed to record word progress:", error);
         }
@@ -93,7 +121,14 @@ export function WordLearningModal({
     });
   };
 
-  const steps: Step[] = ["intro", "listen", "repeat", "example", "complete"];
+  const steps: Step[] = [
+    "intro",
+    "listen",
+    "repeat",
+    "example",
+    "ai-sentences",
+    "complete",
+  ];
   const currentIndex = steps.indexOf(currentStep);
 
   const goNext = () => {
@@ -163,8 +198,16 @@ export function WordLearningModal({
         <div className="p-6 min-h-[400px] flex flex-col">
           {currentStep === "intro" && (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="w-32 h-32 rounded-3xl bg-sunny/30 flex items-center justify-center text-7xl mb-6 border-4 border-sunny/50 shadow-lg">
-                {getCategoryEmoji()}
+              <div className="w-32 h-32 rounded-3xl bg-sunny/30 flex items-center justify-center text-7xl mb-6 border-4 border-sunny/50 shadow-lg overflow-hidden">
+                {word.image?.startsWith("http") ? (
+                  <img
+                    src={word.image}
+                    alt={wordText}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{word.image || getCategoryEmoji()}</span>
+                )}
               </div>
               <h2 className="text-3xl font-bold text-foreground mb-2">
                 {wordText}
@@ -271,6 +314,26 @@ export function WordLearningModal({
               <p className="text-sm text-muted-foreground mt-4">
                 Try making your own sentence with <strong>{wordText}</strong>!
               </p>
+            </div>
+          )}
+
+          {currentStep === "ai-sentences" && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  More Examples
+                </h2>
+                <p className="text-muted-foreground">
+                  See how to use <strong>{wordText}</strong> in different
+                  sentences
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto px-2">
+                <AISentences
+                  wordId={word.id}
+                  languagePreference={languagePreference}
+                />
+              </div>
             </div>
           )}
 

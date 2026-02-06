@@ -9,6 +9,30 @@ import {
   StoryGenerationResponse,
 } from "../types";
 
+export interface TrackDailyWordRequest {
+  child_id: string;
+  word_id: string;
+  date: string;
+  exposure_count?: number;
+  used_actively?: boolean;
+  mastery_confidence?: number;
+  learned_context?: Record<string, any>;
+  include_in_story?: boolean;
+  story_priority?: number;
+}
+
+/**
+ * Track a word learned today for story generation
+ */
+export async function trackDailyWord(
+  request: TrackDailyWordRequest,
+): Promise<void> {
+  await apiRequest("/bedtime-stories/track-word", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
 /**
  * Get words learned today for a child
  */
