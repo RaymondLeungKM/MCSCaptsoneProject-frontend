@@ -2,6 +2,7 @@
  * Vocabulary API
  */
 import { apiRequest } from "./client";
+import { resolveCategoryColor } from "../category-colors";
 import type { Word, Category } from "../types";
 
 export interface WordResponse {
@@ -162,13 +163,13 @@ export function toWord(
 /**
  * Convert API response to Category type
  */
-export function toCategory(response: CategoryResponse): Category {
+export function toCategory(response: CategoryResponse, index = 0): Category {
   return {
     id: response.id,
     name: response.name,
     name_cantonese: response.name_cantonese,
     icon: response.icon,
-    color: response.color,
+    color: resolveCategoryColor(response.color, response.name, index),
     description: response.description,
     description_cantonese: response.description_cantonese,
     wordCount: response.word_count,
