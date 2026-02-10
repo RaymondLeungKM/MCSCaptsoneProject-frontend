@@ -25,6 +25,7 @@ import {
   getDashboardSummary,
   getAnalyticsCharts,
 } from "@/lib/api/parent-dashboard";
+import { LearningCalendar } from "./learning-calendar";
 
 interface AnalyticsDashboardProps {
   childId: string;
@@ -336,6 +337,15 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
           ))}
         </div>
       </Card>
+
+      {/* Learning Calendar */}
+      <div className="col-span-full">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Calendar className="w-6 h-6 text-primary" />
+          Daily Learning History
+        </h3>
+        <LearningCalendar childId={childId} />
+      </div>
 
       {/* Recent Insights */}
       {summary.recent_insights.length > 0 && (

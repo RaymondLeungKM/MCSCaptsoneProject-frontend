@@ -29,6 +29,7 @@ export interface WordResponse {
   success_rate: number;
   is_active: boolean;
   created_at: string;
+  created_by_child_id?: string;
 }
 
 export interface WordProgressResponse {

@@ -113,3 +113,34 @@ export async function updateParentalControls(
     body: JSON.stringify(settings),
   });
 }
+
+/**
+ * Get words learned by a child on a specific date
+ */
+export async function getWordsByDate(
+  childId: string,
+  date: string, // YYYY-MM-DD format
+): Promise<{
+  date: string;
+  child_id: string;
+  words_count: number;
+  words: Array<{
+    id: string;
+    word: string;
+    word_cantonese?: string;
+    jyutping?: string;
+    image_url?: string;
+    category: string;
+    category_cantonese?: string;
+    definition: string;
+    definition_cantonese?: string;
+    exposure_count: number;
+    used_actively: boolean;
+    mastery_confidence: number;
+    created_at?: string;
+  }>;
+}> {
+  return apiRequest(
+    `/parent-dashboard/${childId}/words-by-date?date_str=${date}`,
+  );
+}
