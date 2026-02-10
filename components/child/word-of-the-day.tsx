@@ -71,7 +71,7 @@ export function WordOfTheDay({
       <div className="flex gap-4">
         {/* Word Image */}
         <div className="w-28 h-28 rounded-2xl bg-sunny/30 flex items-center justify-center border-4 border-sunny/50 shadow-inner flex-shrink-0 overflow-hidden">
-          {word.image && word.image.startsWith("http") ? (
+          {word.image && (word.image.startsWith("http") || word.image.startsWith("/")) ? (
             <img
               src={word.image}
               alt={word.word}

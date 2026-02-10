@@ -175,3 +175,26 @@ export function toCategory(response: CategoryResponse, index = 0): Category {
     wordCount: response.word_count,
   };
 }
+
+/**
+ * Recalculate category word counts based on visible words
+ * This is needed because the backend word_count is static and doesn't account
+ * for user-specific filtering (e.g., created_by_child_id)
+ */
+export function recalculateCategoryCounts(
+  categories: Category[],
+  words: Word[]
+): Category[] {
+  // Count words per category from the actual visible words
+  const wordCountsByCategory = words.reduce((acc, word) => {
+    acc[word.category] = (acc[word.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Update categories with accurate counts
+  return categories.map(category => ({
+    ...category,
+    wordCount: wordCountsByCategory[category.id] || 0
+  }));
+}
+

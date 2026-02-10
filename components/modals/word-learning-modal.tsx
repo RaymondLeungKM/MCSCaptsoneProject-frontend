@@ -199,7 +199,7 @@ export function WordLearningModal({
           {currentStep === "intro" && (
             <div className="flex-1 flex flex-col items-center justify-center text-center">
               <div className="w-32 h-32 rounded-3xl bg-sunny/30 flex items-center justify-center text-7xl mb-6 border-4 border-sunny/50 shadow-lg overflow-hidden">
-                {word.image?.startsWith("http") ? (
+                {word.image && (word.image.startsWith("http") || word.image.startsWith("/")) ? (
                   <img
                     src={word.image}
                     alt={wordText}

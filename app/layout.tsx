@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { Nunito, Noto_Sans_TC } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
+// import { Analytics } from "@vercel/analytics/next"; // Disabled for self-hosting
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
@@ -52,7 +52,7 @@ export default function RootLayout({
         className={`${nunito.variable} ${notoSansTC.variable} font-sans antialiased`}
       >
         <AuthProvider>{children}</AuthProvider>
-        <Analytics />
+        {/* <Analytics /> */}
       </body>
     </html>
   );

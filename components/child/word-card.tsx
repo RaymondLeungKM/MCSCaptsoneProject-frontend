@@ -42,7 +42,7 @@ export function WordCard({
       <div className="p-6 space-y-4">
         {/* Image/Icon */}
         <div className="flex justify-center">
-          {word.image && word.image.startsWith("http") ? (
+          {word.image && (word.image.startsWith("http") || word.image.startsWith("/")) ? (
             <img
               src={word.image}
               alt={word.word}

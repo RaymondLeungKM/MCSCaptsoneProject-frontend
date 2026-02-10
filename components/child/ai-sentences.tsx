@@ -38,8 +38,9 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
     async function fetchSentences() {
       try {
         setLoading(true);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
         const response = await fetch(
-          `http://localhost:8000/api/v1/vocabulary/${wordId}/sentences`,
+          `${apiUrl}/vocabulary/${wordId}/sentences`,
         );
 
         if (!response.ok) {

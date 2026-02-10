@@ -103,7 +103,7 @@ export function LearnView({
                     selectedCategory.color,
                   )}
                 >
-                  {word.image && word.image.startsWith("http") ? (
+                  {word.image && (word.image.startsWith("http") || word.image.startsWith("/")) ? (
                     <img
                       src={word.image}
                       alt={word.word}

@@ -10,6 +10,7 @@ import {
   getWordOfTheDay,
   toWord,
   toCategory,
+  recalculateCategoryCounts,
 } from "@/lib/api";
 import { ChildNavigation } from "@/components/child/navigation";
 import { ProfileHeader } from "@/components/child/profile-header";
@@ -66,19 +67,27 @@ export default function HomePage() {
 
       // Load categories
       const categoriesData = await getCategories();
-      setCategories(categoriesData.map(toCategory));
+      const initialCategories = categoriesData.map(toCategory);
 
       // Load word of the day
       try {
         const wordOfDayData = await getWordOfTheDay(firstChild.id);
         // Fetch the full word details
         const wordsData = await getWordsWithProgress(firstChild.id);
+        const loadedWords = wordsData.map((w: any) => toWord(w, w.progress));
+        
+        // Recalculate category counts based on visible words
+        const updatedCategories = recalculateCategoryCounts(initialCategories, loadedWords);
+        setCategories(updatedCategories);
+        
         const word = wordsData.find((w: any) => w.id === wordOfDayData.word_id);
         if (word) {
           setWordOfDay(toWord(word, word.progress));
         }
       } catch (err) {
         console.error("Failed to load word of the day:", err);
+        // Still set categories even if word of the day fails
+        setCategories(initialCategories);
       }
     } catch (err: any) {
       console.error("Failed to load data:", err);

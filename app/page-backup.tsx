@@ -16,7 +16,8 @@ import {
   getWordsWithProgress, 
   getWordOfTheDay,
   toWord,
-  toCategory 
+  toCategory,
+  recalculateCategoryCounts,
 } from "@/lib/api";
 import { games, stories } from "@/lib/mock-data";
 import type { Word, Category, Game, Story } from "@/lib/types";
@@ -91,11 +92,16 @@ export default function HomePage() {
       
       // Load categories
       const categoriesData = await getCategories();
-      setCategories(categoriesData.map(toCategory));
+      const initialCategories = categoriesData.map(toCategory);
       
       // Load words with progress
       const wordsData = await getWordsWithProgress(firstChild.id);
-      setWords(wordsData.map((w: any) => toWord(w, w.progress)));
+      const loadedWords = wordsData.map((w: any) => toWord(w, w.progress));
+      setWords(loadedWords);
+      
+      // Recalculate category counts based on visible words
+      const updatedCategories = recalculateCategoryCounts(initialCategories, loadedWords);
+      setCategories(updatedCategories);
       
       // Load word of the day
       try {
