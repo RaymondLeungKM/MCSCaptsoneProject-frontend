@@ -17,9 +17,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 // Note: You might need to adjust your import path for register API
 import { register } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,15 +56,14 @@ export default function RegisterPage() {
     }
 
     try {
-      await register({
+      const response = await register({
         full_name: fullName,
         email,
         password,
       });
-      setSuccess("帳戶建立成功！正在轉向登入...");
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      await login(response.access_token);
+      setSuccess("帳戶建立成功！正在登入...");
+      router.replace("/");
     } catch (err: any) {
       setError(err.message || "註冊失敗，請稍後再試。");
     } finally {

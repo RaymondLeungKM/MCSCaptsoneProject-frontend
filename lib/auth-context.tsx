@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      setAuthToken(token);
       const userData = await getCurrentUser();
       setUser(userData);
     } catch (err: any) {

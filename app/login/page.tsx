@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
@@ -15,14 +15,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { login, APIError } from "@/lib/api";
+import { login as apiLogin, APIError } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading: authLoading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+    }
+  }, [authLoading, user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +38,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
-      // Login successful - redirect to parent dashboard
-      router.push("/parent");
+      const auth = await apiLogin({ email, password });
+      await login(auth.access_token);
+      router.replace("/");
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.message);
