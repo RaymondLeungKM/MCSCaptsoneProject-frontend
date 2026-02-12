@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import { Zen_Maru_Gothic } from "next/font/google"; // 👈 Back to the cute font!
+import { Zen_Maru_Gothic } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-// We use weight 400 (Regular), 500 (Medium), 700 (Bold), 900 (Black)
+// 👇 1. IMPORT AUTH PROVIDER
+// (Adjust path if your file is named differently, but error says lib/auth-context.tsx)
+import { AuthProvider } from "@/lib/auth-context"; 
+
 const font = Zen_Maru_Gothic({ 
   weight: ["400", "500", "700", "900"],
   subsets: ["latin"], 
-  preload: false, // 👈 IMPORTANT: Fixes the build error!
+  preload: false,
   variable: "--font-zen",
 });
 
@@ -24,14 +27,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${font.className} antialiased min-h-screen bg-slate-50`}>
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-          {children}
-        </ThemeProvider>
+        
+        {/* 👇 2. WRAP EVERYTHING INSIDE AUTHPROVIDER */}
+        <AuthProvider>
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+            {children}
+          </ThemeProvider>
+        </AuthProvider>
+
       </body>
     </html>
   );
