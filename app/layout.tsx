@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-// Import Zen Maru Gothic (The "Round" Font)
-import { Zen_Maru_Gothic } from "next/font/google"; 
+import { Zen_Maru_Gothic } from "next/font/google"; // 👈 Back to the cute font!
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context"; 
+import { ThemeProvider } from "@/components/theme-provider";
 
-// Configure it with all weights so we can use "Black" (900) for titles
-const zenMaru = Zen_Maru_Gothic({
+// We use weight 400 (Regular), 500 (Medium), 700 (Bold), 900 (Black)
+const font = Zen_Maru_Gothic({ 
   weight: ["400", "500", "700", "900"],
-  subsets: ["latin"], // Note: It automatically supports Kanji/Chinese characters
+  subsets: ["latin"], 
+  preload: false, // 👈 IMPORTANT: Fixes the build error!
   variable: "--font-zen",
 });
 
 export const metadata: Metadata = {
   title: "Vocab Journey",
-  description: "Learn languages with your child",
+  description: "Learn vocabulary with fun stories and games!",
 };
 
 export default function RootLayout({
@@ -22,12 +22,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-HK">
-      {/* Apply the round font globally */}
-      <body className={`${zenMaru.variable} font-zen antialiased`}>
-        <AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${font.className} antialiased min-h-screen bg-slate-50`}>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
           {children}
-        </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   Baby, 
   LayoutGrid, 
@@ -12,7 +12,10 @@ import {
   Settings, 
   PieChart 
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+
+// --- UI IMPORTS ---
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import CozyPageWrapper from "@/components/CozyPageWrapper";
 
 // --- COMPONENT IMPORTS ---
 import { OverviewTab } from "@/components/parent/overview-tab";
@@ -22,22 +25,23 @@ import { OfflineMissionsTab } from "@/components/parent/offline-missions-tab";
 import { InsightsTab } from "@/components/parent/insights-tab"; 
 import { SettingsTab } from "@/components/parent/settings-tab";
 import { AnalyticsDashboard } from "@/components/parent/analytics-dashboard";
-import CozyPageWrapper from "@/components/CozyPageWrapper";
 
-// --- DATA IMPORTS (Fixed) ---
+// --- DATA IMPORTS ---
 import { 
   childProfile, 
   dailyMissions, 
-  progressStats, // <--- Added this
-  words          // <--- Added this
+  progressStats, 
+  words 
 } from "@/lib/mock-data";
 
-export default function ParentDashboard() {
+// --- INTERNAL CONTENT COMPONENT ---
+// This component handles the logic that requires useSearchParams
+function ParentDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Handle URL parameters for deep linking
+  // Handle URL parameters for deep linking (e.g., /parent?tab=progress)
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab) setActiveTab(tab);
@@ -119,6 +123,23 @@ export default function ParentDashboard() {
         </Tabs>
       </div>
     </CozyPageWrapper>
+  );
+}
+
+// --- MAIN EXPORT COMPONENT ---
+// Wraps the content in Suspense to fix the Next.js build error
+export default function ParentDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="w-full h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-bold animate-pulse">正在載入家長中心...</p>
+        </div>
+      </div>
+    }>
+      <ParentDashboardContent />
+    </Suspense>
   );
 }
 

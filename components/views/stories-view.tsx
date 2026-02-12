@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  BedtimeStoryGenerator,
-  StoryCard,
-} from "@/components/child/bedtime-story";
+import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
+import { StoryCard } from "@/components/child/story-card"; // <-- Import from new location
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { getChildStories } from "@/lib/api/bedtime-stories";
 import type { GeneratedStory, LanguagePreference } from "@/lib/types";
