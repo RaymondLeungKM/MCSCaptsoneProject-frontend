@@ -1,8 +1,9 @@
+"use client";
+
 import React from "react";
 import { Word, LanguagePreference } from "@/lib/types";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Volume2 } from "lucide-react";
+import { Volume2, CheckCircle, Sparkles, Activity, Repeat } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface WordCardProps {
   word: Word;
@@ -24,141 +25,168 @@ export function WordCard({
   const showEnglish =
     languagePreference === "english" || languagePreference === "bilingual";
 
-  return (
-    <Card
-      className={`
-        relative overflow-hidden transition-all duration-300 hover:shadow-lg
-        cursor-pointer group ${className}
-      `}
-      onClick={onClick}
-    >
-      {/* Progress indicator for mastered words */}
-      {word.mastered && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-          ✓ Mastered
-        </div>
-      )}
+  // Helper to determine labels based on language
+  const labels = {
+    mastered: languagePreference === "english" ? "Mastered" : "已掌握",
+    example: languagePreference === "english" ? "Example" : "例句",
+    action: languagePreference === "english" ? "Action" : "動作",
+    difficulty: languagePreference === "english" ? "Level" : "難度",
+    practiced: languagePreference === "english" ? "Practiced" : "練習",
+  };
 
-      <div className="p-6 space-y-4">
-        {/* Image/Icon */}
-        <div className="flex justify-center">
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "group relative bg-white border-4 border-white rounded-[40px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer overflow-hidden",
+        className
+      )}
+    >
+      {/* --- 1. Top Section: Image & Mastery --- */}
+      <div className="h-48 bg-gradient-to-b from-blue-50 to-white flex items-center justify-center relative p-6">
+        
+        {/* Mastery Badge */}
+        {word.mastered && (
+          <div className="absolute top-4 right-4 bg-emerald-400 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1 animate-in zoom-in">
+            <CheckCircle className="w-3.5 h-3.5" />
+            {labels.mastered}
+          </div>
+        )}
+
+        {/* Image / Emoji */}
+        <div className="transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
           {word.image && word.image.startsWith("http") ? (
             <img
               src={word.image}
               alt={word.word}
-              className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg"
+              className="w-32 h-32 object-contain drop-shadow-md"
             />
           ) : (
-            <div className="text-6xl sm:text-7xl">{word.image || "📝"}</div>
+            <span className="text-[6rem] leading-none drop-shadow-sm filter">
+              {word.image || "📝"}
+            </span>
           )}
         </div>
+      </div>
 
-        {/* Word Display */}
-        <div className="text-center space-y-2">
-          {/* Cantonese Word (Primary if Cantonese mode) */}
+      {/* --- 2. Content Section --- */}
+      <div className="px-6 pb-6 pt-2 text-center relative">
+        
+        {/* Audio Button (Floating in center) */}
+        {(word.audio_url || word.audio_url_english) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPlayAudio?.();
+            }}
+            className="absolute -top-8 left-1/2 -translate-x-1/2 w-14 h-14 bg-[#38BDF8] hover:bg-[#0EA5E9] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all border-4 border-white"
+            aria-label="Play pronunciation"
+          >
+            <Volume2 className="w-7 h-7 fill-current" />
+          </button>
+        )}
+
+        {/* Spacer for audio button */}
+        <div className="h-6" />
+
+        {/* Main Word Display */}
+        <div className="space-y-1 mb-6">
           {showCantonese && word.word_cantonese && (
             <div>
-              <h3 className="text-3xl sm:text-4xl font-bold text-primary">
+              <h3 className="text-4xl font-black text-slate-800 tracking-tight">
                 {word.word_cantonese}
               </h3>
               {word.jyutping && (
-                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                <p className="text-sm font-bold text-slate-400 bg-slate-100 inline-block px-3 py-0.5 rounded-full mt-1">
                   {word.jyutping}
                 </p>
               )}
             </div>
           )}
 
-          {/* English Word (shown below in bilingual mode) */}
           {showEnglish && (
             <h4
-              className={`
-                font-semibold
-                ${languagePreference === "bilingual" ? "text-xl text-muted-foreground" : "text-3xl sm:text-4xl text-primary"}
-              `}
+              className={cn(
+                "font-black tracking-tight",
+                languagePreference === "bilingual" 
+                  ? "text-xl text-slate-400 mt-1" 
+                  : "text-4xl text-slate-800"
+              )}
             >
               {word.word}
             </h4>
           )}
-
-          {/* Audio Button */}
-          {(word.audio_url || word.audio_url_english) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onPlayAudio?.();
-              }}
-              className="mx-auto mt-2"
-            >
-              <Volume2 className="w-4 h-4 mr-2" />
-              Play Sound
-            </Button>
-          )}
         </div>
 
-        {/* Definition */}
-        <div className="space-y-2 text-center border-t pt-4">
+        {/* Definition Bubble */}
+        <div className="bg-slate-50 rounded-2xl p-4 mb-4">
           {showCantonese && word.definition_cantonese && (
-            <p className="text-base font-medium text-foreground">
+            <p className="text-base font-bold text-slate-600 leading-relaxed">
               {word.definition_cantonese}
             </p>
           )}
           {showEnglish && (
-            <p
-              className={`
-                text-sm
-                ${languagePreference === "bilingual" ? "text-muted-foreground" : "text-foreground"}
-              `}
-            >
+            <p className={cn(
+              "leading-relaxed",
+              languagePreference === "bilingual" ? "text-sm text-slate-400 font-medium mt-1" : "text-base font-bold text-slate-600"
+            )}>
               {word.definition}
             </p>
           )}
         </div>
 
-        {/* Example Sentence */}
-        {(showCantonese && word.example_cantonese) ||
-        (showEnglish && word.example) ? (
-          <div className="bg-accent/30 rounded-lg p-3 space-y-1">
-            <p className="text-xs font-semibold text-muted-foreground">
-              Example:
-            </p>
+        {/* Example Sentence (Yellow/Orange Pill) */}
+        {((showCantonese && word.example_cantonese) || (showEnglish && word.example)) && (
+          <div className="bg-orange-50 rounded-2xl p-4 text-left border border-orange-100 mb-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <span className="text-[10px] font-black text-orange-400 uppercase tracking-wide">
+                {labels.example}
+              </span>
+            </div>
             {showCantonese && word.example_cantonese && (
-              <p className="text-sm font-medium">{word.example_cantonese}</p>
+              <p className="text-sm font-bold text-slate-700">{word.example_cantonese}</p>
             )}
             {showEnglish && (
-              <p
-                className={`
-                  text-xs
-                  ${languagePreference === "bilingual" ? "text-muted-foreground italic" : "text-sm"}
-                `}
-              >
+              <p className={cn(
+                "text-sm",
+                languagePreference === "bilingual" ? "text-slate-400 italic" : "font-bold text-slate-700"
+              )}>
                 {word.example}
               </p>
             )}
           </div>
-        ) : null}
+        )}
 
-        {/* Physical Action (if available) */}
+        {/* Physical Action (Blue Pill) */}
         {word.physicalAction && (
-          <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
-              🙌 Try this action:
-            </p>
-            <p className="text-sm text-blue-900 dark:text-blue-100">
+          <div className="bg-blue-50 rounded-2xl p-4 text-left border border-blue-100 mb-4">
+             <div className="flex items-center gap-2 mb-1.5">
+              <Activity className="w-4 h-4 text-blue-500" />
+              <span className="text-[10px] font-black text-blue-400 uppercase tracking-wide">
+                {labels.action}
+              </span>
+            </div>
+            <p className="text-sm font-bold text-blue-700">
               {word.physicalAction}
             </p>
           </div>
         )}
 
-        {/* Exposure Count */}
-        <div className="flex justify-between items-center text-xs text-muted-foreground pt-2">
-          <span>Difficulty: {word.difficulty}</span>
-          <span>Practiced: {word.exposureCount} times</span>
+        {/* Footer Stats */}
+        <div className="flex items-center justify-center gap-4 pt-2 border-t border-slate-100">
+           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-xs font-bold text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-green-400" />
+              {labels.difficulty}: {word.difficulty || "Easy"}
+           </div>
+           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-xs font-bold text-slate-400">
+              <Repeat className="w-3 h-3" />
+              {labels.practiced}: {word.exposureCount || 0}
+           </div>
         </div>
+
       </div>
-    </Card>
+    </div>
   );
 }
 

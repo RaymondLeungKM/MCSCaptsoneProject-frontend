@@ -9,11 +9,17 @@ import {
   Heart,
   Clock,
   Zap,
+  BookOpen,
+  Sparkles,
+  ArrowRight,
+  Info,
+  Star, // <--- Added missing import
+  CheckCircle2 // Used for the check icons
 } from "lucide-react";
 import type { ChildProfile, Word, LearningSession } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   generateParentInsights,
   getAdaptiveLearningRecommendation,
@@ -21,6 +27,7 @@ import {
 import { words as mockWords, childProfile } from "@/lib/mock-data";
 import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { getAuthToken } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 interface InsightsTabProps {
   childId?: string;
@@ -62,7 +69,6 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
         console.log(`Loaded ${loadedWords.length} words for insights`);
       } catch (error) {
         console.error("Failed to load words for insights:", error);
-        // Keep using mock data on error
       } finally {
         setLoading(false);
       }
@@ -96,305 +102,346 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
   const needingExposure = words.filter((w) => w.exposureCount < 6).length;
   const wellLearned = words.filter((w) => w.exposureCount >= 6).length;
 
+  // Translation Helper for Learning Styles
+  const getStyleLabel = (style: string) => {
+    switch(style) {
+      case "kinesthetic": return "動覺型 (Kinesthetic)";
+      case "visual": return "視覺型 (Visual)";
+      case "auditory": return "聽覺型 (Auditory)";
+      case "mixed": return "混合型 (Mixed)";
+      default: return style;
+    }
+  };
+
+  const getStyleDescription = (style: string) => {
+    switch(style) {
+      case "kinesthetic": return "透過肢體動作、觸摸和實踐活動學習效果最佳。";
+      case "visual": return "透過圖像、顏色和視覺演示學習效果最佳。";
+      case "auditory": return "透過聲音、音樂和口頭指令學習效果最佳。";
+      case "mixed": return "結合多種學習方式能達到最佳效果。";
+      default: return "";
+    }
+  };
+
+  const getRecommendedActivities = (style: string) => {
+    switch(style) {
+      case "kinesthetic": return ["做動作猜謎 (Charades)", "肢體動作遊戲", "實物尋寶", "角色扮演"];
+      case "visual": return ["圖像配對遊戲", "彩色閃卡", "繪本閱讀", "繪畫與填色"];
+      case "auditory": return ["兒歌與韻律", "朗讀故事", "聲音配對", "口語重複練習"];
+      default: return ["綜合活動", "講故事", "互動遊戲", "美勞創作"];
+    }
+  };
+
+  // Translation Helper for Activities
+  const getActivityLabel = (activity: string) => {
+    const map: {[key: string]: string} = {
+      'story': '故事時間',
+      'game': '互動遊戲',
+      'flashcards': '閃卡練習',
+      'song': '唱遊時間',
+      'quiz': '小測驗',
+      'charades': '做動作猜謎'
+    };
+    return map[activity.toLowerCase()] || activity;
+  };
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-20 w-full" />
-        <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      <div className="space-y-6 max-w-4xl mx-auto p-6">
+        <Skeleton className="h-32 w-full rounded-[32px]" />
+        <div className="grid grid-cols-2 gap-6">
+          <Skeleton className="h-48 rounded-[28px]" />
+          <Skeleton className="h-48 rounded-[28px]" />
         </div>
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-64 w-full rounded-[28px]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Brain className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-bold text-foreground">
-            Learning Insights
-          </h2>
+    <div className="space-y-8 max-w-4xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+      
+      {/* --- HEADER --- */}
+      <div className="text-center space-y-3 mb-8">
+        <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-2xl mb-2 shadow-sm">
+          <Brain className="w-8 h-8 text-violet-500 animate-pulse" />
         </div>
-        <p className="text-muted-foreground">
-          Research-based insights into {profile.name}'s vocabulary development
+        <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+          AI 學習洞察
+        </h2>
+        <p className="text-slate-500 font-medium max-w-lg mx-auto">
+          深入分析 {profile.name} 的詞彙發展，提供有科學根據的學習建議。
         </p>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="border-2">
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-mint">
+      {/* --- KEY METRICS (Active vs Passive) --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Active Vocab Card */}
+        <Card className="border-none shadow-md bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 rounded-[28px] relative overflow-hidden transition-transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 p-6 opacity-10">
+            <Zap className="w-32 h-32 text-emerald-600" />
+          </div>
+          <CardContent className="p-8 relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
                 <Zap className="w-5 h-5" />
-                <span className="text-sm font-medium">Active Vocabulary</span>
               </div>
-              <p className="text-3xl font-bold text-foreground">
-                {activeVocab}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Can use confidently
-              </p>
+              <span className="font-bold text-emerald-900 uppercase tracking-wider text-sm">主動詞彙 (Active)</span>
             </div>
+            <div>
+              <span className="text-5xl font-black text-emerald-700">{activeVocab}</span>
+              <span className="text-emerald-600/80 ml-2 font-bold text-lg">個</span>
+            </div>
+            <p className="text-sm text-emerald-700/70 mt-3 font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> 能自信地在對話中使用
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-2">
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sky">
+        {/* Passive Vocab Card */}
+        <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 rounded-[28px] relative overflow-hidden transition-transform hover:-translate-y-1">
+          <div className="absolute top-0 right-0 p-6 opacity-10">
+            <BookOpen className="w-32 h-32 text-blue-600" />
+          </div>
+          <CardContent className="p-8 relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
                 <Brain className="w-5 h-5" />
-                <span className="text-sm font-medium">Passive Vocabulary</span>
               </div>
-              <p className="text-3xl font-bold text-foreground">
-                {passiveVocab}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Recognizes but learning
-              </p>
+              <span className="font-bold text-blue-900 uppercase tracking-wider text-sm">被動詞彙 (Passive)</span>
             </div>
+            <div>
+              <span className="text-5xl font-black text-blue-700">{passiveVocab}</span>
+              <span className="text-blue-600/80 ml-2 font-bold text-lg">個</span>
+            </div>
+            <p className="text-sm text-blue-700/70 mt-3 font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> 聽得懂但仍在學習中
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Exposure Tracking */}
-      <Card className="border-2 border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5" />
-            Optimal Exposure Tracking
+      {/* --- EXPOSURE TRACKING --- */}
+      <Card className="border-none shadow-sm bg-white rounded-[28px]">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+            <Target className="w-6 h-6 text-orange-500" />
+            詞彙接觸頻率追蹤
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Words with 6+ exposures
-              </span>
-              <span className="font-bold text-foreground">
+        <CardContent className="space-y-6 pt-4">
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span className="text-slate-500">已掌握詞彙 (接觸 6 次以上)</span>
+              <span className="font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
                 {wellLearned} / {words.length}
               </span>
             </div>
-            <Progress
-              value={(wellLearned / words.length) * 100}
-              className="h-2"
-            />
+            <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+               <div 
+                 className="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full transition-all duration-1000 ease-out"
+                 style={{ width: `${(wellLearned / words.length) * 100}%` }}
+               />
+            </div>
           </div>
 
-          <div className="bg-primary/5 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              📚 Research Finding:
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Children typically need <strong>6-12 exposures</strong> to a word
-              in different contexts before it becomes part of their permanent
-              vocabulary. {profile.name} has {needingExposure} words that need
-              more practice!
-            </p>
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-5 flex gap-4 items-start">
+            <div className="bg-white p-2 rounded-full shadow-sm shrink-0 text-orange-500">
+               <Info className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-orange-900">專家研究指出</p>
+              <p className="text-sm text-orange-800/80 leading-relaxed">
+                兒童通常需要在不同情境下接觸一個新詞彙 <strong>6-12 次</strong>，才能將其轉化為長期記憶。
+                {profile.name} 還有 <strong>{needingExposure}</strong> 個詞彙需要更多練習！
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Personalized Insights */}
-      <Card className="border-2">
+      {/* --- PERSONALIZED INSIGHTS --- */}
+      <Card className="border-none shadow-sm bg-gradient-to-br from-yellow-50 to-amber-50 rounded-[28px]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-sunny" />
-            Personalized Insights
+          <CardTitle className="flex items-center gap-3 text-amber-800 text-xl">
+            <Lightbulb className="w-6 h-6 text-amber-500 fill-amber-500" />
+            個人化學習建議
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-3">
+          <div className="grid gap-3">
+            {/* Note: In a real app, these insights strings should also be localized in the generator function */}
             {insights.map((insight, index) => (
-              <li
+              <div
                 key={index}
-                className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
+                className="flex items-start gap-4 p-4 bg-white/80 rounded-2xl shadow-sm border border-amber-100/50"
               >
-                <span className="text-xl">💡</span>
-                <p className="text-sm text-foreground flex-1">{insight}</p>
-              </li>
+                <div className="shrink-0 mt-0.5 text-xl">💡</div>
+                <p className="text-slate-700 font-medium leading-relaxed">{insight}</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Next Learning Recommendation */}
-      <Card className="border-2 border-mint/30 bg-mint/5">
+      {/* --- RECOMMENDATION CARD (HERO) --- */}
+      <Card className="border-none shadow-lg bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-[28px] overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-12 opacity-5">
+           <TrendingUp className="w-64 h-64 text-white" />
+        </div>
+        
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-mint" />
-            Next Learning Session Recommendation
+           <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider w-fit mb-2">
+              <Sparkles className="w-3 h-3" /> 為你推薦
+           </div>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            推薦學習活動
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        
+        <CardContent className="space-y-6 relative z-10">
+          <div className="grid grid-cols-2 gap-6 p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">
-                Recommended Activity
+              <p className="text-xs text-slate-400 uppercase font-bold mb-1">
+                活動類型
               </p>
-              <p className="text-lg font-bold text-foreground capitalize">
-                {recommendation.recommendedActivity}
+              <p className="text-xl font-bold capitalize text-white flex items-center gap-2">
+                {getActivityLabel(recommendation.recommendedActivity)} <ArrowRight className="w-4 h-4 text-slate-400" />
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Duration</p>
-              <p className="text-lg font-bold text-foreground">
-                {recommendation.estimatedDuration} minutes
+              <p className="text-xs text-slate-400 uppercase font-bold mb-1">建議時間</p>
+              <p className="text-xl font-bold text-white">
+                {recommendation.estimatedDuration} 分鐘
               </p>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-muted-foreground mb-2">Focus Words:</p>
+            <p className="text-sm text-slate-400 font-bold uppercase mb-3">重點詞彙</p>
             <div className="flex flex-wrap gap-2">
               {recommendation.nextWords.map((word) => (
-                <span
+                <Badge 
                   key={word.id}
-                  className="px-3 py-1 bg-white dark:bg-gray-800 rounded-full text-sm font-medium border-2 border-mint/30"
+                  className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
                 >
                   {word.word}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
 
-          <div className="bg-white/50 dark:bg-gray-900/50 rounded-lg p-3">
-            <p className="text-sm text-muted-foreground">
-              <strong>Why:</strong> {recommendation.reason}
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+            <p className="text-sm text-emerald-100 leading-relaxed">
+              <strong className="text-emerald-400 block mb-1">推薦原因</strong> 
+              {recommendation.reason}
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Learning Style */}
-      <Card className="border-2">
+      {/* --- LEARNING STYLE --- */}
+      <Card className="border-none shadow-sm bg-white rounded-[28px]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-coral" />
-            Learning Style Profile
+          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+            <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
+            學習風格分析
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="text-5xl">
+        <CardContent className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-pink-50 rounded-[24px] border border-pink-100">
+            <div className="text-6xl bg-white p-4 rounded-full shadow-sm shrink-0">
               {profile.learningStyle === "kinesthetic" && "🤸"}
               {profile.learningStyle === "visual" && "👀"}
               {profile.learningStyle === "auditory" && "👂"}
               {profile.learningStyle === "mixed" && "🎨"}
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-lg text-foreground capitalize">
-                {profile.learningStyle} Learner
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {profile.learningStyle === "kinesthetic" &&
-                  "Learns best through movement, touch, and hands-on activities"}
-                {profile.learningStyle === "visual" &&
-                  "Learns best through images, colors, and visual demonstrations"}
-                {profile.learningStyle === "auditory" &&
-                  "Learns best through sounds, music, and verbal instructions"}
-                {profile.learningStyle === "mixed" &&
-                  "Benefits from a combination of learning approaches"}
+            <div className="text-center sm:text-left space-y-2">
+              <h3 className="font-black text-2xl text-pink-900 capitalize">
+                {getStyleLabel(profile.learningStyle)}
+              </h3>
+              <p className="text-pink-800/80 font-medium">
+                {getStyleDescription(profile.learningStyle)}
               </p>
             </div>
           </div>
 
-          <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              💡 Recommended Activities:
-            </p>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              {profile.learningStyle === "kinesthetic" && (
-                <>
-                  <li>• Act It Out (Charades)</li>
-                  <li>• Physical action games</li>
-                  <li>• Real-world scavenger hunts</li>
-                  <li>• Role-play and pretend play</li>
-                </>
-              )}
-              {profile.learningStyle === "visual" && (
-                <>
-                  <li>• Picture matching games</li>
-                  <li>• Colorful flashcards</li>
-                  <li>• Story books with illustrations</li>
-                  <li>• Drawing and coloring activities</li>
-                </>
-              )}
-              {profile.learningStyle === "auditory" && (
-                <>
-                  <li>• Songs and rhymes</li>
-                  <li>• Read-aloud stories</li>
-                  <li>• Sound matching games</li>
-                  <li>• Verbal repetition exercises</li>
-                </>
-              )}
-            </ul>
+          <div>
+            <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+               <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> 
+               建議活動
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {getRecommendedActivities(profile.learningStyle).map((activity, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                      <div className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
+                      <span className="text-slate-600 font-medium text-sm">{activity}</span>
+                  </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Best Practices */}
-      <Card className="bg-sunny/5 border-2 border-sunny/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Research-Based Best Practices
+      {/* --- BEST PRACTICES GRID --- */}
+      <Card className="border-none shadow-sm bg-white rounded-[28px] overflow-hidden">
+        <CardHeader className="bg-indigo-50 border-b border-indigo-100/50">
+          <CardTitle className="flex items-center gap-3 text-indigo-900 text-xl">
+            <Clock className="w-6 h-6 text-indigo-500" />
+            專家學習錦囊
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🔄</span>
-            <div>
-              <p className="font-medium text-foreground">
-                Conversational Turns
-              </p>
-              <p className="text-muted-foreground">
-                Engage in back-and-forth conversations. Ask {profile.name} to
-                respond, not just listen.
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+            <div className="p-6 hover:bg-slate-50 transition-colors">
+                <div className="flex items-start gap-4">
+                    <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔄</span>
+                    <div>
+                        <p className="font-bold text-slate-800 text-lg mb-1">輪流對話 (Conversational Turns)</p>
+                        <p className="text-slate-500 text-sm leading-relaxed">
+                            進行一來一往的對話。引導 {profile.name} 回應，而不僅僅是聆聽。
+                        </p>
+                    </div>
+                </div>
             </div>
-          </div>
+            
+            <div className="p-6 hover:bg-slate-50 transition-colors">
+                <div className="flex items-start gap-4">
+                    <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔁</span>
+                    <div>
+                        <p className="font-bold text-slate-800 text-lg mb-1">重複接觸 (Repeated Exposure)</p>
+                        <p className="text-slate-500 text-sm leading-relaxed">
+                             在日常生活中不同情境下使用新詞彙。目標是創造 6-12 次有意義的接觸。
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🔁</span>
-            <div>
-              <p className="font-medium text-foreground">Repeated Exposure</p>
-              <p className="text-muted-foreground">
-                Use new words in different contexts throughout the day. Aim for
-                6-12 meaningful encounters.
-              </p>
+            <div className="p-6 hover:bg-slate-50 transition-colors border-t border-slate-100 md:border-none">
+                <div className="flex items-start gap-4">
+                    <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🌍</span>
+                    <div>
+                        <p className="font-bold text-slate-800 text-lg mb-1">生活應用 (Real-World Context)</p>
+                        <p className="text-slate-500 text-sm leading-relaxed">
+                            在日常作息中，將詞彙與真實的物體和體驗連結起來。
+                        </p>
+                    </div>
+                </div>
             </div>
-          </div>
 
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🌍</span>
-            <div>
-              <p className="font-medium text-foreground">Real-World Context</p>
-              <p className="text-muted-foreground">
-                Connect words to real objects and experiences during daily
-                routines.
-              </p>
+            <div className="p-6 hover:bg-slate-50 transition-colors border-t border-slate-100 md:border-none">
+                <div className="flex items-start gap-4">
+                    <span className="text-3xl bg-indigo-100 p-2 rounded-xl">👐</span>
+                    <div>
+                        <p className="font-bold text-slate-800 text-lg mb-1">多感官學習 (Multisensory)</p>
+                        <p className="text-slate-500 text-sm leading-relaxed">
+                            結合視覺、聲音、手勢和肢體動作，能顯著提升記憶效果。
+                        </p>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">👐</span>
-            <div>
-              <p className="font-medium text-foreground">
-                Multisensory Learning
-              </p>
-              <p className="text-muted-foreground">
-                Combine words with visuals, sounds, gestures, and physical
-                actions for better retention.
-              </p>
-            </div>
-          </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );

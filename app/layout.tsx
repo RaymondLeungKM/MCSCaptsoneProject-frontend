@@ -1,44 +1,19 @@
-import React from "react";
 import type { Metadata } from "next";
-import { Nunito, Noto_Sans_TC } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
-import { AuthProvider } from "@/lib/auth-context";
+// Import Zen Maru Gothic (The "Round" Font)
+import { Zen_Maru_Gothic } from "next/font/google"; 
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context"; 
 
-const nunito = Nunito({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-nunito",
-});
-
-const notoSansTC = Noto_Sans_TC({
-  subsets: ["chinese-traditional"],
-  weight: ["400", "500", "700"],
-  variable: "--font-noto-sans-tc",
+// Configure it with all weights so we can use "Black" (900) for titles
+const zenMaru = Zen_Maru_Gothic({
+  weight: ["400", "500", "700", "900"],
+  subsets: ["latin"], // Note: It automatically supports Kanji/Chinese characters
+  variable: "--font-zen",
 });
 
 export const metadata: Metadata = {
-  title: "WordWorld - 學習新詞語！Learn New Words Every Day!",
-  description:
-    "A fun and interactive Cantonese vocabulary learning platform for preschoolers - 幼兒粵語詞彙學習平台",
-  generator: "v0.app",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+  title: "Vocab Journey",
+  description: "Learn languages with your child",
 };
 
 export default function RootLayout({
@@ -48,11 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-HK">
-      <body
-        className={`${nunito.variable} ${notoSansTC.variable} font-sans antialiased`}
-      >
-        <AuthProvider>{children}</AuthProvider>
-        <Analytics />
+      {/* Apply the round font globally */}
+      <body className={`${zenMaru.variable} font-zen antialiased`}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,54 +1,103 @@
-'use client';
+"use client";
 
-import { Clock, CheckCircle, Play } from 'lucide-react';
-import type { Story } from '@/lib/types';
+import { Clock, CheckCircle, Play, BookOpen, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// --- TYPES ---
+// Defining locally to ensure it works immediately
+export interface Story {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  emoji?: string;
+  color?: string; // "blue", "orange", "purple", etc.
+}
 
 interface StoryCardProps {
   story: Story;
   onRead: (story: Story) => void;
 }
 
+// --- HELPER: Pastel Color Mapping ---
+const getCoverStyles = (color: string = "blue", completed: boolean) => {
+  const map: Record<string, string> = {
+    purple: "bg-purple-100 text-purple-600",
+    blue: "bg-blue-100 text-blue-600",
+    green: "bg-green-100 text-green-600",
+    orange: "bg-orange-100 text-orange-600",
+    pink: "bg-pink-100 text-pink-600",
+    yellow: "bg-yellow-100 text-yellow-600",
+  };
+
+  const baseColor = map[color] || map.blue;
+  
+  if (completed) {
+    return "bg-emerald-100 text-emerald-600 border-emerald-400 opacity-80";
+  }
+  
+  return baseColor;
+};
+
 export function StoryCard({ story, onRead }: StoryCardProps) {
+  // Emoji Fallbacks if not in DB
   const storyEmojis: Record<string, string> = {
     'The Hungry Caterpillar': '🐛',
     'Colors All Around': '🌈',
     'Animal Friends': '🦊',
+    'Space Adventure': '🚀',
   };
+
+  const displayEmoji = story.emoji || storyEmojis[story.title] || '📖';
+  const styles = getCoverStyles(story.color, story.completed);
 
   return (
     <button
       onClick={() => onRead(story)}
       className={cn(
-        'relative flex flex-col rounded-3xl overflow-hidden min-w-[180px] w-[180px]',
-        'border-4 border-transparent transition-all duration-200',
-        'hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl',
-        story.completed ? 'border-mint' : 'hover:border-primary/30'
+        "group relative flex flex-col rounded-[32px] overflow-hidden min-w-[200px] w-[200px] h-[280px]",
+        "border-4 transition-all duration-300",
+        "hover:scale-105 active:scale-95 shadow-sm hover:shadow-xl",
+        story.completed ? "border-emerald-400" : "border-white hover:border-purple-200",
+        "bg-white"
       )}
     >
-      {/* Cover Image Placeholder */}
+      {/* 1. Cover Image Area */}
       <div className={cn(
-        'h-32 flex items-center justify-center text-6xl',
-        story.completed ? 'bg-mint/30' : 'bg-sky/30'
+        "flex-1 w-full flex flex-col items-center justify-center relative p-4",
+        styles
       )}>
-        {storyEmojis[story.title] || '📖'}
+        {/* Completion Badge */}
+        {story.completed && (
+          <div className="absolute top-3 right-3 bg-white text-emerald-500 rounded-full p-1 shadow-sm animate-in zoom-in">
+             <CheckCircle className="w-5 h-5 fill-emerald-100" />
+          </div>
+        )}
+
+        {/* Main Icon */}
+        <span className="text-7xl drop-shadow-sm filter transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+          {displayEmoji}
+        </span>
       </div>
 
-      {/* Info */}
-      <div className="p-3 bg-card">
-        <h3 className="font-bold text-foreground text-sm line-clamp-1 text-left">
-          {story.title}
-        </h3>
+      {/* 2. Info Area */}
+      <div className="p-5 bg-white w-full text-left flex flex-col justify-between h-[100px]">
+        <div>
+          <h3 className="font-black text-slate-700 text-lg leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+            {story.title}
+          </h3>
+        </div>
+
         <div className="flex items-center justify-between mt-2">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
+          <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
+            <Clock className="w-3.5 h-3.5" />
             {story.duration}
           </span>
-          {story.completed ? (
-            <CheckCircle className="w-5 h-5 text-mint" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-              <Play className="w-3 h-3 text-primary-foreground fill-primary-foreground" />
+          
+          {/* Play Icon */}
+          {!story.completed && (
+            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#38BDF8] group-hover:text-white transition-colors">
+              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
             </div>
           )}
         </div>
@@ -57,6 +106,8 @@ export function StoryCard({ story, onRead }: StoryCardProps) {
   );
 }
 
+// --- LIST COMPONENT ---
+
 interface StoriesListProps {
   stories: Story[];
   onReadStory: (story: Story) => void;
@@ -64,16 +115,41 @@ interface StoriesListProps {
 
 export function StoriesList({ stories, onReadStory }: StoriesListProps) {
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">📚</span>
-        <h2 className="text-lg font-bold text-foreground">Story Time</h2>
+    // Wrapped in Glass Card for visibility on night background
+    <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-4xl mx-auto">
+      
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-purple-400 p-2.5 rounded-2xl shadow-sm -rotate-3">
+          <BookOpen className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-slate-700 tracking-tight">
+             故事時間
+          </h2>
+          <p className="text-sm font-bold text-slate-400">
+             重溫你最愛的故事！
+          </p>
+        </div>
       </div>
       
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+      {/* Horizontal Scroll List */}
+      <div className="flex gap-4 overflow-x-auto pb-6 pt-2 px-2 -mx-4 md:mx-0 scrollbar-hide snap-x">
         {stories.map((story) => (
-          <StoryCard key={story.id} story={story} onRead={onReadStory} />
+          <div key={story.id} className="snap-center">
+            <StoryCard story={story} onRead={onReadStory} />
+          </div>
         ))}
+        
+        {/* "More" Placeholder Card (Optional) */}
+        <div className="min-w-[100px] flex items-center justify-center opacity-50">
+           <div className="text-center">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Star className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-400">更多故事<br/>即將推出</p>
+           </div>
+        </div>
       </div>
     </section>
   );

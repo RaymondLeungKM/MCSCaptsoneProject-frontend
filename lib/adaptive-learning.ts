@@ -13,6 +13,42 @@ export interface AdaptiveLearningRecommendation {
   estimatedDuration: number; // minutes
 }
 
+// --- TRANSLATION HELPERS ---
+
+const getStyleLabel = (style: string) => {
+  const map: Record<string, string> = {
+    kinesthetic: "動覺型 (Kinesthetic)",
+    visual: "視覺型 (Visual)",
+    auditory: "聽覺型 (Auditory)",
+    mixed: "混合型 (Mixed)",
+  };
+  return map[style] || style;
+};
+
+const getTimeLabel = (time: string) => {
+  const map: Record<string, string> = {
+    morning: "早上",
+    afternoon: "下午",
+    evening: "晚上",
+  };
+  return map[time] || time;
+};
+
+const getActivityLabelCN = (activity: string) => {
+  const map: Record<string, string> = {
+    actions: "動感學習",
+    pronunciation: "發音練習",
+    matching: "配對遊戲",
+    ispy: "找找看 (I Spy)",
+    charades: "做動作猜謎",
+    story: "故事時間",
+    scavenger: "實物尋寶",
+  };
+  return map[activity] || activity;
+};
+
+// --- LOGIC FUNCTIONS ---
+
 /**
  * Determines if a word needs more exposure based on research
  * Research shows children need 6-12 exposures for vocabulary retention
@@ -151,20 +187,22 @@ export function getAdaptiveLearningRecommendation(
   const difficulty: "easy" | "medium" | "hard" =
     avgExposure < 3 ? "easy" : avgExposure < 8 ? "medium" : "hard";
 
-  // Generate reason
+  // Generate reason (Translated to Chinese)
   const needingExposure = nextWords.filter((w) => w.exposureCount < 6).length;
   const interestMatch = nextWords.filter((w) =>
     profile.interests.includes(w.category),
   ).length;
 
-  let reason = `Selected based on ${profile.name}'s learning needs. `;
+  let reason = `根據 ${profile.name} 的學習需要而設。`;
+  
   if (needingExposure > 0) {
-    reason += `${needingExposure} word(s) need more practice. `;
+    reason += `當中有 ${needingExposure} 個詞彙需要加強練習。`;
   }
   if (interestMatch > 0) {
-    reason += `${interestMatch} word(s) match interests. `;
+    reason += `選了 ${interestMatch} 個符合興趣的詞彙。`;
   }
-  reason += `Best activity: ${recommendedActivity} (suits ${profile.learningStyle} learning style).`;
+  
+  reason += `推薦活動：${getActivityLabelCN(recommendedActivity)} (最適合 ${getStyleLabel(profile.learningStyle)} 學習風格)。`;
 
   // Estimate duration
   const estimatedDuration = Math.min(
@@ -239,6 +277,7 @@ export function shouldLevelUp(
 
 /**
  * Generates personalized learning insights for parents
+ * (Translated to Traditional Chinese)
  */
 export function generateParentInsights(
   profile: ChildProfile,
@@ -250,19 +289,20 @@ export function generateParentInsights(
   // Vocabulary growth
   const activeVocab = allWords.filter((w) => w.mastered).length;
   insights.push(
-    `${profile.name} knows ${activeVocab} words confidently! That's ${Math.round((activeVocab / allWords.length) * 100)}% of the curriculum.`,
+    `${profile.name} 已經自信地掌握了 ${activeVocab} 個詞彙！這佔了課程的 ${Math.round((activeVocab / allWords.length) * 100)}%。`,
   );
 
   // Learning style match
+  const styleAction = profile.learningStyle === "kinesthetic" ? "加入更多肢體動作和動手做的體驗" : "使用更多配合學習風格的教材";
   insights.push(
-    `${profile.name} learns best through ${profile.learningStyle} activities. Try incorporating more movement and hands-on experiences!`,
+    `${profile.name} 透過「${getStyleLabel(profile.learningStyle)}」活動學習效果最好。試著${styleAction}！`,
   );
 
   // Exposure tracking
   const needingMore = allWords.filter((w) => w.exposureCount < 6).length;
   if (needingMore > 0) {
     insights.push(
-      `${needingMore} words need more repetition. Remember, 6-12 exposures are ideal for long-term retention!`,
+      `有 ${needingMore} 個詞彙需要更多重複練習。記住，通常需要 6-12 次接觸才能形成長期記憶！`,
     );
   }
 
@@ -281,11 +321,11 @@ export function generateParentInsights(
 
     if (avgEngagement >= 2.5) {
       insights.push(
-        `Engagement is excellent! ${profile.name} is really enjoying the learning activities.`,
+        `上一次的學習表現非常棒！${profile.name} 非常投入，這是一個很好的鼓勵機會。`,
       );
     } else if (avgEngagement < 1.5) {
       insights.push(
-        `Try shorter sessions or more physical activities to boost engagement.`,
+        `試著縮短學習時間或加入更多動感活動來提升專注力。`,
       );
     }
   }
@@ -293,7 +333,7 @@ export function generateParentInsights(
   // Best time recommendation
   if (profile.preferredTimeOfDay) {
     insights.push(
-      `${profile.name} focuses best in the ${profile.preferredTimeOfDay}. Try to schedule learning sessions then!`,
+      `${profile.name} 在${getTimeLabel(profile.preferredTimeOfDay)}時專注力最好。試著安排在那段時間進行學習！`,
     );
   }
 

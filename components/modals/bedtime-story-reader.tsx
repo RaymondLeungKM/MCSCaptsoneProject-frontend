@@ -1,259 +1,299 @@
 "use client";
 
-import { useState } from "react";
-import { X, Volume2, Heart, Moon, BookOpen } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { X, Volume2, ChevronLeft, ChevronRight, BookOpen, Star, Settings, Languages, Type } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { GeneratedStory, LanguagePreference } from "@/lib/types";
-import { useSpeech } from "@/hooks/use-speech";
+import { cn } from "@/lib/utils";
+import { useSpeech } from "@/lib/speech";
+import type { GeneratedStory, LanguagePreference } from "@/lib/types";
 
 interface BedtimeStoryReaderProps {
-  story: GeneratedStory | null;
   isOpen: boolean;
   onClose: () => void;
-  languagePreference: LanguagePreference;
+  story: GeneratedStory | null;
+  languagePreference?: LanguagePreference;
+  onComplete?: (storyId: string) => void;
 }
 
-export function BedtimeStoryReader({
+export function BedtimeStoryReader({ 
+  isOpen, 
+  onClose, 
   story,
-  isOpen,
-  onClose,
-  languagePreference,
+  languagePreference = "cantonese",
+  onComplete 
 }: BedtimeStoryReaderProps) {
-  const [showJyutping, setShowJyutping] = useState(
-    languagePreference !== "english",
-  );
-  const [showEnglish, setShowEnglish] = useState(
-    languagePreference === "bilingual",
-  );
-  const { speak, stop, isReading } = useSpeech();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const [showJyutping, setShowJyutping] = useState(languagePreference !== "english");
+  const [showEnglish, setShowEnglish] = useState(languagePreference === "bilingual");
+
+  const { speak, stop } = useSpeech();
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentPage(0);
+      stop();
+      setShowSettings(false);
+    }
+  }, [isOpen, story]);
 
   if (!story) return null;
 
-  const handleReadAloud = () => {
-    if (isReading) {
+  // --- CONTENT SPLITTING LOGIC ---
+  const pages = useMemo(() => {
+    const sentences = story.content_cantonese?.split(/(?<=[.!?。！？])\s+/) || [];
+    const engSentences = story.content_english?.split(/(?<=[.!?])\s+/) || [];
+    const jyutSentences = story.jyutping?.split('\n') || [];
+
+    const chunks = [];
+    let currentChunk = { cantonese: "", english: "", jyutping: "" };
+    let count = 0;
+
+    sentences.forEach((sentence, i) => {
+      currentChunk.cantonese += sentence + " ";
+      if (engSentences[i]) currentChunk.english += engSentences[i] + " ";
+      if (jyutSentences[i]) currentChunk.jyutping += jyutSentences[i] + " ";
+      
+      count++;
+      if (count >= 3 || i === sentences.length - 1) {
+        chunks.push({ ...currentChunk });
+        currentChunk = { cantonese: "", english: "", jyutping: "" };
+        count = 0;
+      }
+    });
+    
+    return chunks;
+  }, [story]);
+
+  const totalPages = pages.length + 1; 
+  const isStatsPage = currentPage === pages.length;
+
+  // --- AUDIO ---
+  const handlePlayPage = () => {
+    if (isPlaying) {
       stop();
+      setIsPlaying(false);
     } else {
-      const textToRead =
-        showEnglish && story.content_english
-          ? story.content_english
-          : story.content_cantonese;
-      speak(textToRead);
+      const textToRead = pages[currentPage]?.cantonese || "故事結束";
+      setIsPlaying(true);
+      speak(textToRead, {
+        rate: 0.9,
+        onEnd: () => setIsPlaying(false),
+      });
     }
   };
 
-  // Split content into paragraphs
-  const paragraphs = story.content_cantonese
-    .split("\n")
-    .filter((p) => p.trim());
+  // --- NAVIGATION ---
+  const handleNext = () => {
+    stop();
+    setIsPlaying(false);
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+    } else {
+       if (onComplete) onComplete(story.id);
+       onClose();
+    }
+  };
 
-  // Get consistent word count from word_usage
-  const wordCount = story.word_usage ? Object.keys(story.word_usage).length : 0;
+  const handlePrev = () => {
+    stop();
+    setIsPlaying(false);
+    setCurrentPage(prev => Math.max(0, prev - 1));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-to-b from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 custom-scrollbar">
-        <DialogHeader>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full">
-                <Moon className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <DialogTitle className="text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {showEnglish && story.title_english
-                    ? story.title_english
-                    : story.title}
-                </DialogTitle>
-                {showEnglish && story.title_english && (
-                  <p className="text-sm text-gray-600 mt-1">{story.title}</p>
-                )}
-              </div>
+      <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-transparent border-none shadow-none flex items-center justify-center">
+        
+        {/* --- BOOK CONTAINER --- */}
+        <div className="relative w-full max-w-3xl bg-[#FFF9F0] rounded-[40px] shadow-2xl border-[12px] border-[#5D4037] overflow-hidden flex flex-col h-full max-h-[850px] animate-in zoom-in-95 duration-300">
+          
+          {/* HEADER (Book Spine) */}
+          <div className="bg-[#5D4037] p-4 flex items-center justify-between text-white shadow-md z-10">
+            <div className="flex items-center gap-3 overflow-hidden">
+               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/30">
+                 <BookOpen className="w-5 h-5 text-white" />
+               </div>
+               <div className="min-w-0">
+                  <h2 className="font-bold text-lg line-clamp-1 leading-tight">
+                    {story.title}
+                  </h2>
+                  <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold">
+                    {isStatsPage ? "完 (The End)" : `第 ${currentPage + 1} 頁 / 共 ${totalPages} 頁`}
+                  </p>
+               </div>
             </div>
-          </div>
-        </DialogHeader>
-
-        {/* Story Metadata */}
-        <div className="flex flex-wrap gap-2 pb-4 border-b border-purple-200">
-          {story.theme && (
-            <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-              {story.theme}
-            </Badge>
-          )}
-          <Badge variant="outline" className="border-purple-300">
-            ✨ {wordCount} {languagePreference === "english" ? "words" : "詞語"}
-          </Badge>
-          <Badge variant="outline" className="border-purple-300">
-            ⏱️ {story.reading_time_minutes}{" "}
-            {languagePreference === "english" ? "min" : "分鐘"}
-          </Badge>
-          {story.ai_model && (
-            <Badge variant="outline" className="text-xs border-purple-300">
-              🤖 {story.ai_model}
-            </Badge>
-          )}
-        </div>
-
-        {/* Reading Controls */}
-        <div className="flex flex-wrap items-center gap-4 py-4 border-b border-purple-200 bg-white/50 dark:bg-gray-800/50 rounded-lg px-4">
-          <Button
-            onClick={handleReadAloud}
-            variant={isReading ? "destructive" : "default"}
-            className={`gap-2 ${!isReading && "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"}`}
-          >
-            <Volume2 className={`h-4 w-4 ${isReading && "animate-pulse"}`} />
-            {isReading
-              ? languagePreference === "english"
-                ? "Stop"
-                : "停止"
-              : languagePreference === "english"
-                ? "Read Aloud"
-                : "朗讀"}
-          </Button>
-
-          {story.jyutping && (
+            
             <div className="flex items-center gap-2">
-              <Switch
-                id="show-jyutping"
-                checked={showJyutping}
-                onCheckedChange={setShowJyutping}
-              />
-              <Label htmlFor="show-jyutping" className="text-sm cursor-pointer">
-                {languagePreference === "english"
-                  ? "Show Jyutping"
-                  : "顯示拼音"}
-              </Label>
+               {/* Settings Toggle */}
+               <button 
+                 onClick={() => setShowSettings(!showSettings)}
+                 className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all", showSettings ? "bg-white text-[#5D4037]" : "bg-white/10 hover:bg-white/20")}
+               >
+                  <Settings className="w-5 h-5" />
+               </button>
+               
+               {/* Close Button */}
+               <button 
+                 onClick={onClose}
+                 className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center transition-colors shadow-sm"
+               >
+                 <X className="w-5 h-5 text-white" />
+               </button>
             </div>
-          )}
-
-          {story.content_english && (
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-english"
-                checked={showEnglish}
-                onCheckedChange={setShowEnglish}
-              />
-              <Label htmlFor="show-english" className="text-sm cursor-pointer">
-                {languagePreference === "english" ? "Show English" : "顯示英文"}
-              </Label>
-            </div>
-          )}
-        </div>
-
-        {/* Story Content */}
-        <div className="space-y-6 py-6 px-6 bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-inner border-2 border-purple-100">
-          <div className="flex items-center gap-2 text-purple-600 mb-4">
-            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse delay-75"></div>
-            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse delay-150"></div>
           </div>
 
-          {paragraphs.map((paragraph, index) => (
-            <div
-              key={index}
-              className="space-y-3 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-100 first-letter:text-4xl first-letter:font-bold first-letter:text-purple-600 first-letter:mr-1 first-letter:float-left">
-                {paragraph}
-              </p>
-
-              {showEnglish && story.content_english && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 italic pl-4 border-l-2 border-purple-300 bg-purple-50/50 dark:bg-purple-900/20 py-2 rounded-r">
-                  {story.content_english.split("\n")[index] || ""}
-                </p>
-              )}
-
-              {showJyutping && story.jyutping && (
-                <p className="text-xs text-purple-600 dark:text-purple-400 pl-4 bg-purple-50 dark:bg-purple-900/20 py-1 rounded">
-                  {story.jyutping.split("\n")[index] || ""}
-                </p>
-              )}
-            </div>
-          ))}
-
-          <div className="flex items-center gap-2 text-purple-600 mt-4 justify-center">
-            <div className="w-8 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent"></div>
-            <span className="text-2xl">✨</span>
-            <div className="w-8 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent"></div>
-          </div>
-        </div>
-
-        {/* Featured Words Section */}
-        {story.word_usage && Object.keys(story.word_usage).length > 0 && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl border-2 border-purple-200">
-            <h3 className="font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2 text-lg">
-              <span className="text-2xl">📖</span>
-              {languagePreference === "english" ? "Featured Words" : "故事詞語"}
-            </h3>
-            <div className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-              {languagePreference === "english"
-                ? `${Object.keys(story.word_usage).length} words used in this story`
-                : `故事中使用了 ${Object.keys(story.word_usage).length} 個詞語`}
-            </div>
-            <div className="space-y-3">
-              {Object.entries(story.word_usage).map(([word, usage], idx) => (
-                <div
-                  key={word}
-                  className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm hover:shadow-md transition-all hover:scale-[1.02] border border-purple-200 hover:border-purple-400 cursor-default"
-                  style={{ animationDelay: `${idx * 50}ms` }}
-                >
-                  <div className="font-bold text-purple-700 dark:text-purple-300 text-lg mb-2">
-                    {word}
-                  </div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
-                    {usage}
-                  </div>
+          {/* SETTINGS DRAWER */}
+          <div className={cn(
+             "bg-[#EFEBE9] border-b border-[#D7CCC8] overflow-hidden transition-all duration-300 ease-in-out",
+             showSettings ? "max-h-32 p-4" : "max-h-0 p-0"
+          )}>
+             <div className="flex flex-wrap gap-6 justify-center">
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-[#D7CCC8]">
+                   <Type className="w-4 h-4 text-slate-400" />
+                   <Label htmlFor="jyutping" className="text-sm font-bold text-slate-600">拼音 (Jyutping)</Label>
+                   <Switch id="jyutping" checked={showJyutping} onCheckedChange={setShowJyutping} />
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-[#D7CCC8]">
+                   <Languages className="w-4 h-4 text-slate-400" />
+                   <Label htmlFor="english" className="text-sm font-bold text-slate-600">英文 (English)</Label>
+                   <Switch id="english" checked={showEnglish} onCheckedChange={setShowEnglish} />
+                </div>
+             </div>
           </div>
-        )}
 
-        {/* Cultural References */}
-        {story.cultural_references && story.cultural_references.length > 0 && (
-          <div className="mt-4 p-6 bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-2 border-yellow-200">
-            <h3 className="font-bold text-yellow-900 dark:text-yellow-100 mb-3 flex items-center gap-2 text-lg">
-              <span className="text-2xl">🏙️</span>
-              {languagePreference === "english"
-                ? "Cultural Elements"
-                : "文化元素"}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {story.cultural_references.map((ref, idx) => (
-                <Badge
-                  key={idx}
-                  variant="outline"
-                  className="bg-white dark:bg-gray-800 border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+          {/* MAIN PAGE AREA */}
+          <div className="flex-1 p-6 md:p-12 overflow-y-auto flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
+             
+             {!isStatsPage ? (
+               // --- STORY PAGES ---
+               <div className="flex flex-col h-full justify-center items-center text-center space-y-8 animate-in fade-in duration-500 key={currentPage}">
+                  
+                  {/* Cantonese */}
+                  <p className="text-2xl md:text-4xl font-black text-slate-800 leading-relaxed tracking-tight">
+                    {pages[currentPage]?.cantonese}
+                  </p>
+                  
+                  {/* Jyutping */}
+                  {showJyutping && pages[currentPage]?.jyutping && (
+                     <p className="text-sm md:text-base font-mono text-purple-600 bg-purple-50 px-4 py-2 rounded-xl inline-block border border-purple-100">
+                        {pages[currentPage].jyutping}
+                     </p>
+                  )}
+
+                  {/* English */}
+                  {showEnglish && pages[currentPage]?.english && (
+                     <p className="text-lg md:text-xl font-medium text-slate-500 italic font-serif">
+                        "{pages[currentPage].english}"
+                     </p>
+                  )}
+
+                  {/* Page Number Footer */}
+                  <div className="absolute bottom-4 text-slate-300 text-xs font-bold">
+                     - {currentPage + 1} -
+                  </div>
+               </div>
+             ) : (
+               // --- STATS / END PAGE ---
+               <div className="w-full space-y-6 animate-in zoom-in-95 duration-500">
+                  <div className="text-center mb-8">
+                     <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <Star className="w-10 h-10 text-yellow-500 fill-yellow-500" />
+                     </div>
+                     <h2 className="text-3xl font-black text-slate-800">故事讀完了！</h2>
+                     <p className="text-slate-500 font-bold">做得好！ Great Job!</p>
+                  </div>
+
+                  {/* Cultural References */}
+                  {story.cultural_references && story.cultural_references.length > 0 && (
+                     <div className="bg-orange-50 rounded-2xl p-5 border border-orange-100">
+                        <h3 className="font-bold text-orange-800 mb-3 flex items-center gap-2">
+                           <span className="text-xl">🏙️</span> 文化小知識
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                           {story.cultural_references.map((ref, idx) => (
+                              <Badge key={idx} variant="secondary" className="bg-white text-orange-600 border border-orange-200">
+                                 {ref}
+                              </Badge>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+
+                  {/* Word Usage */}
+                  {story.word_usage && (
+                     <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                        <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                           <span className="text-xl">📖</span> 故事詞彙
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                           {Object.entries(story.word_usage).map(([word, usage], idx) => (
+                              <div key={idx} className="bg-white p-2 rounded-lg text-sm border border-blue-100 flex justify-between px-3">
+                                 <span className="font-bold text-slate-700">{word}</span>
+                                 <span className="text-slate-400 text-xs">{usage}</span>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+
+                  <div className="text-center pt-4 text-slate-400 text-xs">
+                     <p>{story.ai_model ? `由 ${story.ai_model} 生成` : "AI Story"}</p>
+                     <p>{new Date(story.generation_date).toLocaleDateString()}</p>
+                  </div>
+               </div>
+             )}
+          </div>
+
+          {/* FOOTER CONTROLS */}
+          <div className="p-4 md:p-6 bg-[#EFEBE9] border-t border-[#D7CCC8] flex items-center justify-between gap-4 relative z-10">
+             
+             {/* Prev Button */}
+             <Button 
+               onClick={handlePrev}
+               disabled={currentPage === 0}
+               variant="ghost"
+               className="h-14 w-14 rounded-full hover:bg-black/5 disabled:opacity-20 transition-all"
+             >
+                <ChevronLeft className="w-8 h-8 text-[#5D4037]" />
+             </Button>
+
+             {/* Play Button */}
+             {!isStatsPage && (
+                <button
+                  onClick={handlePlayPage}
+                  className={cn(
+                    "h-18 w-18 md:h-20 md:w-20 rounded-full flex items-center justify-center shadow-xl transition-all border-[6px] border-[#FFF9F0] absolute left-1/2 -translate-x-1/2 -top-10",
+                    isPlaying 
+                      ? "bg-orange-400 scale-110" 
+                      : "bg-[#38BDF8] hover:bg-[#0EA5E9] hover:scale-105"
+                  )}
                 >
-                  {ref}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+                  <Volume2 className={cn("w-8 h-8 text-white fill-current", isPlaying && "animate-pulse")} />
+                </button>
+             )}
 
-        {/* Footer with read count */}
-        <div className="mt-6 pt-4 border-t border-purple-200 text-center">
-          {story.read_count > 0 && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              {languagePreference === "english"
-                ? `Read ${story.read_count} time${story.read_count > 1 ? "s" : ""}`
-                : `已閱讀 ${story.read_count} 次`}
-            </p>
-          )}
-          <p className="text-xs mt-2 text-gray-400">
-            {new Date(story.generation_date).toLocaleString("zh-HK")}
-          </p>
+             {/* Next Button */}
+             <Button 
+               onClick={handleNext}
+               className={cn(
+                 "h-14 px-8 rounded-full font-black text-lg transition-all shadow-md",
+                 isStatsPage 
+                   ? "bg-green-500 hover:bg-green-600 text-white" 
+                   : "bg-[#5D4037] hover:bg-[#4E342E] text-white"
+               )}
+             >
+                {isStatsPage ? "完成 Finish" : "下一頁"}
+                {isStatsPage ? <Star className="w-5 h-5 ml-2 fill-current" /> : <ChevronRight className="w-6 h-6 ml-1" />}
+             </Button>
+          </div>
+
         </div>
       </DialogContent>
     </Dialog>

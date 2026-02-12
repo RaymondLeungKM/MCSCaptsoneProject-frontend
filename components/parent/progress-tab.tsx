@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Check, Clock, Star, Volume2 } from "lucide-react";
+import { Search, Volume2, CheckCircle, Clock, Star, BookOpen, Lightbulb } from "lucide-react";
 import type { ProgressStats, Word } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/lib/speech";
@@ -51,6 +50,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
         // Fetch all words with progress for this child
         const wordsData = await getWordsWithProgress(childId);
+        // Map API response to our Word type
         const loadedWords = wordsData.map((w) => toWord(w, w.progress));
 
         // Calculate real stats from loaded words
@@ -61,14 +61,13 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
         setRealStats({
           totalWords,
           masteredWords,
-          weeklyProgress: [], // Not needed for progress tab
-          categoryProgress: [], // Not needed for progress tab
+          weeklyProgress: [], 
+          categoryProgress: [], 
         });
 
         console.log(`Loaded ${totalWords} words, ${masteredWords} mastered`);
       } catch (error) {
         console.error("Failed to load word progress:", error);
-        // Keep using mock data on error
       } finally {
         setLoading(false);
       }
@@ -77,6 +76,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
     loadRealData();
   }, [childId, isMockData]);
 
+  // Filter Logic
   const filteredWords = realWords.filter((word) => {
     const matchesSearch = word.word
       .toLowerCase()
@@ -90,169 +90,198 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
   const playWord = (wordText: string) => {
     speak(wordText, {
-      rate: 0.7,
-      pitch: 1.2,
+      rate: 0.8, // Slightly slower for kids
+      pitch: 1.1, // Slightly higher pitch
     });
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-3 gap-4">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
+      <div className="space-y-6 p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-32 rounded-[32px]" />
+          <Skeleton className="h-32 rounded-[32px]" />
+          <Skeleton className="h-32 rounded-[32px]" />
         </div>
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 rounded-[32px]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-2">
-          <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">
+    <div className="space-y-6 font-zen">
+      
+      {/* 1. TOP SUMMARY CARDS (Cozy Style) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Words */}
+        <Card className="rounded-[32px] border-none bg-white shadow-sm border-2 border-gray-100">
+          <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+            <span className="text-5xl font-black text-[#546E7A] mb-1">
               {realStats.totalWords}
-            </p>
-            <p className="text-sm text-muted-foreground">Total Words</p>
+            </span>
+            <span className="text-sm font-bold text-[#90A4AE] uppercase tracking-widest">
+              詞彙總量 (Total)
+            </span>
           </CardContent>
         </Card>
-        <Card className="border-2 border-mint/50">
-          <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-mint">
+
+        {/* Mastered */}
+        <Card className="rounded-[32px] border-none bg-[#E8F5E9] shadow-sm">
+          <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+            <span className="text-5xl font-black text-[#66BB6A] mb-1">
               {realStats.masteredWords}
-            </p>
-            <p className="text-sm text-muted-foreground">Mastered</p>
+            </span>
+            <span className="text-sm font-bold text-[#81C784] uppercase tracking-widest">
+              已掌握 (Mastered)
+            </span>
           </CardContent>
         </Card>
-        <Card className="border-2 border-sunny/50">
-          <CardContent className="p-4 text-center">
-            <p className="text-3xl font-bold text-sunny">
+
+        {/* In Progress */}
+        <Card className="rounded-[32px] border-none bg-[#FFF3E0] shadow-sm">
+          <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+            <span className="text-5xl font-black text-[#FF9800] mb-1">
               {realStats.totalWords - realStats.masteredWords}
-            </p>
-            <p className="text-sm text-muted-foreground">In Progress</p>
+            </span>
+            <span className="text-sm font-bold text-[#FFB74D] uppercase tracking-widest">
+              學習中 (Learning)
+            </span>
           </CardContent>
         </Card>
       </div>
 
-      {/* Word List */}
-      <Card className="border-2">
-        <CardHeader>
-          <CardTitle className="text-lg">Word Library</CardTitle>
-          <div className="flex flex-col sm:flex-row gap-3 mt-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      {/* 2. WORD LIBRARY SECTION */}
+      <Card className="rounded-[32px] border-2 border-gray-100 shadow-sm bg-white">
+        <CardContent className="p-6 space-y-6">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h3 className="text-xl font-black text-gray-700 flex items-center gap-2">
+               <BookOpen className="w-6 h-6 text-[#29B6F6]" />
+               生字庫 (Word Library)
+            </h3>
+            
+            {/* SEARCH BAR */}
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search words..."
+                placeholder="搜尋生字..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-12 rounded-full bg-[#F5F7F8] border-none font-bold text-gray-600 focus-visible:ring-2 focus-visible:ring-[#29B6F6]"
               />
             </div>
-            <div className="flex gap-2">
-              {(["all", "mastered", "learning"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize",
-                    filter === f
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80",
-                  )}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {filteredWords.map((word) => (
-              <div
-                key={word.id}
+
+          {/* FILTER BUTTONS */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {[
+              { id: "all", label: "全部 (All)" },
+              { id: "mastered", label: "已掌握 (Mastered)" },
+              { id: "learning", label: "學習中 (Learning)" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id as any)}
                 className={cn(
-                  "flex items-center gap-4 p-4 rounded-xl border-2 transition-colors",
-                  word.mastered ? "border-mint/30 bg-mint/5" : "border-border",
+                  "px-4 py-2 rounded-full text-sm font-black transition-all whitespace-nowrap",
+                  filter === f.id
+                    ? "bg-[#29B6F6] text-white shadow-md transform -translate-y-[1px]"
+                    : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                 )}
               >
-                {/* Status Icon */}
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 3. WORD LIST */}
+          <div className="space-y-3">
+            {filteredWords.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-400 font-bold">找不到相關生字 (No words found)</p>
+              </div>
+            ) : (
+              filteredWords.map((word) => (
                 <div
+                  key={word.id}
                   className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                    word.mastered ? "bg-mint" : "bg-sunny/30",
+                    "group flex items-center justify-between p-4 rounded-[24px] border-2 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)]",
+                    word.mastered 
+                      ? "border-transparent bg-white hover:border-[#E8F5E9]" 
+                      : "border-transparent bg-white hover:border-[#FFF3E0]"
                   )}
                 >
-                  {word.mastered ? (
-                    <Check className="w-5 h-5 text-card" />
-                  ) : (
-                    <Clock className="w-5 h-5 text-sunny" />
-                  )}
-                </div>
-
-                {/* Word Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-foreground">{word.word}</h3>
-                    <button
-                      onClick={() => playWord(word.word)}
-                      className="p-1 rounded-full hover:bg-muted transition-colors"
-                      aria-label={`Listen to ${word.word}`}
-                    >
-                      <Volume2 className="w-4 h-4 text-muted-foreground" />
-                    </button>
+                  <div className="flex items-center gap-4">
+                    {/* Status Icon */}
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0",
+                      word.mastered ? "bg-[#E8F5E9]" : "bg-[#FFF3E0]"
+                    )}>
+                      {word.mastered ? (
+                        <CheckCircle className="w-6 h-6 text-[#66BB6A]" />
+                      ) : (
+                        <Clock className="w-6 h-6 text-[#FF9800]" />
+                      )}
+                    </div>
+                    
+                    {/* Word Info */}
+                    <div>
+                      <h4 className="text-lg font-black text-gray-700 flex items-center gap-2">
+                        {word.word}
+                        <button 
+                          onClick={() => playWord(word.word)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-gray-100 text-[#29B6F6]"
+                          aria-label={`Listen to ${word.word}`}
+                        >
+                           <Volume2 className="w-5 h-5" />
+                        </button>
+                      </h4>
+                      <p className="text-xs font-bold text-gray-400 uppercase">
+                        {word.categoryName || "一般"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {word.categoryName}
-                  </p>
-                </div>
 
-                {/* Progress */}
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex gap-1">
-                    {[...Array(6)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={cn(
-                          "w-3 h-3",
-                          i < word.exposureCount
-                            ? "text-sunny fill-sunny"
-                            : "text-muted",
-                        )}
-                      />
-                    ))}
+                  {/* Progress Stars */}
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5, 6].map((star) => (
+                        <Star
+                          key={star}
+                          className={cn(
+                            "w-3 h-3",
+                            star <= (word.exposureCount || 0)
+                              ? "text-[#FFCA28] fill-[#FFCA28]" // Yellow filled stars
+                              : "text-gray-200"
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-300">
+                      {word.exposureCount}/6 次練習
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {word.exposureCount}/6 exposures
-                  </span>
                 </div>
-              </div>
-            ))}
-
-            {filteredWords.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  No words found matching your search.
-                </p>
-              </div>
+              ))
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Learning Tips */}
-      <Card className="border-2 border-sky/30 bg-sky/5">
-        <CardContent className="p-4">
-          <h3 className="font-bold text-foreground mb-2">Learning Tip</h3>
-          <p className="text-sm text-muted-foreground">
-            Children typically need 6-12 exposures to a word in different
-            contexts before it becomes part of their permanent vocabulary. Keep
-            practicing with the words that have fewer stars!
-          </p>
+      {/* 4. LEARNING TIP CARD */}
+      <Card className="rounded-[24px] border-none bg-[#E3F2FD] shadow-sm">
+        <CardContent className="p-5 flex gap-4 items-start">
+          <div className="bg-white p-2 rounded-full shadow-sm flex-shrink-0">
+             <Lightbulb className="w-6 h-6 text-[#29B6F6]" />
+          </div>
+          <div>
+            <h3 className="font-black text-[#1565C0] mb-1">學習小貼士 (Learning Tip)</h3>
+            <p className="text-sm font-bold text-[#546E7A] leading-relaxed">
+              小朋友通常需要係唔同情況下接觸一個生字 6 到 12 次，先至會真正入腦。
+              <br/>
+              建議多啲練習星星比較少嘅生字啦！
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

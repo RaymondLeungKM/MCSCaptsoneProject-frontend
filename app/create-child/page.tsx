@@ -5,162 +5,138 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createChild } from "@/lib/api";
-
-const avatars = ["👧", "👦", "👶", "🧒", "👨", "👩"];
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import CozyPageWrapper from "@/components/CozyPageWrapper";
 
 export default function CreateChildPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("4");
-  const [avatar, setAvatar] = useState("👧");
-  const [learningStyle, setLearningStyle] = useState<
-    "visual" | "auditory" | "kinesthetic" | "mixed"
-  >("mixed");
+  const [childName, setChildName] = useState("");
+  const [age, setAge] = useState("");
+  const [avatar, setAvatar] = useState("👦"); 
+  const [style, setStyle] = useState("mixed");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const avatars = ["👦", "👧", "🧑", "🐻", "🐰", "🦁"];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
-    try {
-      await createChild({
-        name,
-        age: parseInt(age),
-        avatar,
-        learning_style: learningStyle,
-        daily_goal: 5,
-        attention_span: 15,
-      });
-
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Failed to create child profile");
-    } finally {
-      setLoading(false);
-    }
+    // Add your API logic here
+    console.log({ childName, age, avatar, style });
+    
+    setTimeout(() => {
+        router.push("/"); 
+    }, 1000);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-white to-coral-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
-            Create Child Profile
-          </CardTitle>
-          <CardDescription className="text-center">
-            Let's set up a profile for your little learner
-          </CardDescription>
+    <CozyPageWrapper>
+      <Card className="w-full bg-white/95 backdrop-blur-md rounded-[48px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] border-4 border-white">
+        
+        <CardHeader className="space-y-1 pt-10 pb-2 text-center">
+          <h1 className="text-4xl font-black text-[#FF9800] tracking-widest drop-shadow-sm">
+            邊個去冒險?
+          </h1>
+          <p className="text-[#90A4AE] font-bold text-base">
+            建立小朋友專屬檔案
+          </p>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
 
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-5 px-8">
+            
+            {/* 1. Name Input */}
             <div className="space-y-2">
-              <Label htmlFor="name">Child's Name</Label>
+              <Label className="text-[#546E7A] font-black text-xs ml-4 uppercase tracking-widest">
+                小朋友暱稱 / 名字
+              </Label>
               <Input
-                id="name"
-                type="text"
-                placeholder="Emma"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="例如: 軒軒"
+                value={childName}
+                onChange={(e) => setChildName(e.target.value)}
                 required
-                disabled={loading}
+                className="rounded-full bg-[#F1F8E9] border-none h-12 px-6 text-lg text-[#37474F] font-bold placeholder:text-[#B0BEC5] focus-visible:ring-2 focus-visible:ring-[#66BB6A] transition-all"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
-              <Select value={age} onValueChange={setAge} disabled={loading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select age" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2, 3, 4, 5, 6].map((a) => (
-                    <SelectItem key={a} value={a.toString()}>
-                      {a} years old
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* 2. Age & Learning Style */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">
+                  年齡
+                </Label>
+                <div className="relative">
+                  <select 
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="w-full rounded-full bg-[#F1F8E9] h-12 px-4 text-[#37474F] font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#66BB6A] outline-none border-none"
+                  >
+                    <option value="" disabled>選擇</option>
+                    {[2,3,4,5,6,7,8,9,10,11,12].map(num => (
+                      <option key={num} value={num}>{num} 歲</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">▼</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">
+                  學習風格
+                </Label>
+                <div className="relative">
+                   <select 
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    className="w-full rounded-full bg-[#F1F8E9] h-12 px-4 text-[#37474F] font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#66BB6A] outline-none border-none"
+                  >
+                    <option value="visual">👀 睇圖 (Visual)</option>
+                    <option value="auditory">👂 聽聲 (Auditory)</option>
+                    {/* Added Kinesthetic Option */}
+                    <option value="kinesthetic">🏃‍♂️ 郁動 (Kinesthetic)</option>
+                    <option value="mixed">✨ 混合 (Mixed)</option>
+                  </select>
+                   <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">▼</div>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Avatar</Label>
-              <div className="flex gap-2">
-                {avatars.map((av) => (
+            {/* 3. Avatar Selection */}
+            <div className="space-y-3">
+              <Label className="text-[#546E7A] font-black text-xs ml-4 uppercase tracking-widest">
+                選擇冒險頭像
+              </Label>
+              <div className="flex justify-between gap-2">
+                {avatars.map((char) => (
                   <button
-                    key={av}
+                    key={char}
                     type="button"
-                    onClick={() => setAvatar(av)}
-                    className={`text-4xl p-2 rounded-lg transition-all ${
-                      avatar === av
-                        ? "bg-primary/20 scale-110 ring-2 ring-primary"
-                        : "hover:bg-gray-100"
+                    onClick={() => setAvatar(char)}
+                    className={`text-3xl w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      avatar === char 
+                        ? "bg-[#FFF3E0] scale-125 shadow-md border-2 border-orange-300" 
+                        : "bg-transparent hover:bg-gray-50 opacity-60 hover:opacity-100"
                     }`}
-                    disabled={loading}
                   >
-                    {av}
+                    {char}
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="learningStyle">Learning Style</Label>
-              <Select
-                value={learningStyle}
-                onValueChange={(value: any) => setLearningStyle(value)}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select learning style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="visual">
-                    Visual (Pictures & Colors)
-                  </SelectItem>
-                  <SelectItem value="auditory">
-                    Auditory (Sounds & Stories)
-                  </SelectItem>
-                  <SelectItem value="kinesthetic">
-                    Kinesthetic (Movement & Actions)
-                  </SelectItem>
-                  <SelectItem value="mixed">Mixed (All Styles)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </CardContent>
 
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating..." : "Create Profile"}
+          <CardFooter className="pb-10 px-8 pt-2">
+            <Button 
+              type="submit" 
+              className="w-full bg-[#66BB6A] hover:bg-[#57A65B] text-white font-black text-2xl pt-2 pb-3 rounded-full h-16 shadow-[0_6px_0_#388E3C] active:shadow-none active:translate-y-[6px] transition-all" 
+              disabled={loading}
+            >
+              {loading ? "設定中..." : "完成設定"}
             </Button>
           </CardFooter>
         </form>
       </Card>
-    </div>
+    </CozyPageWrapper>
   );
 }

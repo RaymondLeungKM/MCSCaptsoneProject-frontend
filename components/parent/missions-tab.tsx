@@ -1,45 +1,60 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Check, Circle, Plus, Lightbulb, Clock, MapPin, Utensils, Moon } from 'lucide-react';
-import type { DailyMission } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Check, Circle, Plus, Lightbulb, Clock, MapPin, Utensils, Moon, Flag, Target } from "lucide-react";
+import type { DailyMission } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface MissionsTabProps {
   missions: DailyMission[];
 }
 
+// Translated Suggested Missions
 const suggestedMissions = [
   {
-    title: 'Morning Routine',
-    description: 'Practice words during getting ready',
+    title: "早晨習慣 (Morning)",
+    description: "刷牙洗面嗰陣練習生字",
     icon: Clock,
-    words: ['Brush', 'Teeth', 'Water', 'Mirror'],
+    color: "text-orange-400",
+    bg: "bg-orange-50",
+    words: ["牙刷 (Brush)", "毛巾 (Towel)", "鏡 (Mirror)"],
   },
   {
-    title: 'Walk to School',
-    description: 'Name things you see on your walk',
+    title: "返學途中 (Walking)",
+    description: "講出沿路見到嘅事物",
     icon: MapPin,
-    words: ['Tree', 'Car', 'Bird', 'House'],
+    color: "text-green-500",
+    bg: "bg-green-50",
+    words: ["樹 (Tree)", "巴士 (Bus)", "雀仔 (Bird)"],
   },
   {
-    title: 'Meal Time',
-    description: 'Talk about food and table items',
+    title: "食飯時間 (Meal Time)",
+    description: "認識餐具同食物名稱",
     icon: Utensils,
-    words: ['Plate', 'Fork', 'Spoon', 'Cup'],
+    color: "text-red-400",
+    bg: "bg-red-50",
+    words: ["匙羹 (Spoon)", "碗 (Bowl)", "菜 (Veggie)"],
   },
   {
-    title: 'Bedtime Story',
-    description: 'Read together and discuss new words',
+    title: "睡前故事 (Bedtime)",
+    description: "一齊睇書，傾吓新學嘅字",
     icon: Moon,
-    words: ['Moon', 'Star', 'Dream', 'Sleep'],
+    color: "text-indigo-400",
+    bg: "bg-indigo-50",
+    words: ["月亮 (Moon)", "發夢 (Dream)", "訓覺 (Sleep)"],
   },
 ];
 
 export function MissionsTab({ missions }: MissionsTabProps) {
-  const [localMissions, setLocalMissions] = useState(missions);
+  // Mock data for display if missions prop is empty (for visualization)
+  const initialMissions = missions.length > 0 ? missions : [
+    { id: "1", title: "超市大冒險", description: "帶小朋友去超市搵生字", targetWord: "蘋果 (Apple)", context: "叫小朋友幫手搵蘋果", completed: false },
+    { id: "2", title: "顏色偵探", description: "搵出屋企藍色嘅物件", targetWord: "藍色 (Blue)", context: "指住藍色物件大聲讀出", completed: true },
+  ];
+
+  const [localMissions, setLocalMissions] = useState(initialMissions);
 
   const toggleMission = (id: string) => {
     setLocalMissions((prev) =>
@@ -50,69 +65,87 @@ export function MissionsTab({ missions }: MissionsTabProps) {
   };
 
   const completedCount = localMissions.filter((m) => m.completed).length;
+  const progressPercent = (completedCount / localMissions.length) * 100;
 
   return (
-    <div className="space-y-6">
-      {/* Mission Overview */}
-      <Card className="border-2">
+    <div className="space-y-6 font-zen">
+      
+      {/* 1. MISSION PROGRESS CARD */}
+      <Card className="rounded-[32px] border-2 border-gray-100 shadow-sm bg-white">
         <CardHeader>
-          <CardTitle className="text-lg">Today&apos;s Offline Missions</CardTitle>
-          <CardDescription>
-            Reinforce learning by using words in daily activities
+          <CardTitle className="flex items-center gap-2 text-xl font-black text-gray-700">
+            <Flag className="w-6 h-6 text-[#FF9800]" />
+            今日線下任務 (Offline Missions)
+          </CardTitle>
+          <CardDescription className="text-gray-500 font-bold">
+            將學習融入日常生活，同小朋友一齊完成任務啦！
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1 bg-muted rounded-full h-3">
+          {/* Progress Bar */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden border border-gray-200">
               <div 
-                className="bg-primary h-full rounded-full transition-all"
-                style={{ width: `${(completedCount / localMissions.length) * 100}%` }}
+                className="bg-[#66BB6A] h-full rounded-full transition-all duration-500 ease-out shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]"
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <span className="text-sm font-bold text-foreground">
+            <span className="text-lg font-black text-[#66BB6A]">
               {completedCount}/{localMissions.length}
             </span>
           </div>
 
-          <div className="space-y-3">
+          {/* Mission List */}
+          <div className="space-y-4">
             {localMissions.map((mission) => (
               <div
                 key={mission.id}
+                onClick={() => toggleMission(mission.id)}
                 className={cn(
-                  'p-4 rounded-xl border-2 transition-all',
+                  "p-5 rounded-[24px] border-2 transition-all cursor-pointer group shadow-[0_4px_0_rgba(0,0,0,0.02)]",
                   mission.completed 
-                    ? 'border-mint/50 bg-mint/5' 
-                    : 'border-border hover:border-primary/30'
+                    ? "border-[#A5D6A7] bg-[#E8F5E9]" // Green when done
+                    : "border-gray-100 bg-white hover:border-[#FFCC80] hover:shadow-md" // White default
                 )}
               >
-                <div className="flex items-start gap-3">
-                  <button
-                    onClick={() => toggleMission(mission.id)}
+                <div className="flex items-start gap-4">
+                  {/* Checkbox Button */}
+                  <div
                     className={cn(
-                      'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
-                      mission.completed ? 'bg-mint' : 'border-2 border-muted-foreground'
+                      "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 transition-all",
+                      mission.completed 
+                        ? "bg-[#66BB6A] text-white shadow-sm" 
+                        : "bg-gray-100 border-2 border-gray-300 group-hover:border-[#FF9800]"
                     )}
-                    aria-label={mission.completed ? 'Mark as incomplete' : 'Mark as complete'}
                   >
-                    {mission.completed && <Check className="w-4 h-4 text-card" />}
-                  </button>
+                    {mission.completed && <Check className="w-5 h-5 stroke-[3]" />}
+                  </div>
+
+                  {/* Text Content */}
                   <div className="flex-1">
                     <h3 className={cn(
-                      'font-bold',
-                      mission.completed ? 'text-muted-foreground line-through' : 'text-foreground'
+                      "text-lg font-black transition-colors",
+                      mission.completed ? "text-[#388E3C] line-through decoration-2" : "text-gray-700"
                     )}>
                       {mission.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm font-bold text-gray-400 mt-1">
                       {mission.description}
                     </p>
-                    <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Target Word:</strong> {mission.targetWord}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        <strong>How to:</strong> {mission.context}
-                      </p>
+                    
+                    {/* Mission Details Box */}
+                    <div className={cn(
+                      "mt-3 p-4 rounded-[16px] flex flex-col gap-2",
+                      mission.completed ? "bg-white/50" : "bg-[#F5F7F8]"
+                    )}>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Target className="w-4 h-4 text-[#29B6F6]" />
+                        <span>目標生字: <strong className="text-gray-800">{mission.targetWord}</strong></span>
+                      </div>
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <Lightbulb className="w-4 h-4 text-[#FF9800] mt-0.5" />
+                        <span>點樣做: <strong className="text-gray-800">{mission.context}</strong></span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -122,15 +155,15 @@ export function MissionsTab({ missions }: MissionsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Suggested Missions */}
-      <Card className="border-2">
+      {/* 2. SUGGESTED ACTIVITIES CARD */}
+      <Card className="rounded-[32px] border-2 border-gray-100 shadow-sm bg-white">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Lightbulb className="w-5 h-5 text-sunny" />
-            Suggested Activities
+          <CardTitle className="flex items-center gap-2 text-xl font-black text-gray-700">
+            <Lightbulb className="w-6 h-6 text-[#FFCA28]" />
+            更多建議活動 (Activities)
           </CardTitle>
-          <CardDescription>
-            Ideas for practicing vocabulary throughout the day
+          <CardDescription className="text-gray-500 font-bold">
+            係唔同嘅時間，都可以同小朋友練習生字架！
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -140,20 +173,20 @@ export function MissionsTab({ missions }: MissionsTabProps) {
               return (
                 <div
                   key={index}
-                  className="p-4 rounded-xl border-2 border-border hover:border-primary/30 transition-colors"
+                  className="p-5 rounded-[24px] border-2 border-transparent bg-[#FAFAFA] hover:border-[#E1F5FE] hover:bg-white hover:shadow-sm transition-all"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5 text-primary" />
+                    <div className={cn("w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0", mission.bg)}>
+                      <Icon className={cn("w-6 h-6", mission.color)} />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-bold text-foreground">{mission.title}</h4>
-                      <p className="text-sm text-muted-foreground">{mission.description}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <h4 className="font-black text-gray-700 text-lg">{mission.title}</h4>
+                      <p className="text-xs font-bold text-gray-400 mb-3">{mission.description}</p>
+                      <div className="flex flex-wrap gap-2">
                         {mission.words.map((word) => (
                           <span 
                             key={word}
-                            className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground"
+                            className="text-[10px] font-bold bg-white border border-gray-200 px-2 py-1 rounded-full text-gray-500 shadow-sm"
                           >
                             {word}
                           </span>
@@ -168,15 +201,19 @@ export function MissionsTab({ missions }: MissionsTabProps) {
         </CardContent>
       </Card>
 
-      {/* Tips */}
-      <Card className="border-2 border-lavender/30 bg-lavender/5">
-        <CardContent className="p-4">
-          <h3 className="font-bold text-foreground mb-2">Why Offline Missions Matter</h3>
-          <p className="text-sm text-muted-foreground">
-            Research shows that children learn vocabulary best when words move from the digital 
-            screen into real life with the help of important people. These missions help 
-            reinforce learning through meaningful daily interactions.
-          </p>
+      {/* 3. LEARNING TIP */}
+      <Card className="rounded-[24px] border-none bg-[#E1F5FE] shadow-sm">
+        <CardContent className="p-5 flex gap-4 items-start">
+           <div className="bg-white p-2 rounded-full shadow-sm flex-shrink-0">
+             <Lightbulb className="w-6 h-6 text-[#29B6F6]" />
+           </div>
+           <div>
+             <h3 className="font-black text-[#0277BD] mb-1">點解線下任務咁重要？</h3>
+             <p className="text-sm font-bold text-[#546E7A] leading-relaxed">
+               研究顯示，當小朋友將屏幕學到嘅生字應用係現實生活，學習效果最好！
+               呢啲任務可以幫你係日常互動中加深記憶。
+             </p>
+           </div>
         </CardContent>
       </Card>
     </div>

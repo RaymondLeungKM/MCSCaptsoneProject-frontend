@@ -1,112 +1,92 @@
-'use client';
+"use client";
 
-import { Flame, Star, Settings } from 'lucide-react';
-import type { ChildProfile } from '@/lib/types';
+import { Flame, Star, BookOpen, Target } from 'lucide-react';
+import type { ChildProfile } from '@/lib/types'; 
 import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ProfileHeaderProps {
-  profile: ChildProfile;
+  profile: any;
   onSettingsClick?: () => void;
 }
 
-export function ProfileHeader({ profile, onSettingsClick }: ProfileHeaderProps) {
+export function ProfileHeader({ profile }: ProfileHeaderProps) {
   const xpProgress = (profile.xp % 100);
-  const dailyProgress = (profile.todayProgress / profile.dailyGoal) * 100;
+  // Calculate progress safely (avoid divide by zero)
+  const dailyProgress = profile.dailyGoal > 0 ? (profile.todayProgress / profile.dailyGoal) * 100 : 0;
+  const xpToNextLevel = 100 - xpProgress;
 
   return (
-    <header className="bg-card rounded-3xl p-4 shadow-lg border-4 border-primary/20">
-      <div className="flex items-center gap-4">
-        {/* Avatar */}
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full bg-sunny flex items-center justify-center text-4xl border-4 border-primary shadow-md">
-            {profile.avatar}
-          </div>
-          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+    <header className="bg-white/80 backdrop-blur-md rounded-[32px] p-6 shadow-sm border border-white/50 w-full">
+      <div className="flex items-center gap-5">
+        
+        {/* Avatar Section */}
+        <div className="relative shrink-0">
+          <Avatar className="w-20 h-20 border-4 border-white shadow-md">
+            {profile.avatar && <AvatarImage src={profile.avatar} alt={profile.name} />}
+            <AvatarFallback className="bg-orange-100 text-orange-500 text-3xl font-black">
+              {profile.name?.[0] || "C"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="absolute -bottom-2 -right-1 bg-[#38BDF8] text-white text-xs font-black px-2.5 py-1 rounded-full border-2 border-white shadow-sm">
             Lv.{profile.level}
           </div>
         </div>
 
-        {/* Info */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-foreground">
-              Hi, {profile.name}!
+        {/* Info Section */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-black text-slate-700 tracking-tight truncate">
+              你好，{profile.name}！
             </h1>
-            <button 
-              onClick={onSettingsClick}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="Settings"
-            >
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
+            {/* 🗑️ REMOVED THE OLD SETTINGS BUTTON HERE */}
           </div>
           
           {/* XP Bar */}
-          <div className="mt-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-              <span className="flex items-center gap-1">
-                <Star className="w-3 h-3 text-sunny fill-sunny" />
+          <div>
+            <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-1.5">
+              <span className="flex items-center gap-1 text-yellow-500">
+                <Star className="w-3.5 h-3.5 fill-yellow-500" />
                 {profile.xp} XP
               </span>
-              <span>{100 - xpProgress} to next level</span>
+              <span>距離下一級 {xpToNextLevel} XP</span>
             </div>
-            <Progress value={xpProgress} className="h-2 bg-muted" />
+            <Progress value={xpProgress} className="h-3 rounded-full bg-slate-100" indicatorClassName="bg-gradient-to-r from-yellow-400 to-orange-400" />
           </div>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-        {/* Streak */}
-        <div className="flex items-center gap-2 bg-coral/10 px-3 py-2 rounded-2xl">
-          <Flame className="w-5 h-5 text-coral" />
-          <div>
-            <p className="text-lg font-bold text-foreground">{profile.currentStreak}</p>
-            <p className="text-xs text-muted-foreground">Day Streak</p>
-          </div>
-        </div>
-
-        {/* Words Learned */}
-        <div className="flex items-center gap-2 bg-mint/20 px-3 py-2 rounded-2xl">
-          <span className="text-2xl">📚</span>
-          <div>
-            <p className="text-lg font-bold text-foreground">{profile.wordsLearned}</p>
-            <p className="text-xs text-muted-foreground">Words Learned</p>
-          </div>
-        </div>
-
-        {/* Daily Goal */}
-        <div className="flex items-center gap-2 bg-sky/20 px-3 py-2 rounded-2xl">
-          <div className="relative">
-            <svg className="w-10 h-10 -rotate-90">
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                className="text-muted"
-              />
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeDasharray={`${dailyProgress} ${100 - dailyProgress}`}
-                strokeLinecap="round"
-                className="text-primary"
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">
-              {profile.todayProgress}/{profile.dailyGoal}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">Today</p>
-        </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-3 mt-6">
+        <StatBox 
+            icon={<Flame className="w-6 h-6 text-orange-500 fill-orange-500" />} 
+            value={profile.currentStreak} 
+            label="連續打卡" 
+            color="bg-orange-50 border-orange-100" 
+        />
+        <StatBox 
+            icon={<BookOpen className="w-6 h-6 text-blue-500" />} 
+            value={profile.wordsLearned} 
+            label="已學詞彙" 
+            color="bg-blue-50 border-blue-100" 
+        />
+        <StatBox 
+            icon={<Target className="w-6 h-6 text-green-500" />} 
+            value={`${profile.todayProgress}/${profile.dailyGoal}`} 
+            label="今日目標" 
+            color="bg-green-50 border-green-100" 
+        />
       </div>
     </header>
+  );
+}
+
+function StatBox({ icon, value, label, color }: { icon: React.ReactNode, value: string | number, label: string, color: string }) {
+  return (
+    <div className={`${color} rounded-[24px] p-3 flex flex-col items-center justify-center text-center border border-opacity-50`}>
+      <div className="mb-1">{icon}</div>
+      <p className="text-xl font-black text-slate-700 leading-none">{value}</p>
+      <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide mt-1">{label}</p>
+    </div>
   );
 }

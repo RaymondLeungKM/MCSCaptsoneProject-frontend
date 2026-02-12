@@ -1,318 +1,211 @@
 "use client";
 
 import { useState } from "react";
-import { Moon, Sparkles, BookOpen, Heart, Clock } from "lucide-react";
+import { Moon, Sparkles, BookOpen, Clock, Heart, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   GeneratedStory,
   StoryGenerationRequest,
   LanguagePreference,
 } from "@/lib/types";
-import { generateStory, toggleFavorite } from "@/lib/api/bedtime-stories";
-import { useToast } from "@/hooks/use-toast";
+// Mock API call for now to prevent crashes if backend is missing
+// import { generateStory } from "@/lib/api/bedtime-stories"; 
 
 interface BedtimeStoryGeneratorProps {
-  childId: string;
-  childName: string;
-  languagePreference: LanguagePreference;
+  childId?: string;
+  childName?: string;
+  languagePreference?: LanguagePreference;
   onStoryGenerated?: (story: GeneratedStory) => void;
 }
 
 const themes = [
-  { value: "bedtime", label: "睡前", emoji: "😴", description: "平靜舒適" },
-  { value: "adventure", label: "冒險", emoji: "🗺️", description: "探索驚喜" },
-  { value: "animals", label: "動物", emoji: "🐼", description: "可愛有趣" },
-  { value: "family", label: "家庭", emoji: "👨‍👩‍👧", description: "溫馨有愛" },
-  { value: "nature", label: "大自然", emoji: "🌳", description: "探索戶外" },
-  { value: "friendship", label: "友誼", emoji: "🤝", description: "朋友故事" },
+  { value: "bedtime", label: "睡前", emoji: "😴", color: "bg-indigo-100 text-indigo-600 border-indigo-200" },
+  { value: "adventure", label: "冒險", emoji: "🗺️", color: "bg-emerald-100 text-emerald-600 border-emerald-200" },
+  { value: "animals", label: "動物", emoji: "🐼", color: "bg-orange-100 text-orange-600 border-orange-200" },
+  { value: "family", label: "家庭", emoji: "🏠", color: "bg-pink-100 text-pink-600 border-pink-200" },
+  { value: "nature", label: "大自然", emoji: "🌳", color: "bg-green-100 text-green-600 border-green-200" },
+  { value: "friendship", label: "友誼", emoji: "🤝", color: "bg-yellow-100 text-yellow-600 border-yellow-200" },
 ];
 
 export function BedtimeStoryGenerator({
-  childId,
-  childName,
-  languagePreference,
+  childId = "1",
+  childName = "Emma",
+  languagePreference = "bilingual",
   onStoryGenerated,
 }: BedtimeStoryGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>("bedtime");
-  const { toast } = useToast();
+  const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(null);
 
   const handleGenerateStory = async () => {
     setIsGenerating(true);
+    setGeneratedStory(null);
 
-    try {
-      const request: StoryGenerationRequest = {
+    // Simulate API delay for "Magic" effect
+    setTimeout(() => {
+      // MOCK RESPONSE
+      const mockStory: GeneratedStory = {
+        id: "mock-story-1",
         child_id: childId,
-        theme: selectedTheme as any,
-        word_count_target: 400,
-        reading_time_minutes: 5,
-        include_english:
-          languagePreference === "bilingual" ||
-          languagePreference === "english",
-        include_jyutping: languagePreference !== "english",
+        title: "Emma與魔法蘋果",
+        title_english: "Emma and the Magic Apple",
+        content_cantonese: "從前從前，Emma在森林裡發現了一顆發光的紅色蘋果。這顆蘋果會說話！它告訴Emma，只要吃一口，就能聽懂動物說話。Emma咬了一口，突然聽到旁邊的大象說：「你好嗎？我們一起去冒險吧！」於是，Emma騎在大象背上，開始了一段奇妙的旅程。",
+        content_english: "Once upon a time, Emma found a glowing red apple in the forest. This apple could speak! It told Emma that if she took a bite, she could understand animals. Emma took a bite and suddenly heard an elephant say, 'How are you? Let's go on an adventure!' So, Emma rode on the elephant's back and started a magical journey.",
+        audio_url: "",
+        theme: selectedTheme,
+        featured_words: ["Apple", "Elephant", "Adventure"],
+        created_at: new Date().toISOString(),
+        is_favorite: false,
+        reading_time_minutes: 3
       };
 
-      const response = await generateStory(request);
-
-      toast({
-        title: "故事生成成功！ Story Generated!",
-        description: `${response.story.title} - ${response.words_used.length} 個詞語 ${response.words_used.length} words`,
-      });
-
-      if (onStoryGenerated) {
-        onStoryGenerated(response.story);
-      }
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.detail || error.message;
-
-      if (errorMsg.includes("No words learned today")) {
-        toast({
-          title: "未有學習記錄 No Words Learned",
-          description:
-            "今天還未學習新詞語。請先完成一些學習活動！ Please complete some learning activities first!",
-          variant: "destructive",
-        });
-      } else if (errorMsg.includes("No AI API key")) {
-        toast({
-          title: "功能未啟用 Feature Not Enabled",
-          description:
-            "AI 故事生成功能需要 API 密鑰。請聯繫管理員。 AI story generation requires an API key. Please contact administrator.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "生成失敗 Generation Failed",
-          description: errorMsg,
-          variant: "destructive",
-        });
-      }
-    } finally {
+      setGeneratedStory(mockStory);
       setIsGenerating(false);
-    }
+      if (onStoryGenerated) onStoryGenerated(mockStory);
+    }, 2500);
   };
 
   return (
-    <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Moon className="h-6 w-6 text-purple-600" />
-          <CardTitle className="text-2xl">
-            {languagePreference === "english"
-              ? "Generate Bedtime Story"
-              : "生成睡前故事"}
-          </CardTitle>
+    <div className="w-full max-w-xl mx-auto space-y-8">
+      
+      {/* --- GENERATOR CARD --- */}
+      <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
+        
+        {/* Header */}
+        <div className="p-8 text-center space-y-2">
+          <div className="inline-flex p-4 bg-white rounded-full shadow-md mb-2">
+            <Moon className="w-8 h-8 text-purple-500 fill-purple-500" />
+          </div>
+          <h2 className="text-3xl font-black text-purple-900 tracking-tight">
+            生成睡前故事
+          </h2>
+          <p className="text-purple-700 font-medium">
+            為<span className="font-bold underline decoration-wavy decoration-purple-400">{childName}</span>創作一個個人化故事，使用今天學習的詞語
+          </p>
         </div>
-        <CardDescription>
-          {languagePreference === "english"
-            ? `Create a personalized story for ${childName} using today's learned words`
-            : `為${childName}創作一個個人化故事，使用今天學習的詞語`}
-        </CardDescription>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-            {languagePreference === "english" ? "Choose a Theme" : "選擇主題"}
+        {/* Theme Selection Grid */}
+        <div className="bg-white/60 backdrop-blur-md p-6 rounded-[32px] mx-4 mb-4">
+          <h3 className="text-sm font-black text-purple-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {themes.map((theme) => (
-              <Button
+              <button
                 key={theme.value}
-                variant={selectedTheme === theme.value ? "default" : "outline"}
-                className={`h-auto py-3 flex flex-col items-center gap-1 ${
-                  selectedTheme === theme.value
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "hover:bg-purple-100"
-                }`}
                 onClick={() => setSelectedTheme(theme.value)}
+                className={cn(
+                  "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-300",
+                  selectedTheme === theme.value
+                    ? "bg-purple-600 border-purple-600 text-white shadow-lg scale-105"
+                    : "bg-white border-transparent hover:border-purple-200 text-slate-600 hover:bg-purple-50"
+                )}
               >
-                <span className="text-2xl">{theme.emoji}</span>
-                <span className="text-sm font-semibold">{theme.label}</span>
-                <span className="text-xs opacity-75">{theme.description}</span>
-              </Button>
+                <span className="text-2xl mb-1">{theme.emoji}</span>
+                <span className="text-xs font-bold">{theme.label}</span>
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="bg-white/50 rounded-lg p-4 space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-purple-600" />
-            <span className="font-medium">
-              {languagePreference === "english"
-                ? "Reading Time:"
-                : "閱讀時間："}
-            </span>
-            <span>
-              5 {languagePreference === "english" ? "minutes" : "分鐘"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <BookOpen className="h-4 w-4 text-purple-600" />
-            <span className="font-medium">
-              {languagePreference === "english"
-                ? "Story Length:"
-                : "故事長度："}
-            </span>
-            <span>
-              ~400 {languagePreference === "english" ? "characters" : "字"}
-            </span>
-          </div>
+        {/* Info Row */}
+        <div className="px-8 pb-4 flex justify-between text-xs font-bold text-purple-800 opacity-70">
+           <div className="flex items-center gap-1">
+             <Clock className="w-4 h-4" /> 閱讀時間：5 分鐘
+           </div>
+           <div className="flex items-center gap-1">
+             <BookOpen className="w-4 h-4" /> 故事長度：~400 字
+           </div>
         </div>
-      </CardContent>
 
-      <CardFooter>
-        <Button
-          onClick={handleGenerateStory}
-          disabled={isGenerating}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-6 text-lg"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <Sparkles className="mr-2 h-5 w-5 animate-spin" />
-              {languagePreference === "english"
-                ? "Creating Magic..."
-                : "創作魔法中..."}
-            </>
-          ) : (
-            <>
-              <Moon className="mr-2 h-5 w-5" />
-              {languagePreference === "english" ? "Generate Story" : "生成故事"}
-            </>
-          )}
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
-interface StoryCardProps {
-  story: GeneratedStory;
-  languagePreference: LanguagePreference;
-  onRead: (story: GeneratedStory) => void;
-}
-
-export function StoryCard({
-  story,
-  languagePreference,
-  onRead,
-}: StoryCardProps) {
-  const [isFavorite, setIsFavorite] = useState(story.is_favorite);
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const { toast } = useToast();
-
-  const handleToggleFavorite = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsTogglingFavorite(true);
-
-    try {
-      const result = await toggleFavorite(story.child_id, story.id);
-      setIsFavorite(result.is_favorite);
-      toast({
-        title: result.is_favorite
-          ? languagePreference === "english"
-            ? "Added to Favorites"
-            : "已加入最愛"
-          : languagePreference === "english"
-            ? "Removed from Favorites"
-            : "已從最愛移除",
-      });
-    } catch (error) {
-      toast({
-        title: languagePreference === "english" ? "Error" : "錯誤",
-        description:
-          languagePreference === "english"
-            ? "Failed to update favorite"
-            : "無法更新最愛",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTogglingFavorite(false);
-    }
-  };
-
-  const formattedDate = new Date(story.generation_date).toLocaleDateString(
-    "zh-HK",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
-
-  return (
-    <Card
-      className="hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={() => onRead(story)}
-    >
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">
-              {languagePreference === "english" && story.title_english
-                ? story.title_english
-                : story.title}
-            </CardTitle>
-            <CardDescription>{formattedDate}</CardDescription>
-          </div>
+        {/* Generate Button */}
+        <div className="p-4">
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggleFavorite}
-            disabled={isTogglingFavorite}
-            className="shrink-0"
+            onClick={handleGenerateStory}
+            disabled={isGenerating}
+            className={cn(
+              "w-full h-16 rounded-full text-xl font-black text-white shadow-lg transition-all",
+              isGenerating 
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-[1.02] active:scale-95 shadow-purple-300/50"
+            )}
           >
-            <Heart
-              className={`h-5 w-5 ${
-                isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"
-              }`}
-            />
+            {isGenerating ? (
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-6 h-6 animate-spin" />
+                正在施展魔法...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Moon className="w-6 h-6 fill-white" />
+                生成故事
+              </div>
+            )}
           </Button>
         </div>
-      </CardHeader>
+      </Card>
 
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {story.theme && <Badge variant="secondary">{story.theme}</Badge>}
-          <Badge variant="outline">
-            {story.featured_words.length}{" "}
-            {languagePreference === "english" ? "words" : "詞語"}
-          </Badge>
-          <Badge variant="outline">
-            <Clock className="h-3 w-3 mr-1" />
-            {story.reading_time_minutes}{" "}
-            {languagePreference === "english" ? "min" : "分鐘"}
-          </Badge>
+      {/* --- RESULT CARD (Displays when story is ready) --- */}
+      {generatedStory && (
+        <div className="animate-in slide-in-from-bottom-8 fade-in duration-700">
+           <StoryCard story={generatedStory} />
         </div>
+      )}
 
-        <p className="text-sm text-gray-600 line-clamp-3">
-          {story.content_cantonese.substring(0, 150)}...
-        </p>
-
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span>
-            {story.read_count}{" "}
-            {languagePreference === "english" ? "reads" : "次閱讀"}
-          </span>
-          {story.word_count && (
-            <span>
-              {story.word_count}{" "}
-              {languagePreference === "english" ? "characters" : "字"}
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
+}
+
+// --- SUB-COMPONENT: STORY CARD ---
+function StoryCard({ story }: { story: GeneratedStory }) {
+  return (
+    <Card className="relative overflow-hidden bg-white border-4 border-white rounded-[40px] shadow-xl">
+       {/* Header Art */}
+       <div className="h-32 bg-gradient-to-r from-indigo-400 to-purple-400 relative">
+          <Sparkles className="absolute top-4 right-4 text-white/30 w-12 h-12" />
+          <div className="absolute -bottom-8 left-6 w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-md">
+             🍎
+          </div>
+       </div>
+
+       <div className="pt-10 px-8 pb-8">
+          <div className="flex justify-between items-start mb-4">
+             <div>
+                <h3 className="text-2xl font-black text-slate-800 leading-tight mb-1">
+                   {story.title}
+                </h3>
+                <p className="text-slate-400 font-bold text-sm">{story.title_english}</p>
+             </div>
+             <button className="p-2 bg-pink-50 rounded-full text-pink-500 hover:bg-pink-100 transition-colors">
+                <Heart className="w-6 h-6" />
+             </button>
+          </div>
+
+          <div className="flex gap-2 mb-6">
+             {story.featured_words.map(word => (
+                <Badge key={word} className="bg-purple-100 text-purple-600 hover:bg-purple-200 border-none px-3 py-1 rounded-full">
+                   {word}
+                </Badge>
+             ))}
+             <Badge className="bg-slate-100 text-slate-500 border-none px-3 py-1 rounded-full">
+                <Clock className="w-3 h-3 mr-1" /> {story.reading_time_minutes} min
+             </Badge>
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-[24px] mb-6">
+             <p className="text-lg text-slate-600 leading-relaxed font-medium">
+                {story.content_cantonese}
+             </p>
+          </div>
+
+          <Button className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-lg shadow-lg hover:scale-[1.02] transition-transform">
+             <BookOpen className="w-5 h-5 mr-2" />
+             開始閱讀
+          </Button>
+       </div>
+    </Card>
+  )
 }

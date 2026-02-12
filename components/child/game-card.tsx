@@ -1,61 +1,113 @@
-'use client';
+"use client";
 
-import { Play } from 'lucide-react';
-import type { Game } from '@/lib/types';
+import { Play, Sparkles, Trophy, Gamepad2 } from 'lucide-react';
+import type { Game, LanguagePreference } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+// --- 1. COLOR MAPPING HELPER ---
+// Maps simple color names to our "Cozy" design system classes
+const getGameColorStyles = (color: string) => {
+  const c = color?.toLowerCase() || "blue";
+  const map: Record<string, string> = {
+    purple: "bg-purple-50 border-purple-200 hover:bg-purple-100 hover:border-purple-300 text-purple-600",
+    blue: "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300 text-blue-600",
+    green: "bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300 text-green-600",
+    orange: "bg-orange-50 border-orange-200 hover:bg-orange-100 hover:border-orange-300 text-orange-600",
+    pink: "bg-pink-50 border-pink-200 hover:bg-pink-100 hover:border-pink-300 text-pink-600",
+    yellow: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 hover:border-yellow-300 text-yellow-600",
+  };
+  return map[c] || map.blue;
+};
 
 interface GameCardProps {
   game: Game;
   onPlay: (game: Game) => void;
+  languagePreference?: LanguagePreference;
 }
 
-export function GameCard({ game, onPlay }: GameCardProps) {
+export function GameCard({ game, onPlay, languagePreference = "cantonese" }: GameCardProps) {
+  const styles = getGameColorStyles(game.color);
+
   return (
     <button
       onClick={() => onPlay(game)}
       className={cn(
-        'flex items-center gap-4 p-4 rounded-2xl w-full text-left',
-        'border-4 border-transparent transition-all duration-200',
-        'hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg',
-        game.color,
-        'hover:border-foreground/20'
+        "group relative w-full text-left transition-all duration-300",
+        "flex items-center gap-5 p-5 rounded-[32px] border-4",
+        "hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md",
+        styles // Apply dynamic color styles
       )}
-      aria-label={`Play ${game.name}`}
+      aria-label={languagePreference === "english" ? `Play ${game.name}` : `開始 ${game.name}`}
     >
-      <div className="w-14 h-14 rounded-2xl bg-card/50 flex items-center justify-center text-3xl shadow-inner">
+      {/* Icon Box */}
+      <div className="w-20 h-20 rounded-[24px] bg-white flex items-center justify-center text-4xl shadow-sm group-hover:scale-110 transition-transform duration-300">
         {game.icon}
       </div>
       
-      <div className="flex-1">
-        <h3 className="font-bold text-foreground text-lg">{game.name}</h3>
-        <p className="text-sm text-foreground/70">{game.description}</p>
+      {/* Text Content */}
+      <div className="flex-1 min-w-0">
+        <h3 className="font-black text-slate-700 text-xl tracking-tight mb-1">
+          {game.name}
+        </h3>
+        <p className="text-sm font-bold opacity-70 leading-tight line-clamp-2">
+          {game.description}
+        </p>
       </div>
 
-      <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center shadow-md">
-        <Play className="w-5 h-5 text-primary fill-primary" />
+      {/* Play Button (Right Arrow) */}
+      <div className="w-12 h-12 rounded-full bg-white/60 flex items-center justify-center shadow-sm group-hover:bg-white group-hover:text-[#38BDF8] transition-colors">
+        <Play className="w-6 h-6 fill-current ml-1" />
       </div>
+
+      {/* Decorative Badge (Optional - shows "New" or "Hot") */}
+      {game.id === 'quiz' && (
+         <div className="absolute -top-3 -right-2 bg-yellow-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm rotate-6">
+            POPULAR
+         </div>
+      )}
     </button>
   );
 }
 
+// --- 2. LIST COMPONENT ---
+
 interface GamesListProps {
   games: Game[];
   onPlayGame: (game: Game) => void;
+  languagePreference?: LanguagePreference;
 }
 
-export function GamesList({ games, onPlayGame }: GamesListProps) {
+export function GamesList({ games, onPlayGame, languagePreference = "cantonese" }: GamesListProps) {
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🎮</span>
-        <h2 className="text-lg font-bold text-foreground">Fun Games</h2>
+    // Wrapped in the white glass card to ensure visibility on dark backgrounds
+    <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-xl mx-auto">
+      
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-blue-400 p-2.5 rounded-2xl shadow-sm -rotate-3">
+          <Gamepad2 className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-slate-700 tracking-tight">
+             {languagePreference === "english" ? "Fun Games" : "好玩遊戲"}
+          </h2>
+          <p className="text-sm font-bold text-slate-400">
+             {languagePreference === "english" ? "Learn while playing!" : "邊玩邊學！"}
+          </p>
+        </div>
       </div>
       
-      <div className="flex flex-col gap-3">
+      {/* Game List Grid */}
+      <div className="flex flex-col gap-4">
         {games.map((game) => (
-          <GameCard key={game.id} game={game} onPlay={onPlayGame} />
+          <GameCard 
+            key={game.id} 
+            game={game} 
+            onPlay={onPlayGame} 
+            languagePreference={languagePreference}
+          />
         ))}
       </div>
-    </section>
+    </div>
   );
 }

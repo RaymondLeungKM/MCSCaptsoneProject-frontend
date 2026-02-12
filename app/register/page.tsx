@@ -6,153 +6,121 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { register as apiRegister } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+// Import your new wrapper
+import CozyPageWrapper from "@/components/CozyPageWrapper"; 
+// Note: You might need to adjust your import path for register API
+import { register } from "@/lib/api"; 
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useAuth();
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    // Validation
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Register user
-      const response = await apiRegister({
-        email,
-        full_name: fullName,
-        password,
-      });
-      await login(response.access_token);
-
-      // Redirect to home
-      router.push("/");
+      // Assuming your register API takes name, email, password
+      await register({ name, email, password });
+      router.push("/login"); // Redirect to login after success
     } catch (err: any) {
-      setError(err.message || "Registration failed. Please try again.");
+      setError(err.message || "註冊失敗，請稍後再試。");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-100 via-white to-coral-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Create Account
-          </CardTitle>
-          <CardDescription className="text-center">
-            Join us to help your child learn and grow
-          </CardDescription>
+    <CozyPageWrapper>
+      <Card className="w-full bg-white/95 backdrop-blur-md rounded-[48px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] border-4 border-white">
+        
+        <CardHeader className="space-y-2 pt-10 pb-2 text-center items-center">
+          <h1 className="text-5xl font-black text-[#FF9800] tracking-widest drop-shadow-sm">
+            加入冒險!
+          </h1>
+          <p className="text-[#90A4AE] font-bold text-lg tracking-wide">
+            建立家長帳戶
+          </p>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-8">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="rounded-2xl border-red-100 bg-red-50 text-red-500 font-bold">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
+            {/* Name Field */}
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label className="text-[#546E7A] font-black text-sm ml-4 uppercase tracking-widest">
+                家長稱呼
+              </Label>
               <Input
-                id="fullName"
-                type="text"
-                placeholder="Your name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                placeholder="例如: 陳大文"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
-                disabled={loading}
+                className="rounded-full bg-[#F1F8E9] border-none h-14 px-6 text-lg text-[#37474F] font-bold placeholder:text-[#B0BEC5] focus-visible:ring-2 focus-visible:ring-[#29B6F6] transition-all"
               />
             </div>
 
+            {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label className="text-[#546E7A] font-black text-sm ml-4 uppercase tracking-widest">
+                電郵
+              </Label>
               <Input
-                id="email"
                 type="email"
-                placeholder="parent@example.com"
+                placeholder="name@family.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loading}
+                className="rounded-full bg-[#F1F8E9] border-none h-14 px-6 text-lg text-[#37474F] font-bold placeholder:text-[#B0BEC5] focus-visible:ring-2 focus-visible:ring-[#29B6F6] transition-all"
               />
             </div>
 
+            {/* Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label className="text-[#546E7A] font-black text-sm ml-4 uppercase tracking-widest">
+                設定密碼
+              </Label>
               <Input
-                id="password"
                 type="password"
-                placeholder="At least 6 characters"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={loading}
-                minLength={6}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Re-enter password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={loading}
+                className="rounded-full bg-[#F1F8E9] border-none h-14 px-6 text-lg text-[#37474F] font-bold placeholder:text-[#B0BEC5] focus-visible:ring-2 focus-visible:ring-[#29B6F6] transition-all"
               />
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Create Account"}
+          <CardFooter className="flex flex-col space-y-4 pb-10 px-8 pt-2">
+            <Button 
+              type="submit" 
+              className="w-full bg-[#29B6F6] hover:bg-[#039BE5] text-white font-black text-2xl pt-2 pb-3 rounded-full h-16 shadow-[0_6px_0_#0288D1] active:shadow-none active:translate-y-[6px] transition-all hover:scale-[1.02]" 
+              disabled={loading}
+            >
+              {loading ? "處理中..." : "建立帳戶"}
             </Button>
 
-            <div className="text-sm text-center text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-primary hover:underline font-semibold"
-              >
-                Sign in
+            <div className="text-center font-bold text-[#90A4AE]">
+              已經有帳戶?{" "}
+              <Link href="/login" className="text-[#29B6F6] hover:underline underline-offset-4">
+                立即登入
               </Link>
             </div>
           </CardFooter>
         </form>
       </Card>
-    </div>
+    </CozyPageWrapper>
   );
 }
