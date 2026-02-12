@@ -4,13 +4,8 @@ import { useState } from "react";
 import { Volume2, ChevronRight, ArrowLeft, Star, Check } from "lucide-react";
 import type { Category, Word, LanguagePreference } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useSpeech } from "@/lib/speech";
-import {
-  getWordText,
-  getCategoryName,
-  getSpeechText,
-} from "@/lib/language-utils";
+import { useWordAudio } from "@/hooks/use-word-audio";
+import { getWordText, getCategoryName } from "@/lib/language-utils";
 
 interface LearnViewProps {
   categories: Category[];
@@ -30,17 +25,16 @@ export function LearnView({
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     initialCategory,
   );
-  const { speak } = useSpeech();
+  const { playWord, isPlaying, isLoading } = useWordAudio();
 
   const categoryWords = selectedCategory
     ? words.filter((w) => w.categoryName === selectedCategory.name)
     : [];
 
-  const playWord = (word: Word) => {
-    const speechText = getSpeechText(word, languagePreference);
-    speak(speechText, {
-      rate: 0.7,
-      pitch: 1.2,
+  const handlePlayWord = (word: Word) => {
+    void playWord(word, {
+      languagePreference,
+      speechRate: 0.75,
     });
   };
 
@@ -121,12 +115,17 @@ export function LearnView({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    playWord(word);
+                    handlePlayWord(word);
                   }}
                   className="mt-2 p-2 rounded-full bg-primary/10 hover:bg-primary/20"
                   aria-label={`Listen to ${wordText}`}
                 >
-                  <Volume2 className="w-4 h-4 text-primary" />
+                  <Volume2
+                    className={cn(
+                      "w-4 h-4 text-primary",
+                      (isPlaying || isLoading) && "animate-pulse",
+                    )}
+                  />
                 </button>
 
                 {/* Exposure indicator */}

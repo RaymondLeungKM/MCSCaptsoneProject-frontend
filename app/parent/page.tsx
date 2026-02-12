@@ -2,15 +2,16 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-  Baby, 
-  LayoutGrid, 
-  TrendingUp, 
-  Target, 
-  WifiOff, 
-  BarChart3, 
-  Settings, 
-  PieChart 
+import {
+  Baby,
+  LayoutGrid,
+  TrendingUp,
+  Target,
+  WifiOff,
+  BarChart3,
+  Settings,
+  PieChart,
+  Loader2,
 } from "lucide-react";
 
 // --- UI IMPORTS ---
@@ -22,17 +23,17 @@ import { OverviewTab } from "@/components/parent/overview-tab";
 import { ProgressTab } from "@/components/parent/progress-tab";
 import { MissionsTab } from "@/components/parent/missions-tab";
 import { OfflineMissionsTab } from "@/components/parent/offline-missions-tab";
-import { InsightsTab } from "@/components/parent/insights-tab"; 
+import { InsightsTab } from "@/components/parent/insights-tab";
 import { SettingsTab } from "@/components/parent/settings-tab";
 import { AnalyticsDashboard } from "@/components/parent/analytics-dashboard";
-
-// --- DATA IMPORTS ---
-import { 
-  childProfile, 
-  dailyMissions, 
-  progressStats, 
-  words 
-} from "@/lib/mock-data";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getChildren, toChildProfile } from "@/lib/api";
+import type {
+  ChildProfile,
+  DailyMission,
+  ProgressStats,
+  Word,
+} from "@/lib/types";
 
 // --- INTERNAL CONTENT COMPONENT ---
 // This component handles the logic that requires useSearchParams
@@ -40,6 +41,24 @@ function ParentDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
+  const [profile, setProfile] = useState<ChildProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const fallbackStats: ProgressStats = {
+    totalWords: 0,
+    masteredWords: 0,
+    weeklyProgress: [0, 0, 0, 0, 0, 0, 0],
+    streakDays: 0,
+    categoryProgress: [],
+    averageExposuresPerWord: 0,
+    activeVocabulary: 0,
+    passiveVocabulary: 0,
+    multiSensoryEngagement: 0,
+  };
+
+  const fallbackWords: Word[] = [];
+  const fallbackMissions: DailyMission[] = [];
 
   // Handle URL parameters for deep linking (e.g., /parent?tab=progress)
   useEffect(() => {
@@ -47,10 +66,70 @@ function ParentDashboardContent() {
     if (tab) setActiveTab(tab);
   }, [searchParams]);
 
+  useEffect(() => {
+    async function loadParentDashboardProfile() {
+      setIsLoadingProfile(true);
+      setProfileError(null);
+
+      try {
+        const children = await getChildren();
+        if (!children.length) {
+          setProfileError("未找到小朋友資料，請先建立小朋友檔案。");
+          setProfile(null);
+          return;
+        }
+
+        setProfile(toChildProfile(children[0]));
+      } catch (error) {
+        if (error instanceof Error) {
+          setProfileError(error.message);
+        } else {
+          setProfileError("載入家長中心失敗，請稍後再試。");
+        }
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    }
+
+    void loadParentDashboardProfile();
+  }, []);
+
+  if (isLoadingProfile) {
+    return (
+      <CozyPageWrapper type="dashboard">
+        <div className="container mx-auto px-4 py-6 max-w-6xl pb-32">
+          <div className="bg-white/90 backdrop-blur-md p-8 rounded-[40px] shadow-sm border border-white/50 flex items-center justify-center gap-3 text-slate-600 font-bold">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            載入家長中心中...
+          </div>
+        </div>
+      </CozyPageWrapper>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <CozyPageWrapper type="dashboard">
+        <div className="container mx-auto px-4 py-6 max-w-6xl pb-32 space-y-4">
+          <Alert variant="destructive">
+            <AlertDescription>
+              {profileError || "目前沒有可用的小朋友資料。"}
+            </AlertDescription>
+          </Alert>
+          <button
+            onClick={() => router.push("/create-child")}
+            className="bg-[#38BDF8] hover:bg-[#0EA5E9] text-white px-8 py-3.5 rounded-full font-black text-lg shadow-lg shadow-blue-200/50 transition-all hover:scale-105 active:scale-95"
+          >
+            建立小朋友檔案
+          </button>
+        </div>
+      </CozyPageWrapper>
+    );
+  }
+
   return (
     <CozyPageWrapper type="dashboard">
       <div className="container mx-auto px-4 py-6 max-w-6xl pb-32">
-        
         {/* --- HEADER --- */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 bg-white/90 backdrop-blur-md p-5 rounded-[40px] shadow-sm border border-white/50">
           <div className="flex items-center gap-5 mb-4 md:mb-0">
@@ -58,67 +137,125 @@ function ParentDashboardContent() {
               <Baby className="w-8 h-8 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tight">家長中心</h1>
+              <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+                家長中心
+              </h1>
               <p className="text-slate-500 font-bold text-sm">
-                跟進 <span className="text-[#38BDF8]">{childProfile.name}</span> 嘅學習進度
+                跟進 <span className="text-[#38BDF8]">{profile.name}</span>{" "}
+                嘅學習進度
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={() => router.push("/child")}
             className="bg-[#38BDF8] hover:bg-[#0EA5E9] text-white px-8 py-3.5 rounded-full font-black text-lg shadow-lg shadow-blue-200/50 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
           >
-            切換至兒童模式 <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            切換至兒童模式{" "}
+            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 
         {/* --- NAVIGATION TABS --- */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-8"
+        >
           <div className="flex justify-center sticky top-4 z-40">
             <TabsList className="bg-white/80 backdrop-blur-xl p-1.5 rounded-full shadow-lg shadow-slate-200/50 border border-white/60 h-auto flex-wrap justify-center gap-2">
-              <TabItem value="overview" icon={<LayoutGrid className="w-4 h-4" />} label="概覽" />
-              <TabItem value="progress" icon={<TrendingUp className="w-4 h-4" />} label="進度" />
-              <TabItem value="charts" icon={<PieChart className="w-4 h-4" />} label="圖表" />
-              <TabItem value="missions" icon={<Target className="w-4 h-4" />} label="任務" />
-              <TabItem value="offline" icon={<WifiOff className="w-4 h-4" />} label="離線" />
-              <TabItem value="insights" icon={<BarChart3 className="w-4 h-4" />} label="分析" />
-              <TabItem value="settings" icon={<Settings className="w-4 h-4" />} label="設定" />
+              <TabItem
+                value="overview"
+                icon={<LayoutGrid className="w-4 h-4" />}
+                label="概覽"
+              />
+              <TabItem
+                value="progress"
+                icon={<TrendingUp className="w-4 h-4" />}
+                label="進度"
+              />
+              <TabItem
+                value="charts"
+                icon={<PieChart className="w-4 h-4" />}
+                label="圖表"
+              />
+              <TabItem
+                value="missions"
+                icon={<Target className="w-4 h-4" />}
+                label="任務"
+              />
+              <TabItem
+                value="offline"
+                icon={<WifiOff className="w-4 h-4" />}
+                label="離線"
+              />
+              <TabItem
+                value="insights"
+                icon={<BarChart3 className="w-4 h-4" />}
+                label="分析"
+              />
+              <TabItem
+                value="settings"
+                icon={<Settings className="w-4 h-4" />}
+                label="設定"
+              />
             </TabsList>
           </div>
 
           {/* --- CONTENT AREA --- */}
-          <div className="min-h-[500px]">
-            
-            <TabsContent value="overview" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <OverviewTab profile={childProfile} stats={progressStats} />
-            </TabsContent>
-            
-            <TabsContent value="progress" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <ProgressTab childId={childProfile.id} stats={progressStats} words={words} />
+          <div className="min-h-125">
+            <TabsContent
+              value="overview"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <OverviewTab profile={profile} stats={fallbackStats} />
             </TabsContent>
 
-            <TabsContent value="charts" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <AnalyticsDashboard childId={childProfile.id} />
+            <TabsContent
+              value="progress"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <ProgressTab
+                childId={profile.id}
+                stats={fallbackStats}
+                words={fallbackWords}
+              />
             </TabsContent>
-            
-            <TabsContent value="missions" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <MissionsTab missions={dailyMissions} />
+
+            <TabsContent
+              value="charts"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <AnalyticsDashboard childId={profile.id} />
             </TabsContent>
-            
-            <TabsContent value="offline" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+
+            <TabsContent
+              value="missions"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <MissionsTab missions={fallbackMissions} />
+            </TabsContent>
+
+            <TabsContent
+              value="offline"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
               <OfflineMissionsTab />
             </TabsContent>
-            
-            <TabsContent value="insights" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <InsightsTab childId={childProfile.id} />
-            </TabsContent>
-            
-            <TabsContent value="settings" className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-              <SettingsTab profile={childProfile} />
+
+            <TabsContent
+              value="insights"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <InsightsTab childId={profile.id} />
             </TabsContent>
 
+            <TabsContent
+              value="settings"
+              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
+            >
+              <SettingsTab profile={profile} />
+            </TabsContent>
           </div>
         </Tabs>
       </div>
@@ -130,14 +267,18 @@ function ParentDashboardContent() {
 // Wraps the content in Suspense to fix the Next.js build error
 export default function ParentDashboard() {
   return (
-    <Suspense fallback={
-      <div className="w-full h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-bold animate-pulse">正在載入家長中心...</p>
+    <Suspense
+      fallback={
+        <div className="w-full h-screen flex items-center justify-center bg-slate-50">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+            <p className="text-slate-400 font-bold animate-pulse">
+              正在載入家長中心...
+            </p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ParentDashboardContent />
     </Suspense>
   );
@@ -145,7 +286,15 @@ export default function ParentDashboard() {
 
 // --- HELPER COMPONENTS ---
 
-function TabItem({ value, icon, label }: { value: string; icon: React.ReactNode; label: string }) {
+function TabItem({
+  value,
+  icon,
+  label,
+}: {
+  value: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <TabsTrigger
       value={value}
@@ -159,7 +308,16 @@ function TabItem({ value, icon, label }: { value: string; icon: React.ReactNode;
 
 function ArrowRight({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
     </svg>

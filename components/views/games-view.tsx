@@ -2,25 +2,31 @@
 
 import { useState } from "react";
 import { ArrowLeft, Star, Check, X, Volume2 } from "lucide-react";
-import type { Game, Word } from "@/lib/types";
+import type { Game, Word, LanguagePreference } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { GameCard } from "@/components/child/game-card";
-import { useSpeech } from "@/lib/speech";
+import { getSpeechText } from "@/lib/language-utils";
+import { useWordAudio } from "@/hooks/use-word-audio";
 
 interface GamesViewProps {
   games: Game[];
   words: Word[];
+  languagePreference?: LanguagePreference;
 }
 
-export function GamesView({ games, words }: GamesViewProps) {
+export function GamesView({
+  games,
+  words,
+  languagePreference = "cantonese",
+}: GamesViewProps) {
   const [activeGame, setActiveGame] = useState<Game | null>(null);
   const [gameState, setGameState] = useState<"playing" | "correct" | "wrong">(
     "playing",
   );
   const [score, setScore] = useState(0);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const { speak } = useSpeech();
+  const { playWord, isPlaying, isLoading } = useWordAudio();
 
   const gameWords = words.slice(0, 4);
   const currentWord = gameWords[currentWordIndex];
@@ -51,10 +57,10 @@ export function GamesView({ games, words }: GamesViewProps) {
     }, 1500);
   };
 
-  const playWord = (word: string) => {
-    speak(word, {
-      rate: 0.7,
-      pitch: 1.2,
+  const handlePlayWord = (word: Word) => {
+    void playWord(word, {
+      languagePreference,
+      speechRate: 0.75,
     });
   };
 
@@ -131,11 +137,16 @@ export function GamesView({ games, words }: GamesViewProps) {
                   {currentWord.word}
                 </h2>
                 <button
-                  onClick={() => playWord(currentWord.word)}
+                  onClick={() => handlePlayWord(currentWord)}
                   className="p-2 rounded-full bg-primary/10 hover:bg-primary/20"
                   aria-label="Listen to word"
                 >
-                  <Volume2 className="w-5 h-5 text-primary" />
+                  <Volume2
+                    className={cn(
+                      "w-5 h-5 text-primary",
+                      (isPlaying || isLoading) && "animate-pulse",
+                    )}
+                  />
                 </button>
               </div>
             </>
@@ -196,18 +207,18 @@ export function GamesView({ games, words }: GamesViewProps) {
             {currentWord.category === "Nature" && "🌳"}
           </span>
           <h2 className="text-3xl font-bold text-foreground mb-2">
-            {currentWord.word}
+            {getSpeechText(currentWord, languagePreference)}
           </h2>
           <p className="text-muted-foreground font-mono">
             /{currentWord.pronunciation}/
           </p>
 
           <button
-            onClick={() => playWord(currentWord.word)}
+            onClick={() => handlePlayWord(currentWord)}
             className="mt-6 px-6 py-3 rounded-2xl bg-sky text-foreground font-bold flex items-center gap-2 mx-auto"
           >
             <Volume2 className="w-5 h-5" />
-            Hear It
+            {isLoading ? "Preparing..." : "Hear It"}
           </button>
         </div>
 

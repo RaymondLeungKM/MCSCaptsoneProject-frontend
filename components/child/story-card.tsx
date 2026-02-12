@@ -1,7 +1,7 @@
 "use client";
 
-import { Clock, CheckCircle, Play, BookOpen, Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Clock, CheckCircle, Play, BookOpen, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // --- TYPES ---
 // Defining locally to ensure it works immediately
@@ -17,6 +17,9 @@ export interface Story {
 interface StoryCardProps {
   story: Story;
   onRead: (story: Story) => void;
+  onPlayAudio?: (story: Story) => void;
+  isAudioPlaying?: boolean;
+  isAudioLoading?: boolean;
 }
 
 // --- HELPER: Pastel Color Mapping ---
@@ -31,57 +34,63 @@ const getCoverStyles = (color: string = "blue", completed: boolean) => {
   };
 
   const baseColor = map[color] || map.blue;
-  
+
   if (completed) {
     return "bg-emerald-100 text-emerald-600 border-emerald-400 opacity-80";
   }
-  
+
   return baseColor;
 };
 
-export function StoryCard({ story, onRead }: StoryCardProps) {
+export function StoryCard({
+  story,
+  onRead,
+  onPlayAudio,
+  isAudioPlaying = false,
+  isAudioLoading = false,
+}: StoryCardProps) {
   // Emoji Fallbacks if not in DB
   const storyEmojis: Record<string, string> = {
-    'The Hungry Caterpillar': '🐛',
-    'Colors All Around': '🌈',
-    'Animal Friends': '🦊',
-    'Space Adventure': '🚀',
+    "The Hungry Caterpillar": "🐛",
+    "Colors All Around": "🌈",
+    "Animal Friends": "🦊",
+    "Space Adventure": "🚀",
   };
 
-  const displayEmoji = story.emoji || storyEmojis[story.title] || '📖';
-  const styles = getCoverStyles(story.color, story.completed);
+  const displayEmoji = story.emoji || storyEmojis[story.title] || "📖";
+  const styles = getCoverStyles(story.color || "blue", story.completed);
 
   return (
     <button
       onClick={() => onRead(story)}
       className={cn(
-        "group relative flex flex-col rounded-[32px] overflow-hidden min-w-[200px] w-[200px] h-[280px]",
+        "group relative flex flex-col rounded-4xl overflow-hidden min-w-50 w-50 h-70",
         "border-4 transition-all duration-300",
         "hover:scale-105 active:scale-95 shadow-sm hover:shadow-xl",
-        story.completed ? "border-emerald-400" : "border-white hover:border-purple-200",
-        "bg-white"
+        story.completed
+          ? "border-emerald-400"
+          : "border-white hover:border-purple-200",
+        "bg-white",
       )}
     >
-      {/* 1. Cover Image Area */}
-      <div className={cn(
-        "flex-1 w-full flex flex-col items-center justify-center relative p-4",
-        styles
-      )}>
-        {/* Completion Badge */}
+      <div
+        className={cn(
+          "flex-1 w-full flex flex-col items-center justify-center relative p-4",
+          styles,
+        )}
+      >
         {story.completed && (
           <div className="absolute top-3 right-3 bg-white text-emerald-500 rounded-full p-1 shadow-sm animate-in zoom-in">
-             <CheckCircle className="w-5 h-5 fill-emerald-100" />
+            <CheckCircle className="w-5 h-5 fill-emerald-100" />
           </div>
         )}
 
-        {/* Main Icon */}
         <span className="text-7xl drop-shadow-sm filter transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
           {displayEmoji}
         </span>
       </div>
 
-      {/* 2. Info Area */}
-      <div className="p-5 bg-white w-full text-left flex flex-col justify-between h-[100px]">
+      <div className="p-5 bg-white w-full text-left flex flex-col justify-between h-25">
         <div>
           <h3 className="font-black text-slate-700 text-lg leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
             {story.title}
@@ -93,9 +102,26 @@ export function StoryCard({ story, onRead }: StoryCardProps) {
             <Clock className="w-3.5 h-3.5" />
             {story.duration}
           </span>
-          
-          {/* Play Icon */}
-          {!story.completed && (
+
+          {onPlayAudio && (
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                onPlayAudio(story);
+              }}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+              aria-label={`Play audio for ${story.title}`}
+            >
+              <Play
+                className={cn(
+                  "w-3.5 h-3.5 fill-current ml-0.5 text-slate-500",
+                  (isAudioPlaying || isAudioLoading) && "animate-pulse",
+                )}
+              />
+            </button>
+          )}
+
+          {!story.completed && !onPlayAudio && (
             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#38BDF8] group-hover:text-white transition-colors">
               <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
             </div>
@@ -117,7 +143,6 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
   return (
     // Wrapped in Glass Card for visibility on night background
     <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-4xl mx-auto">
-      
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="bg-purple-400 p-2.5 rounded-2xl shadow-sm -rotate-3">
@@ -125,14 +150,12 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
         </div>
         <div>
           <h2 className="text-2xl font-black text-slate-700 tracking-tight">
-             故事時間
+            故事時間
           </h2>
-          <p className="text-sm font-bold text-slate-400">
-             重溫你最愛的故事！
-          </p>
+          <p className="text-sm font-bold text-slate-400">重溫你最愛的故事！</p>
         </div>
       </div>
-      
+
       {/* Horizontal Scroll List */}
       <div className="flex gap-4 overflow-x-auto pb-6 pt-2 px-2 -mx-4 md:mx-0 scrollbar-hide snap-x">
         {stories.map((story) => (
@@ -140,15 +163,19 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
             <StoryCard story={story} onRead={onReadStory} />
           </div>
         ))}
-        
+
         {/* "More" Placeholder Card (Optional) */}
-        <div className="min-w-[100px] flex items-center justify-center opacity-50">
-           <div className="text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Star className="w-6 h-6 text-slate-400" />
-              </div>
-              <p className="text-xs font-bold text-slate-400">更多故事<br/>即將推出</p>
-           </div>
+        <div className="min-w-25 flex items-center justify-center opacity-50">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <Star className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-xs font-bold text-slate-400">
+              更多故事
+              <br />
+              即將推出
+            </p>
+          </div>
         </div>
       </div>
     </section>

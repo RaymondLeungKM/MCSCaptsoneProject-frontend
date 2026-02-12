@@ -9,3 +9,5 @@ export * from "./children";
 export * from "./vocabulary";
 export * from "./adaptive";
 export * from "./progress";
+export * from "./bedtime-stories";
+export * from "./audio";

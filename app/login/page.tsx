@@ -2,24 +2,48 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { login, APIError } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    setTimeout(() => {
-      router.push("/parent"); 
-    }, 800);
+
+    try {
+      await login({ email, password });
+      // Login successful - redirect to parent dashboard
+      router.push("/parent");
+    } catch (err) {
+      if (err instanceof APIError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("登入失敗。請檢查電郵和密碼。");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,10 +57,22 @@ export default function LoginPage() {
             跟進小朋友嘅學習足跡
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-8 space-y-6">
+          {error && (
+            <Alert
+              variant="destructive"
+              className="rounded-2xl border-red-100 bg-red-50 text-red-600 font-bold"
+            >
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-600 font-extrabold ml-1 text-xs tracking-wide">
+              <Label
+                htmlFor="email"
+                className="text-slate-600 font-extrabold ml-1 text-xs tracking-wide"
+              >
                 家長電郵
               </Label>
               <Input
@@ -45,12 +81,16 @@ export default function LoginPage() {
                 placeholder="name@family.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-14 rounded-2xl border-none bg-[#F0FDF4] text-slate-600 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-green-300 transition-all font-medium text-lg px-4"
+                disabled={isLoading}
+                className="h-14 rounded-2xl border-none bg-[#F0FDF4] text-slate-600 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-green-300 transition-all font-medium text-lg px-4 disabled:opacity-50"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-600 font-extrabold ml-1 text-xs tracking-wide">
+              <Label
+                htmlFor="password"
+                className="text-slate-600 font-extrabold ml-1 text-xs tracking-wide"
+              >
                 密碼
               </Label>
               <Input
@@ -59,14 +99,15 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-14 rounded-2xl border-none bg-[#F0FDF4] text-slate-600 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-green-300 transition-all font-medium text-lg px-4"
+                disabled={isLoading}
+                className="h-14 rounded-2xl border-none bg-[#F0FDF4] text-slate-600 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-green-300 transition-all font-medium text-lg px-4 disabled:opacity-50"
                 required
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-14 rounded-full text-xl font-black bg-[#38BDF8] hover:bg-[#0EA5E9] shadow-lg shadow-blue-200/50 transition-all mt-4 text-white active:scale-95"
+            <Button
+              type="submit"
+              className="w-full h-14 rounded-full text-xl font-black bg-[#38BDF8] hover:bg-[#0EA5E9] shadow-lg shadow-blue-200/50 transition-all mt-4 text-white active:scale-95 disabled:opacity-60"
               disabled={isLoading}
             >
               {isLoading ? "登入中..." : "查看進度"}
@@ -74,9 +115,12 @@ export default function LoginPage() {
           </form>
 
           <div className="text-center">
-            <button className="text-slate-400 text-sm font-bold hover:text-blue-500 transition-colors">
-              新朋友? <span className="text-[#38BDF8]">建立新帳戶</span>
-            </button>
+            <p className="text-slate-400 text-sm font-bold">
+              新朋友?{" "}
+              <Link href="/register" className="text-[#38BDF8] hover:underline">
+                建立新帳戶
+              </Link>
+            </p>
           </div>
         </CardContent>
       </Card>

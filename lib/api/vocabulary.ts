@@ -47,6 +47,23 @@ export interface WordProgressResponse {
   kinesthetic_exposures: number;
 }
 
+export interface GeneratedSentenceResponse {
+  id?: number;
+  sentence: string;
+  sentence_english?: string;
+  jyutping?: string;
+  context?: string;
+  difficulty?: string;
+  created_at?: string;
+}
+
+export interface SentenceGenerationResponse {
+  word: string;
+  word_cantonese: string;
+  sentences: GeneratedSentenceResponse[];
+  total_generated: number;
+}
+
 export interface CategoryResponse {
   id: string;
   name: string;
@@ -101,6 +118,45 @@ export async function getWordsWithProgress(
  */
 export async function getWord(wordId: string): Promise<WordResponse> {
   return apiRequest<WordResponse>(`/vocabulary/${wordId}`);
+}
+
+/**
+ * Get saved AI-generated sentences for a word
+ */
+export async function getWordSentences(
+  wordId: string,
+): Promise<GeneratedSentenceResponse[]> {
+  return apiRequest<GeneratedSentenceResponse[]>(
+    `/vocabulary/${wordId}/sentences`,
+  );
+}
+
+/**
+ * Generate AI sentences for a word and save them on backend
+ */
+export async function generateWordSentences(
+  wordId: string,
+  params?: { num_sentences?: number; contexts?: string[] },
+): Promise<SentenceGenerationResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.num_sentences) {
+    queryParams.append("num_sentences", params.num_sentences.toString());
+  }
+
+  if (params?.contexts?.length) {
+    params.contexts.forEach((context) =>
+      queryParams.append("contexts", context),
+    );
+  }
+
+  const query = queryParams.toString();
+  return apiRequest<SentenceGenerationResponse>(
+    `/vocabulary/${wordId}/generate-sentences${query ? `?${query}` : ""}`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 /**
