@@ -31,6 +31,7 @@ export interface DailyWordSummary {
   word_cantonese?: string;
   jyutping?: string;
   definition_cantonese?: string;
+  image_url?: string;
   exposure_count: number;
   story_priority: number;
   used_actively: boolean;
@@ -64,7 +65,7 @@ export function DailyWordsViewer({
     word: summary.word,
     word_cantonese: summary.word_cantonese,
     jyutping: summary.jyutping,
-    image: "",
+    image: summary.image_url || "",
     category: "",
     pronunciation: summary.jyutping || "",
     definition: summary.definition_cantonese || "",
@@ -104,6 +105,7 @@ export function DailyWordsViewer({
               jyutping: item.jyutping,
               definition_cantonese:
                 item.definition_cantonese || item.definition,
+              image_url: item.image_url,
               exposure_count: exposureCount,
               used_actively: exposureCount >= 6 || successRate >= 0.7,
               story_priority: Math.max(
@@ -125,6 +127,7 @@ export function DailyWordsViewer({
           word_cantonese: item.word_cantonese,
           jyutping: item.jyutping,
           definition_cantonese: item.definition_cantonese || item.definition,
+          image_url: item.image_url,
           exposure_count: item.total_exposures || 0,
           used_actively: (item.success_rate || 0) >= 0.7,
           story_priority: Math.max(
