@@ -11,3 +11,6 @@ export * from "./adaptive";
 export * from "./progress";
 export * from "./bedtime-stories";
 export * from "./audio";
+export * from "./missions";
+export * from "./games";
+export * from "./parent-dashboard";

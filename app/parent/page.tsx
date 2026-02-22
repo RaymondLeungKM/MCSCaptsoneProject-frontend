@@ -240,7 +240,7 @@ function ParentDashboardContent() {
               value="offline"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              <OfflineMissionsTab />
+              <OfflineMissionsTab childId={profile.id} />
             </TabsContent>
 
             <TabsContent

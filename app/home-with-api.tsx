@@ -159,7 +159,7 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {selectedChild && (
           <>
-            <ProfileHeader profile={selectedChild} />
+            <ProfileHeader childId={selectedChild.id} />
 
             <div className="mt-6 space-y-6">
               {wordOfDay && (

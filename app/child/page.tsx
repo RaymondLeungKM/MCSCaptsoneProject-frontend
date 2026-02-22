@@ -27,6 +27,7 @@ import {
   toChildProfile,
 } from "@/lib/api";
 import { getChildStories, getStory } from "@/lib/api/bedtime-stories";
+import { startLearningSession, endLearningSession } from "@/lib/api/progress";
 import type { Category, ChildProfile, Game, GeneratedStory } from "@/lib/types";
 import type { Story as StoryCardStory } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
@@ -125,8 +126,10 @@ export default function ChildDashboard() {
     null,
   );
   const storyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!authLoading) {
@@ -153,6 +156,17 @@ export default function ChildDashboard() {
 
       const selectedChild = toChildProfile(children[0]);
       setProfile(selectedChild);
+
+      // Start learning session (fire-and-forget, don't block UI)
+      startLearningSession({
+        child_id: selectedChild.id,
+        start_time: new Date().toISOString(),
+      })
+        .then((session) => {
+          sessionIdRef.current = session.id;
+          console.log("[Session] Started:", session.id);
+        })
+        .catch((e) => console.warn("[Session] Could not start:", e));
 
       const categoryResponses = await getCategories();
       setCategories(
@@ -254,6 +268,18 @@ export default function ChildDashboard() {
   useEffect(() => {
     return () => {
       stopStoryAudio();
+      // End learning session on unmount
+      if (sessionIdRef.current) {
+        const sessionId = sessionIdRef.current;
+        sessionIdRef.current = null;
+        endLearningSession(sessionId, {
+          end_time: new Date().toISOString(),
+          words_encountered: [],
+          activities_completed: [],
+          engagement_level: "medium",
+          interactions_count: 0,
+        }).catch((e) => console.warn("[Session] Could not end:", e));
+      }
     };
   }, []);
 
@@ -325,7 +351,7 @@ export default function ChildDashboard() {
       <div className="w-full max-w-4xl min-h-screen pb-32 relative z-10 px-4">
         {/* --- HEADER --- */}
         <header className="flex flex-col md:flex-row items-center justify-between gap-4 py-6">
-          <ProfileHeader profile={profile} />
+          <ProfileHeader childId={profile.id} refreshKey={profileRefreshKey} />
 
           <Link
             href="/parent"
@@ -345,13 +371,19 @@ export default function ChildDashboard() {
                 childId={profile.id}
                 childName={profile.name}
                 languagePreference={profile.languagePreference || "bilingual"}
+                onWordLearned={() => setProfileRefreshKey((k) => k + 1)}
               />
             </section>
           )}
 
           {activeTab === "learn" && (
             <section className="px-2">
-              <CategoryGrid categories={categories} />
+              <CategoryGrid
+                categories={categories}
+                languagePreference={profile.languagePreference || "bilingual"}
+                childId={profile.id}
+                onWordLearned={() => setProfileRefreshKey((k) => k + 1)}
+              />
             </section>
           )}
 

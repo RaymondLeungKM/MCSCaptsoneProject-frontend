@@ -18,9 +18,14 @@ import {
   LineChart,
   Lightbulb,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  getDashboardSummary,
+  getAnalyticsCharts,
+} from "@/lib/api/parent-dashboard";
+import { getAuthToken } from "@/lib/api/client";
 
 // --- TYPES (Locally defined to ensure standalone functionality) ---
 interface DashboardSummary {
@@ -76,7 +81,7 @@ const generateMockData = () => {
   const today = new Date();
   const dates = [];
   const words = [];
-  
+
   // Generate 90 days of data
   for (let i = 89; i >= 0; i--) {
     const d = new Date();
@@ -97,34 +102,64 @@ const generateMockData = () => {
       weekly_sessions: 6,
       weekly_xp_earned: 320,
       category_progress: [
-        { category_id: "1", category_name: "動物", words_learned: 24, total_words: 24, progress_percentage: 100 },
-        { category_id: "2", category_name: "食物", words_learned: 12, total_words: 18, progress_percentage: 66 },
-        { category_id: "3", category_name: "顏色", words_learned: 10, total_words: 12, progress_percentage: 83 },
-        { category_id: "4", category_name: "大自然", words_learned: 8, total_words: 20, progress_percentage: 40 },
-        { category_id: "5", category_name: "家庭", words_learned: 5, total_words: 10, progress_percentage: 50 },
+        {
+          category_id: "1",
+          category_name: "動物",
+          words_learned: 24,
+          total_words: 24,
+          progress_percentage: 100,
+        },
+        {
+          category_id: "2",
+          category_name: "食物",
+          words_learned: 12,
+          total_words: 18,
+          progress_percentage: 66,
+        },
+        {
+          category_id: "3",
+          category_name: "顏色",
+          words_learned: 10,
+          total_words: 12,
+          progress_percentage: 83,
+        },
+        {
+          category_id: "4",
+          category_name: "大自然",
+          words_learned: 8,
+          total_words: 20,
+          progress_percentage: 40,
+        },
+        {
+          category_id: "5",
+          category_name: "家庭",
+          words_learned: 5,
+          total_words: 10,
+          progress_percentage: 50,
+        },
       ],
       recent_insights: [
-        { 
-          id: "1", 
-          title: "學習里程碑！", 
-          description: "Emma 已經連續 7 天完成學習，專注力顯著提升。", 
-          type: "milestone", 
-          priority: "high" 
+        {
+          id: "1",
+          title: "學習里程碑！",
+          description: "Emma 已經連續 7 天完成學習，專注力顯著提升。",
+          type: "milestone",
+          priority: "high",
         },
-        { 
-          id: "2", 
-          title: "視覺學習優勢", 
-          description: "數據顯示 Emma 對圖片配對遊戲的反應最快，正確率最高。", 
-          type: "pattern", 
-          priority: "medium" 
+        {
+          id: "2",
+          title: "視覺學習優勢",
+          description: "數據顯示 Emma 對圖片配對遊戲的反應最快，正確率最高。",
+          type: "pattern",
+          priority: "medium",
         },
-        { 
-          id: "3", 
-          title: "難點提示", 
-          description: "「大自然」類別的詞彙記憶較弱，建議多帶去公園實地觀察。", 
-          type: "struggle", 
-          priority: "low" 
-        }
+        {
+          id: "3",
+          title: "難點提示",
+          description: "「大自然」類別的詞彙記憶較弱，建議多帶去公園實地觀察。",
+          type: "struggle",
+          priority: "low",
+        },
       ],
       latest_report: {
         id: "r1",
@@ -138,20 +173,36 @@ const generateMockData = () => {
         recommendations: [
           "嘗試增加晚間共讀時間",
           "複習「顏色」相關詞彙",
-          "進行更多戶外實物對照練習"
-        ]
-      }
+          "進行更多戶外實物對照練習",
+        ],
+      },
     } as DashboardSummary,
     charts: {
       time_series: {
         dates: dates,
-        words_learned: words
-      }
-    } as AnalyticsCharts
+        words_learned: words,
+      },
+    } as AnalyticsCharts,
   };
 };
 
 const MOCK_DB = generateMockData();
+
+// Map global insight_type to local type labels
+function mapInsightType(
+  insightType: string,
+): "milestone" | "pattern" | "struggle" | "achievement" {
+  const map: Record<
+    string,
+    "milestone" | "pattern" | "struggle" | "achievement"
+  > = {
+    strength: "achievement",
+    weakness: "struggle",
+    recommendation: "pattern",
+    milestone: "milestone",
+  };
+  return map[insightType] ?? "pattern";
+}
 
 interface AnalyticsDashboardProps {
   childId: string;
@@ -181,25 +232,99 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call delay
-      setTimeout(() => {
+      const token = getAuthToken();
+      const isMockChild = !childId || childId.length < 10;
+
+      if (!token || isMockChild) {
         setSummary(MOCK_DB.summary);
         setCharts(MOCK_DB.charts);
-        setLoading(false);
-      }, 800);
+        return;
+      }
+
+      const [apiSummary, apiCharts] = await Promise.all([
+        getDashboardSummary(childId),
+        getAnalyticsCharts(childId, period),
+      ]);
+
+      setSummary({
+        total_words_learned: apiSummary.total_words_learned,
+        current_streak: apiSummary.current_streak,
+        level: apiSummary.level,
+        xp: apiSummary.xp,
+        weekly_words_learned: apiSummary.weekly_words_learned,
+        weekly_learning_time: apiSummary.weekly_learning_time,
+        weekly_sessions: apiSummary.weekly_sessions,
+        weekly_xp_earned: apiSummary.weekly_xp_earned,
+        category_progress: (apiSummary.category_progress ?? []).map((cp) => ({
+          category_id: cp.category_id,
+          category_name: cp.category_name,
+          words_learned: cp.words_learned,
+          total_words: cp.total_words,
+          progress_percentage: cp.progress_percentage,
+        })),
+        recent_insights: (apiSummary.recent_insights ?? []).map((ins) => ({
+          id: ins.id,
+          title: ins.title,
+          description: ins.description,
+          type: mapInsightType(ins.insight_type),
+          priority: ins.priority,
+        })),
+        latest_report: apiSummary.latest_report
+          ? {
+              id: apiSummary.latest_report.id,
+              week_start: apiSummary.latest_report.week_start_date,
+              week_end: apiSummary.latest_report.week_end_date,
+              total_words_learned: apiSummary.latest_report.total_words_learned,
+              total_learning_time: apiSummary.latest_report.total_learning_time,
+              days_active: apiSummary.latest_report.days_active,
+              growth_percentage: apiSummary.latest_report.growth_percentage,
+              strengths: apiSummary.latest_report.strengths,
+              recommendations: apiSummary.latest_report.recommendations,
+            }
+          : MOCK_DB.summary.latest_report,
+      });
+
+      setCharts({
+        time_series: {
+          dates: apiCharts.time_series.dates,
+          words_learned: apiCharts.time_series.words_learned,
+        },
+      });
+
+      console.log("[Analytics] Loaded real data for child:", childId);
     } catch (error: any) {
-      console.error("Failed to load analytics:", error);
-      setError("無法載入數據");
+      console.error("Failed to load analytics, falling back to mock:", error);
+      setSummary(MOCK_DB.summary);
+      setCharts(MOCK_DB.charts);
+    } finally {
       setLoading(false);
     }
   };
 
   const loadCharts = async () => {
     setChartsLoading(true);
-    // Simulate chart data refresh delay
-    setTimeout(() => {
+    try {
+      const token = getAuthToken();
+      const isMockChild = !childId || childId.length < 10;
+
+      if (!token || isMockChild) {
+        setChartsLoading(false);
+        return;
+      }
+
+      const apiCharts = await getAnalyticsCharts(childId, period);
+      setCharts({
+        time_series: {
+          dates: apiCharts.time_series.dates,
+          words_learned: apiCharts.time_series.words_learned,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to load charts:", error);
+      setCharts(MOCK_DB.charts);
+    } finally {
       setChartsLoading(false);
-    }, 400);
+    }
   };
 
   // --- CORE LOGIC: DATA AGGREGATION (Restored) ---
@@ -207,28 +332,33 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     if (!charts) return { labels: [], values: [] };
 
     const { dates, words_learned } = charts.time_series;
-    const dataPoints = dates.map((d, i) => ({ date: new Date(d), value: words_learned[i] }));
+    const dataPoints = dates.map((d, i) => ({
+      date: new Date(d),
+      value: words_learned[i],
+    }));
 
     if (period === "week") {
       // Show last 7 days
       const last7 = dataPoints.slice(-7);
       return {
-        labels: last7.map(d => d.date.toLocaleDateString("zh-HK", { weekday: "short" })), // e.g. 週一
-        values: last7.map(d => d.value),
+        labels: last7.map((d) =>
+          d.date.toLocaleDateString("zh-HK", { weekday: "short" }),
+        ), // e.g. 週一
+        values: last7.map((d) => d.value),
       };
     } else if (period === "month") {
       // Aggregate into weeks for 30-day view
       const last30 = dataPoints.slice(-30);
       const weeklyMap: Record<string, number> = {};
-      
-      last30.forEach(p => {
+
+      last30.forEach((p) => {
         // Calculate the "Week of" date
         const d = new Date(p.date);
         const day = d.getDay();
         const diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust to Monday
         const monday = new Date(d.setDate(diff));
         const key = `${monday.getMonth() + 1}月${monday.getDate()}日`; // Format: 5月12日
-        
+
         weeklyMap[key] = (weeklyMap[key] || 0) + p.value;
       });
 
@@ -239,11 +369,14 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     } else {
       // Aggregate into months for all-time view
       const monthlyMap: Record<string, number> = {};
-      dataPoints.forEach(p => {
-        const key = p.date.toLocaleDateString("zh-HK", { year: 'numeric', month: 'short' }); // e.g. 2023年 10月
+      dataPoints.forEach((p) => {
+        const key = p.date.toLocaleDateString("zh-HK", {
+          year: "numeric",
+          month: "short",
+        }); // e.g. 2023年 10月
         monthlyMap[key] = (monthlyMap[key] || 0) + p.value;
       });
-      
+
       return {
         labels: Object.keys(monthlyMap),
         values: Object.values(monthlyMap),
@@ -255,7 +388,9 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-[28px]" />)}
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-[28px]" />
+          ))}
         </div>
         <Skeleton className="h-64 w-full rounded-[32px]" />
         <Skeleton className="h-64 w-full rounded-[32px]" />
@@ -266,8 +401,12 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   if (error) {
     return (
       <div className="rounded-[24px] border border-red-200 bg-red-50 p-6 text-center">
-        <h3 className="mb-2 text-lg font-semibold text-red-900">無法載入分析數據</h3>
-        <Button onClick={loadData} variant="destructive">重試</Button>
+        <h3 className="mb-2 text-lg font-semibold text-red-900">
+          無法載入分析數據
+        </h3>
+        <Button onClick={loadData} variant="destructive">
+          重試
+        </Button>
       </div>
     );
   }
@@ -276,7 +415,6 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
-      
       {/* Header */}
       <div className="text-center space-y-3 mb-6">
         <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl mb-2 shadow-sm">
@@ -322,17 +460,21 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
       <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/80">
         <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
           <div>
-             <h4 className="text-xl font-bold text-slate-700 flex items-center gap-2">
-               <BarChart3 className="w-5 h-5 text-slate-400" />
-               學習進度趨勢
-             </h4>
-             {!chartsLoading && (
-               <p className="text-sm text-slate-500 mt-1">
-                 這段期間共學習了 <span className="font-bold text-blue-600">{getAggregatedData().values.reduce((a, b) => a + b, 0)}</span> 個新詞彙
-               </p>
-             )}
+            <h4 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-slate-400" />
+              學習進度趨勢
+            </h4>
+            {!chartsLoading && (
+              <p className="text-sm text-slate-500 mt-1">
+                這段期間共學習了{" "}
+                <span className="font-bold text-blue-600">
+                  {getAggregatedData().values.reduce((a, b) => a + b, 0)}
+                </span>{" "}
+                個新詞彙
+              </p>
+            )}
           </div>
-          
+
           <div className="flex bg-slate-100 p-1 rounded-full shrink-0">
             {(["week", "month", "all"] as const).map((p) => (
               <button
@@ -340,9 +482,9 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
                 onClick={() => setPeriod(p)}
                 className={cn(
                   "px-4 py-2 rounded-full text-xs font-bold transition-all",
-                  period === p 
-                    ? "bg-white text-blue-600 shadow-sm" 
-                    : "text-slate-500 hover:text-slate-700"
+                  period === p
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700",
                 )}
               >
                 {p === "week" ? "最近7天" : p === "month" ? "最近30天" : "全部"}
@@ -380,11 +522,13 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
                       <div className="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden relative">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-blue-400 to-indigo-400 transition-all duration-1000 ease-out group-hover:from-blue-500 group-hover:to-indigo-500 relative"
-                          style={{ width: `${Math.max((values[i] / maxValue) * 100, 2)}%` }}
+                          style={{
+                            width: `${Math.max((values[i] / maxValue) * 100, 2)}%`,
+                          }}
                         />
                       </div>
                       <span className="text-xs font-bold text-slate-600 w-6 text-left">
-                         {values[i]}
+                        {values[i]}
                       </span>
                     </div>
                   ))
@@ -397,7 +541,6 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
       {/* 3. Stats Grid (Weekly & Category) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* Weekly Stats */}
         <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60">
           <h3 className="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">
@@ -405,25 +548,47 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
             本週概況
           </h3>
           <div className="space-y-4">
-            <WeeklyStatRow label="新學詞彙" value={summary.weekly_words_learned} icon={<BookOpen className="h-4 w-4" />} color="text-blue-500 bg-blue-50" />
-            <WeeklyStatRow label="學習時長" value={`${summary.weekly_learning_time} 分鐘`} icon={<Clock className="h-4 w-4" />} color="text-green-500 bg-green-50" />
-            <WeeklyStatRow label="學習次數" value={`${summary.weekly_sessions} 次`} icon={<Target className="h-4 w-4" />} color="text-purple-500 bg-purple-50" />
-            <WeeklyStatRow label="獲得經驗" value={summary.weekly_xp_earned} icon={<Star className="h-4 w-4" />} color="text-yellow-500 bg-yellow-50" />
+            <WeeklyStatRow
+              label="新學詞彙"
+              value={summary.weekly_words_learned}
+              icon={<BookOpen className="h-4 w-4" />}
+              color="text-blue-500 bg-blue-50"
+            />
+            <WeeklyStatRow
+              label="學習時長"
+              value={`${summary.weekly_learning_time} 分鐘`}
+              icon={<Clock className="h-4 w-4" />}
+              color="text-green-500 bg-green-50"
+            />
+            <WeeklyStatRow
+              label="學習次數"
+              value={`${summary.weekly_sessions} 次`}
+              icon={<Target className="h-4 w-4" />}
+              color="text-purple-500 bg-purple-50"
+            />
+            <WeeklyStatRow
+              label="獲得經驗"
+              value={summary.weekly_xp_earned}
+              icon={<Star className="h-4 w-4" />}
+              color="text-yellow-500 bg-yellow-50"
+            />
           </div>
         </Card>
 
         {/* Category Progress */}
         <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60">
           <h4 className="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">
-             <Target className="w-5 h-5 text-teal-500" />
-             各主題掌握度
+            <Target className="w-5 h-5 text-teal-500" />
+            各主題掌握度
           </h4>
           <div className="space-y-5">
             {summary.category_progress.map((cat) => (
               <div key={cat.category_id} className="space-y-2">
                 <div className="flex justify-between text-sm font-bold">
                   <span className="text-slate-700">{cat.category_name}</span>
-                  <span className="text-slate-400">{cat.words_learned} / {cat.total_words}</span>
+                  <span className="text-slate-400">
+                    {cat.words_learned} / {cat.total_words}
+                  </span>
                 </div>
                 <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                   <div
@@ -438,31 +603,30 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* 4. Recent Insights */}
         {summary.recent_insights.length > 0 && (
-            <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60 h-full">
+          <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60 h-full">
             <h4 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-yellow-500" />
-                AI 學習洞察
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
+              AI 學習洞察
             </h4>
             <div className="space-y-3">
-                {summary.recent_insights.map((insight) => (
+              {summary.recent_insights.map((insight) => (
                 <InsightCard key={insight.id} insight={insight} />
-                ))}
+              ))}
             </div>
-            </Card>
+          </Card>
         )}
 
         {/* 5. Latest Report */}
         {summary.latest_report && (
-            <Card className="p-6 rounded-[32px] border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 h-full">
+          <Card className="p-6 rounded-[32px] border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 h-full">
             <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-500" />
-                最新學習週報
+              <BarChart3 className="w-5 h-5 text-indigo-500" />
+              最新學習週報
             </h4>
             <ReportSummary report={summary.latest_report} />
-            </Card>
+          </Card>
         )}
       </div>
     </div>
@@ -471,15 +635,32 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
 // --- SUB-COMPONENTS (Styled) ---
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  color: string;
+}) {
   return (
     <Card className="p-5 rounded-[28px] border-none shadow-sm bg-white hover:scale-105 transition-transform duration-200">
       <div className="flex flex-col gap-3">
-        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", color)}>
-            {icon}
+        <div
+          className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center",
+            color,
+          )}
+        >
+          {icon}
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">{label}</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+            {label}
+          </p>
           <p className="text-2xl font-black text-slate-800 mt-1">{value}</p>
         </div>
       </div>
@@ -487,7 +668,17 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
-function WeeklyStatRow({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
+function WeeklyStatRow({
+  label,
+  value,
+  icon,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+}) {
   return (
     <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-100">
       <div className="flex items-center gap-3">
@@ -507,23 +698,33 @@ function InsightCard({ insight }: { insight: LearningInsight }) {
   };
 
   const typeMap: Record<string, string> = {
-    'milestone': '里程碑',
-    'struggle': '需要關注',
-    'pattern': '學習模式',
-    'achievement': '成就'
+    milestone: "里程碑",
+    struggle: "需要關注",
+    pattern: "學習模式",
+    achievement: "成就",
   };
 
   return (
-    <div className={cn("p-4 rounded-2xl border transition-all hover:shadow-md bg-white", priorityStyles[insight.priority])}>
+    <div
+      className={cn(
+        "p-4 rounded-2xl border transition-all hover:shadow-md bg-white",
+        priorityStyles[insight.priority],
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-             <h5 className="font-bold text-sm">{insight.title}</h5>
-             <Badge variant="outline" className="text-[10px] bg-white/50 border-black/10 h-5 px-1.5">
-               {typeMap[insight.type]}
-             </Badge>
+            <h5 className="font-bold text-sm">{insight.title}</h5>
+            <Badge
+              variant="outline"
+              className="text-[10px] bg-white/50 border-black/10 h-5 px-1.5"
+            >
+              {typeMap[insight.type]}
+            </Badge>
           </div>
-          <p className="text-xs opacity-90 leading-relaxed font-medium">{insight.description}</p>
+          <p className="text-xs opacity-90 leading-relaxed font-medium">
+            {insight.description}
+          </p>
         </div>
       </div>
     </div>
@@ -537,15 +738,21 @@ function ReportSummary({ report }: { report: WeeklyReport }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white/60 p-3 rounded-2xl">
           <p className="text-xs text-indigo-400 font-bold mb-1">詞彙學習</p>
-          <p className="text-xl font-black text-indigo-900">{report.total_words_learned}</p>
+          <p className="text-xl font-black text-indigo-900">
+            {report.total_words_learned}
+          </p>
         </div>
         <div className="bg-white/60 p-3 rounded-2xl">
           <p className="text-xs text-indigo-400 font-bold mb-1">活躍天數</p>
-          <p className="text-xl font-black text-indigo-900">{report.days_active}/7</p>
+          <p className="text-xl font-black text-indigo-900">
+            {report.days_active}/7
+          </p>
         </div>
         <div className="bg-white/60 p-3 rounded-2xl">
           <p className="text-xs text-indigo-400 font-bold mb-1">學習時長</p>
-          <p className="text-xl font-black text-indigo-900">{report.total_learning_time}m</p>
+          <p className="text-xl font-black text-indigo-900">
+            {report.total_learning_time}m
+          </p>
         </div>
         <div className="bg-white/60 p-3 rounded-2xl">
           <p className="text-xs text-indigo-400 font-bold mb-1">成長幅度</p>
@@ -563,7 +770,7 @@ function ReportSummary({ report }: { report: WeeklyReport }) {
       {report.strengths.length > 0 && (
         <div>
           <h5 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-             <CheckCircle2 className="w-3 h-3" /> 強項
+            <CheckCircle2 className="w-3 h-3" /> 強項
           </h5>
           <div className="flex flex-wrap gap-2">
             {report.strengths.map((strength, i) => (
@@ -581,12 +788,15 @@ function ReportSummary({ report }: { report: WeeklyReport }) {
       {report.recommendations.length > 0 && (
         <div>
           <h5 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-             <AlertCircle className="w-3 h-3" /> 建議
+            <AlertCircle className="w-3 h-3" /> 建議
           </h5>
           <ul className="space-y-2">
             {report.recommendations.map((rec, i) => (
-              <li key={i} className="text-xs text-indigo-800 bg-white/40 p-2 rounded-lg flex items-start gap-2 font-medium">
-                <span className="text-indigo-400 mt-0.5">•</span> 
+              <li
+                key={i}
+                className="text-xs text-indigo-800 bg-white/40 p-2 rounded-lg flex items-start gap-2 font-medium"
+              >
+                <span className="text-indigo-400 mt-0.5">•</span>
                 {rec}
               </li>
             ))}
