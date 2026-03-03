@@ -89,7 +89,7 @@ export function GamesList({ games, onPlayGame, languagePreference = "cantonese" 
         </div>
         <div>
           <h2 className="text-2xl font-black text-slate-700 tracking-tight">
-             好玩遁戲
+             好玩遊戲
           </h2>
           <p className="text-sm font-bold text-slate-400">
              邊玩邊學！
