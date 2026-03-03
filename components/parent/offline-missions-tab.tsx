@@ -178,7 +178,7 @@ export function OfflineMissionsTab({ childId }: OfflineMissionsTabProps = {}) {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-4xl mx-auto p-4 md:p-6">
+      <div className="space-y-6 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
         <Skeleton className="h-32 w-full rounded-[32px]" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Skeleton className="h-24 rounded-2xl" />
@@ -192,7 +192,7 @@ export function OfflineMissionsTab({ childId }: OfflineMissionsTabProps = {}) {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
       {/* --- HEADER --- */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl mb-2 shadow-sm">
@@ -415,7 +415,7 @@ export function OfflineMissionsTab({ childId }: OfflineMissionsTabProps = {}) {
                       <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
                         <h4 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
                           <MessageCircle className="w-4 h-4 text-blue-500" />
-                          試吓咁樣問：
+                          可以這樣提問：
                         </h4>
                         <ul className="space-y-3">
                           {mission.conversationPrompts.map((prompt, idx) => (

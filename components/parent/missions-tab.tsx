@@ -14,44 +14,44 @@ interface MissionsTabProps {
 // Translated Suggested Missions
 const suggestedMissions = [
   {
-    title: "早晨習慣 (Morning)",
+    title: "早晨習慣",
     description: "刷牙洗面嗰陣練習生字",
     icon: Clock,
     color: "text-orange-400",
     bg: "bg-orange-50",
-    words: ["牙刷 (Brush)", "毛巾 (Towel)", "鏡 (Mirror)"],
+    words: ["牙刷", "毛巾", "鏡"],
   },
   {
-    title: "返學途中 (Walking)",
-    description: "講出沿路見到嘅事物",
+    title: "返學途中",
+    description: "說出沿途見到的事物",
     icon: MapPin,
     color: "text-green-500",
     bg: "bg-green-50",
-    words: ["樹 (Tree)", "巴士 (Bus)", "雀仔 (Bird)"],
+    words: ["樹", "巴士", "雀仔"],
   },
   {
-    title: "食飯時間 (Meal Time)",
+    title: "食飯時間",
     description: "認識餐具同食物名稱",
     icon: Utensils,
     color: "text-red-400",
     bg: "bg-red-50",
-    words: ["匙羹 (Spoon)", "碗 (Bowl)", "菜 (Veggie)"],
+    words: ["匙羹", "碗", "菜"],
   },
   {
-    title: "睡前故事 (Bedtime)",
-    description: "一齊睇書，傾吓新學嘅字",
+    title: "睡前故事",
+    description: "一同閱讀，溫習新學的詞語",
     icon: Moon,
     color: "text-indigo-400",
     bg: "bg-indigo-50",
-    words: ["月亮 (Moon)", "發夢 (Dream)", "訓覺 (Sleep)"],
+    words: ["月亮", "發夢", "訓覺"],
   },
 ];
 
 export function MissionsTab({ missions }: MissionsTabProps) {
   // Mock data for display if missions prop is empty (for visualization)
   const initialMissions = missions.length > 0 ? missions : [
-    { id: "1", title: "超市大冒險", description: "帶小朋友去超市搵生字", targetWord: "蘋果 (Apple)", context: "叫小朋友幫手搵蘋果", completed: false },
-    { id: "2", title: "顏色偵探", description: "搵出屋企藍色嘅物件", targetWord: "藍色 (Blue)", context: "指住藍色物件大聲讀出", completed: true },
+    { id: "1", title: "超市大冒險", description: "帶小朋友到超市認識詞語", targetWord: "蘋果", context: "請小朋友幫忙找蘋果", completed: false },
+    { id: "2", title: "顏色偵探", description: "找出家中藍色的物件", targetWord: "藍色", context: "指著藍色物件大聲朗讀", completed: true },
   ];
 
   const [localMissions, setLocalMissions] = useState(initialMissions);
@@ -75,10 +75,10 @@ export function MissionsTab({ missions }: MissionsTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-black text-gray-700">
             <Flag className="w-6 h-6 text-[#FF9800]" />
-            今日線下任務 (Offline Missions)
+            今日線下任務
           </CardTitle>
           <CardDescription className="text-gray-500 font-bold">
-            將學習融入日常生活，同小朋友一齊完成任務啦！
+            將學習融入日常生活，與小朋友一同完成任務！
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,7 +144,7 @@ export function MissionsTab({ missions }: MissionsTabProps) {
                       </div>
                       <div className="flex items-start gap-2 text-sm text-gray-600">
                         <Lightbulb className="w-4 h-4 text-[#FF9800] mt-0.5" />
-                        <span>點樣做: <strong className="text-gray-800">{mission.context}</strong></span>
+                        <span>如何進行： <strong className="text-gray-800">{mission.context}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -160,10 +160,10 @@ export function MissionsTab({ missions }: MissionsTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-black text-gray-700">
             <Lightbulb className="w-6 h-6 text-[#FFCA28]" />
-            更多建議活動 (Activities)
+            更多建議活動
           </CardTitle>
           <CardDescription className="text-gray-500 font-bold">
-            係唔同嘅時間，都可以同小朋友練習生字架！
+            在不同時段，均可與小朋友一起練習詞語。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -208,10 +208,9 @@ export function MissionsTab({ missions }: MissionsTabProps) {
              <Lightbulb className="w-6 h-6 text-[#29B6F6]" />
            </div>
            <div>
-             <h3 className="font-black text-[#0277BD] mb-1">點解線下任務咁重要？</h3>
+             <h3 className="font-black text-[#0277BD] mb-1">為何線下任務如此重要？</h3>
              <p className="text-sm font-bold text-[#546E7A] leading-relaxed">
-               研究顯示，當小朋友將屏幕學到嘅生字應用係現實生活，學習效果最好！
-               呢啲任務可以幫你係日常互動中加深記憶。
+               研究顯示，當小朋友將在屏幕學到的詞語應用到現實生活，學習效果最為理想。這些任務有助您在日常互動中鹞固記憶。
              </p>
            </div>
         </CardContent>

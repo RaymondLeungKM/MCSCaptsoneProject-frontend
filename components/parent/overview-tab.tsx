@@ -121,7 +121,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg font-black text-gray-700">
               <TrendingUp className="w-6 h-6 text-[#29B6F6]" />
-              每日進度 (Daily Progress)
+              每日進度
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -144,7 +144,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-lg font-black text-gray-700">
               <BookOpen className="w-6 h-6 text-[#29B6F6]" />
-              總進度 (Overall)
+              總進度
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -155,7 +155,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
               </div>
               <Progress value={overallProgress} className="h-4 rounded-full bg-gray-100" indicatorClassName="bg-[#29B6F6]" />
               <p className="text-sm text-gray-500 font-medium">
-                {profile.name} 已經掌握了課程嘅 {Math.round(overallProgress)}% 生字！
+                {profile.name} 已掌握課程中 {Math.round(overallProgress)}% 的詞語！
               </p>
             </div>
           </CardContent>
@@ -167,7 +167,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-black text-gray-700">
             <Calendar className="w-6 h-6 text-[#FF9800]" />
-            本週活躍度 (Weekly Activity)
+            本週活躍度
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -199,7 +199,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-black text-gray-700">
             <Layers className="w-6 h-6 text-[#66BB6A]" />
-            類別進度 (By Category)
+            類別進度
           </CardTitle>
         </CardHeader>
         <CardContent>

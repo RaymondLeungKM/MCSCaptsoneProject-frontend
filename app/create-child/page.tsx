@@ -29,11 +29,7 @@ export default function CreateChildPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!age) {
-      setError("請先選擇年齡");
-      return;
-    }
+    if (!age) { setError("請先選擇年齡"); return; }
 
     setLoading(true);
     try {
@@ -41,20 +37,12 @@ export default function CreateChildPage() {
         name: childName.trim(),
         age: Number(age),
         avatar,
-        learning_style: style as
-          | "visual"
-          | "auditory"
-          | "kinesthetic"
-          | "mixed",
+        learning_style: style as any,
         language_preference: "cantonese",
       });
-      router.replace("/");
+      router.replace("/parent");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("建立小朋友檔案失敗，請稍後再試。");
-      }
+      setError("連線失敗。請確保 Backend Server 已啟動。");
     } finally {
       setLoading(false);
     }
@@ -62,8 +50,8 @@ export default function CreateChildPage() {
 
   return (
     <CozyPageWrapper>
-      <Card className="w-full bg-white/95 backdrop-blur-md rounded-[48px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] border-4 border-white">
-        <CardHeader className="space-y-1 pt-10 pb-2 text-center">
+      <Card className="w-full max-w-md mx-auto bg-white/95 backdrop-blur-md rounded-[48px] shadow-2xl border-4 border-white mt-6">
+        <CardHeader className="pt-10 pb-2 text-center">
           <h1 className="text-4xl font-black text-[#FF9800] tracking-widest drop-shadow-sm">
             邊個去冒險?
           </h1>
@@ -73,17 +61,13 @@ export default function CreateChildPage() {
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-5 px-8">
+          <CardContent className="space-y-6 px-8">
             {error && (
-              <Alert
-                variant="destructive"
-                className="rounded-2xl border-red-100 bg-red-50 text-red-600 font-bold"
-              >
+              <Alert variant="destructive" className="rounded-2xl border-red-100 bg-red-50 text-red-600 font-bold">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            {/* 1. Name Input */}
             <div className="space-y-2">
               <Label className="text-[#546E7A] font-black text-xs ml-4 uppercase tracking-widest">
                 小朋友暱稱 / 名字
@@ -97,61 +81,44 @@ export default function CreateChildPage() {
               />
             </div>
 
-            {/* 2. Age & Learning Style */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">
-                  年齡
-                </Label>
+                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">年齡</Label>
                 <div className="relative">
                   <select
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
                     className="w-full rounded-full bg-[#F1F8E9] h-12 px-4 text-[#37474F] font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#66BB6A] outline-none border-none"
                   >
-                    <option value="" disabled>
-                      選擇
-                    </option>
+                    <option value="" disabled>選擇</option>
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                      <option key={num} value={num}>
-                        {num} 歲
-                      </option>
+                      <option key={num} value={num}>{num} 歲</option>
                     ))}
                   </select>
-                  <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">
-                    ▼
-                  </div>
+                  <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">▼</div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">
-                  學習風格
-                </Label>
+                <Label className="text-[#546E7A] font-black text-xs ml-3 uppercase">學習風格</Label>
                 <div className="relative">
                   <select
                     value={style}
                     onChange={(e) => setStyle(e.target.value)}
                     className="w-full rounded-full bg-[#F1F8E9] h-12 px-4 text-[#37474F] font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#66BB6A] outline-none border-none"
                   >
-                    <option value="visual">👀 睇圖 (Visual)</option>
-                    <option value="auditory">👂 聽聲 (Auditory)</option>
-                    {/* Added Kinesthetic Option */}
-                    <option value="kinesthetic">🏃‍♂️ 郁動 (Kinesthetic)</option>
-                    <option value="mixed">✨ 混合 (Mixed)</option>
+                    <option value="visual">👀 睇圖</option>
+                    <option value="auditory">👂 聽聲</option>
+                    <option value="kinesthetic">🏃‍♂️ 郁動</option>
+                    <option value="mixed">✨ 混合</option>
                   </select>
-                  <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">
-                    ▼
-                  </div>
+                  <div className="absolute right-4 top-3.5 pointer-events-none text-[#90A4AE] text-xs">▼</div>
                 </div>
               </div>
             </div>
 
-            {/* 3. Avatar Selection */}
             <div className="space-y-3">
-              <Label className="text-[#546E7A] font-black text-xs ml-4 uppercase tracking-widest">
-                選擇冒險頭像
-              </Label>
+              <Label className="text-[#546E7A] font-black text-xs ml-4 uppercase tracking-widest">選擇冒險頭像</Label>
               <div className="flex justify-between gap-2">
                 {avatars.map((char) => (
                   <button
@@ -159,9 +126,7 @@ export default function CreateChildPage() {
                     type="button"
                     onClick={() => setAvatar(char)}
                     className={`text-3xl w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      avatar === char
-                        ? "bg-[#FFF3E0] scale-125 shadow-md border-2 border-orange-300"
-                        : "bg-transparent hover:bg-gray-50 opacity-60 hover:opacity-100"
+                      avatar === char ? "bg-[#FFF3E0] scale-125 shadow-md border-2 border-orange-300" : "bg-transparent opacity-60"
                     }`}
                   >
                     {char}
@@ -171,11 +136,11 @@ export default function CreateChildPage() {
             </div>
           </CardContent>
 
-          <CardFooter className="pb-10 px-8 pt-2">
+          <CardFooter className="pb-10 px-8 pt-4 items-center">
             <Button
               type="submit"
-              className="w-full bg-[#66BB6A] hover:bg-[#57A65B] text-white font-black text-2xl pt-2 pb-3 rounded-full h-16 shadow-[0_6px_0_#388E3C] active:shadow-none active:translate-y-[6px] transition-all"
               disabled={loading}
+              className="w-full bg-[#66BB6A] hover:bg-[#57A65B] text-white font-black text-2xl pt-2 pb-3 rounded-full h-16 shadow-[0_6px_0_#388E3C] active:shadow-none active:translate-y-[6px] transition-all"
             >
               {loading ? "設定中..." : "完成設定"}
             </Button>

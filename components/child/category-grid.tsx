@@ -81,11 +81,7 @@ export function CategoryGrid({
       })
       .catch(() => {
         if (!cancelled)
-          setWordsError(
-            languagePreference === "english"
-              ? "Could not load words."
-              : "載入詞語失敗，請稍後再試。",
-          );
+          setWordsError("載入詞語失敗，請稍後再試。");
       })
       .finally(() => {
         if (!cancelled) setIsLoadingWords(false);
@@ -127,11 +123,8 @@ export function CategoryGrid({
   };
 
   const headerText =
-    languagePreference === "english" ? "Explore Words" : "探索主題";
-  const subHeaderText =
-    languagePreference === "english"
-      ? "Choose a category"
-      : "選擇一個主題開始學習";
+    "探索主題";
+  const subHeaderText = "選擇一個主題開始學習";
 
   // ── WORD LIST VIEW ──────────────────────────────────────────────────────────
   if (selectedCategory) {
@@ -149,13 +142,13 @@ export function CategoryGrid({
           childId={childId}
           onProgressUpdate={handleProgressUpdate}
         />
-        <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-xl mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full animate-in fade-in slide-in-from-right-4 duration-300">
           {/* Header – Back Button */}
           <div className="flex items-center gap-3 mb-6">
             <button
               onClick={() => setSelectedCategory(null)}
               className="bg-white/70 hover:bg-white p-2 rounded-2xl shadow-sm border border-white/60 transition-all hover:scale-105 active:scale-95"
-              aria-label={languagePreference === "english" ? "Back" : "返回"}
+              aria-label="返回"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
@@ -167,11 +160,7 @@ export function CategoryGrid({
                   {catName}
                 </h2>
                 <p className="text-xs font-bold text-slate-400">
-                  {isLoadingWords
-                    ? languagePreference === "english"
-                      ? "Loading…"
-                      : "載入中…"
-                    : `${categoryWords.length} ${languagePreference === "english" ? "words" : "個詞語"}`}
+                  {isLoadingWords ? "載入中…" : `${categoryWords.length} 個詞語`}
                 </p>
               </div>
             </div>
@@ -202,9 +191,7 @@ export function CategoryGrid({
             <div className="text-center py-12">
               <p className="text-5xl mb-3">🔍</p>
               <p className="text-slate-500 font-bold text-sm">
-                {languagePreference === "english"
-                  ? "No words yet!"
-                  : "暫時還沒有詞語"}
+                暫時還沒有詞語
               </p>
             </div>
           )}
@@ -214,10 +201,6 @@ export function CategoryGrid({
             <div className="grid grid-cols-2 gap-4">
               {categoryWords.map((word) => {
                 const wordText = getWordText(word, languagePreference);
-                const showBilingual =
-                  languagePreference !== "english" &&
-                  word.word_cantonese &&
-                  word.word_cantonese !== word.word;
 
                 return (
                   <button
@@ -273,15 +256,8 @@ export function CategoryGrid({
                       {wordText}
                     </span>
 
-                    {/* Bilingual sub-label: show English when in Cantonese mode */}
-                    {showBilingual && languagePreference === "cantonese" && (
-                      <span className="text-[11px] font-bold text-current/60 mt-0.5">
-                        {word.word}
-                      </span>
-                    )}
-
                     {/* Jyutping */}
-                    {languagePreference !== "english" && word.jyutping && (
+                    {word.jyutping && (
                       <span className="mt-1 px-2 py-0.5 rounded-full bg-white/40 text-[10px] font-bold tracking-wide">
                         {word.jyutping}
                       </span>
@@ -291,7 +267,7 @@ export function CategoryGrid({
                     <button
                       onClick={(e) => handlePlayWord(e, word)}
                       className="absolute bottom-3 right-3 bg-white/70 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-200 hover:scale-110"
-                      aria-label={`Play ${word.word}`}
+                      aria-label={`播放 ${word.word_cantonese || word.word}`}
                     >
                       <Volume2
                         className={cn(
@@ -320,7 +296,7 @@ export function CategoryGrid({
         childId={childId}
         onProgressUpdate={handleProgressUpdate}
       />
-      <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-xl mx-auto">
+      <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-yellow-400 p-2.5 rounded-2xl shadow-sm rotate-3">
@@ -362,8 +338,7 @@ export function CategoryGrid({
 
                 {/* Word Count Tag */}
                 <span className="mt-2 px-2.5 py-1 rounded-full bg-white/40 text-[10px] font-black uppercase tracking-wide">
-                  {category.wordCount}{" "}
-                  {languagePreference === "english" ? "words" : "詞語"}
+                  {category.wordCount} 詞語
                 </span>
 
                 {/* Play Button Indicator (appears on hover) */}

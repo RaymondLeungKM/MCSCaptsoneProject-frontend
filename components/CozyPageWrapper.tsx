@@ -168,7 +168,7 @@ export default function CozyPageWrapper({ children, type = "center" }: WrapperPr
       `}</style>
 
       <div className={cn(
-        "min-h-screen relative overflow-hidden font-zen transition-all duration-[2000ms] ease-in-out",
+        "min-h-[100dvh] relative overflow-hidden font-zen transition-all duration-[2000ms] ease-in-out",
         isNight 
           ? "bg-gradient-to-b from-[#2b5876] via-[#3a6073] to-[#4e4376]" 
           : "bg-gradient-to-b from-[#FFFDE7] via-[#E3F2FD] to-[#B3E5FC]",
@@ -178,7 +178,7 @@ export default function CozyPageWrapper({ children, type = "center" }: WrapperPr
         {/* Toggle Button (Fixed Z-Index & Pointer) */}
         <button 
           onClick={toggleTheme}
-          className="fixed top-24 right-4 z-50 bg-white/20 backdrop-blur-md p-3 rounded-full border-2 border-white/50 hover:bg-white/40 hover:scale-110 transition-all shadow-lg group md:top-6 md:right-6 cursor-pointer"
+          className="fixed top-4 right-4 z-50 bg-white/20 backdrop-blur-md p-3 rounded-full border-2 border-white/50 hover:bg-white/40 hover:scale-110 transition-all shadow-lg group md:top-6 md:right-6 cursor-pointer"
         >
           {isNight ? (
             <Sun className="w-6 h-6 text-yellow-300 fill-yellow-300 animate-spin-slow" />
@@ -300,7 +300,7 @@ export default function CozyPageWrapper({ children, type = "center" }: WrapperPr
             </div>
         </div>
 
-        <div className={cn("relative z-10 w-full", type === "center" ? "max-w-md" : "")}>
+        <div className={cn("relative z-10 w-full", type === "center" ? "max-w-md" : "max-w-2xl md:max-w-6xl mx-auto")}>
           {children}
         </div>
       </div>

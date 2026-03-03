@@ -103,7 +103,7 @@ export function BedtimeStoryGenerator({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}
@@ -237,7 +237,7 @@ function StoryCard({ story }: { story: GeneratedStory }) {
             </Badge>
           ))}
           <Badge className="bg-slate-100 text-slate-500 border-none px-3 py-1 rounded-full">
-            <Clock className="w-3 h-3 mr-1" /> {story.reading_time_minutes} min
+            <Clock className="w-3 h-3 mr-1" /> {story.reading_time_minutes} 分鐘
           </Badge>
         </div>
 

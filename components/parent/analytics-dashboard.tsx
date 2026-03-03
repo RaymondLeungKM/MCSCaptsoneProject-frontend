@@ -414,7 +414,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   if (!summary || !charts) return null;
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
       {/* Header */}
       <div className="text-center space-y-3 mb-6">
         <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl mb-2 shadow-sm">

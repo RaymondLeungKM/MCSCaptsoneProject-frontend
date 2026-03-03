@@ -199,7 +199,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
     switch (style) {
       case "kinesthetic":
         return [
-          "做動作猜謎 (Charades)",
+          "做動作猜謎",
           "肢體動作遊戲",
           "實物尋寶",
           "角色扮演",
@@ -228,7 +228,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-4xl mx-auto p-6">
+      <div className="space-y-6 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
         <Skeleton className="h-32 w-full rounded-[32px]" />
         <div className="grid grid-cols-2 gap-6">
           <Skeleton className="h-48 rounded-[28px]" />
@@ -240,7 +240,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
       {/* --- HEADER --- */}
       <div className="text-center space-y-3 mb-8">
         <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-2xl mb-2 shadow-sm">
@@ -267,7 +267,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
                 <Zap className="w-5 h-5" />
               </div>
               <span className="font-bold text-emerald-900 uppercase tracking-wider text-sm">
-                主動詞彙 (Active)
+                主動詞彙
               </span>
             </div>
             <div>
@@ -295,7 +295,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
                 <Brain className="w-5 h-5" />
               </div>
               <span className="font-bold text-blue-900 uppercase tracking-wider text-sm">
-                被動詞彙 (Passive)
+                被動詞彙
               </span>
             </div>
             <div>
@@ -505,7 +505,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
               <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔄</span>
               <div>
                 <p className="font-bold text-slate-800 text-lg mb-1">
-                  輪流對話 (Conversational Turns)
+                  輪流對話
                 </p>
                 <p className="text-slate-500 text-sm leading-relaxed">
                   進行一來一往的對話。引導 {profile.name} 回應，而不僅僅是聆聽。
@@ -519,7 +519,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
               <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔁</span>
               <div>
                 <p className="font-bold text-slate-800 text-lg mb-1">
-                  重複接觸 (Repeated Exposure)
+                  重複接觸
                 </p>
                 <p className="text-slate-500 text-sm leading-relaxed">
                   在日常生活中不同情境下使用新詞彙。目標是創造 6-12
@@ -534,7 +534,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
               <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🌍</span>
               <div>
                 <p className="font-bold text-slate-800 text-lg mb-1">
-                  生活應用 (Real-World Context)
+                  生活應用
                 </p>
                 <p className="text-slate-500 text-sm leading-relaxed">
                   在日常作息中，將詞彙與真實的物體和體驗連結起來。
@@ -548,7 +548,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
               <span className="text-3xl bg-indigo-100 p-2 rounded-xl">👐</span>
               <div>
                 <p className="font-bold text-slate-800 text-lg mb-1">
-                  多感官學習 (Multisensory)
+                  多感官學習
                 </p>
                 <p className="text-slate-500 text-sm leading-relaxed">
                   結合視覺、聲音、手勢和肢體動作，能顯著提升記憶效果。

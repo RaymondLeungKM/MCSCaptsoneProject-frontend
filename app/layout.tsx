@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Zen_Maru_Gothic } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -17,6 +17,13 @@ const font = Zen_Maru_Gothic({
 export const metadata: Metadata = {
   title: "Vocab Journey",
   description: "Learn vocabulary with fun stories and games!",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

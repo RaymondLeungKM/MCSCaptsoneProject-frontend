@@ -45,7 +45,7 @@ export function WordOfTheDay({
   };
 
   return (
-    <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 shadow-sm border border-white/50 relative overflow-hidden w-full max-w-xl mx-auto group">
+    <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 shadow-sm border border-white/50 relative overflow-hidden w-full group">
       
       {/* --- Decorative Elements --- */}
       <div className="absolute top-0 right-0 p-4 opacity-50 pointer-events-none">

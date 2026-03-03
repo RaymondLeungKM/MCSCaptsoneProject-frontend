@@ -99,7 +99,7 @@ export function ParentalControlsSettings({
   if (!settings) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No settings available</p>
+        <p className="text-muted-foreground">暫時沒有可用設定</p>
       </div>
     );
   }
@@ -110,12 +110,12 @@ export function ParentalControlsSettings({
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Content Filtering</h3>
+          <h3 className="text-lg font-semibold">內容筛選</h3>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="max-difficulty">Maximum Difficulty Level</Label>
+            <Label htmlFor="max-difficulty">難度上限</Label>
             <Select
               value={settings.max_difficulty}
               onValueChange={(value: any) =>
@@ -126,15 +126,15 @@ export function ParentalControlsSettings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="easy">Easy</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="hard">Hard</SelectItem>
+                <SelectItem value="easy">初級</SelectItem>
+                <SelectItem value="medium">中級</SelectItem>
+                <SelectItem value="hard">進階</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="min-difficulty">Minimum Difficulty Level</Label>
+            <Label htmlFor="min-difficulty">難度下限</Label>
             <Select
               value={settings.min_difficulty}
               onValueChange={(value: any) =>
@@ -145,15 +145,15 @@ export function ParentalControlsSettings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="easy">Easy</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="hard">Hard</SelectItem>
+                <SelectItem value="easy">初級</SelectItem>
+                <SelectItem value="medium">中級</SelectItem>
+                <SelectItem value="hard">進階</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="safe-mode">Safe Mode (Simplified UI)</Label>
+            <Label htmlFor="safe-mode">安全模式</Label>
             <Switch
               id="safe-mode"
               checked={settings.safe_mode_enabled}
@@ -169,13 +169,13 @@ export function ParentalControlsSettings({
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Clock className="h-5 w-5 text-orange-500" />
-          <h3 className="text-lg font-semibold">Screen Time Management</h3>
+          <h3 className="text-lg font-semibold">使用時間管理</h3>
         </div>
 
         <div className="space-y-4">
           <div>
             <Label htmlFor="screen-time-limit">
-              Daily Screen Time Limit (minutes)
+              每日使用時限（分鐘）
             </Label>
             <Input
               id="screen-time-limit"
@@ -187,16 +187,16 @@ export function ParentalControlsSettings({
                   e.target.value ? parseInt(e.target.value) : undefined,
                 )
               }
-              placeholder="No limit"
+              placeholder="無限制"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Leave empty for no limit
+              留空表示無限制
             </p>
           </div>
 
           <div>
             <Label htmlFor="warning-threshold">
-              Warning Threshold (minutes)
+              提示閾値（分鐘）
             </Label>
             <Input
               id="warning-threshold"
@@ -217,12 +217,12 @@ export function ParentalControlsSettings({
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Volume2 className="h-5 w-5 text-purple-500" />
-          <h3 className="text-lg font-semibold">Learning Preferences</h3>
+          <h3 className="text-lg font-semibold">學習偉好</h3>
         </div>
 
         <div className="space-y-4">
           <div>
-            <Label>Speech Rate: {settings.tts_speech_rate.toFixed(1)}x</Label>
+            <Label>語速：{settings.tts_speech_rate.toFixed(1)}x</Label>
             <Slider
               value={[settings.tts_speech_rate]}
               onValueChange={([value]) =>
@@ -234,13 +234,13 @@ export function ParentalControlsSettings({
               className="mt-2"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Slower</span>
-              <span>Faster</span>
+              <span>較慢</span>
+              <span>較快</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="bilingual-mode">Enable Bilingual Mode</Label>
+            <Label htmlFor="bilingual-mode">開啟雙語模式</Label>
             <Switch
               id="bilingual-mode"
               checked={settings.enable_bilingual_mode}
@@ -251,7 +251,7 @@ export function ParentalControlsSettings({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="show-jyutping">Show Jyutping (Romanization)</Label>
+            <Label htmlFor="show-jyutping">顯示粤語拼音</Label>
             <Switch
               id="show-jyutping"
               checked={settings.show_jyutping}
@@ -267,14 +267,13 @@ export function ParentalControlsSettings({
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Gamepad2 className="h-5 w-5 text-green-500" />
-          <h3 className="text-lg font-semibold">Game Settings</h3>
+          <h3 className="text-lg font-semibold">遲戲設定</h3>
         </div>
 
         <div className="space-y-4">
           <div>
             <Label>
-              Game Difficulty Multiplier:{" "}
-              {settings.game_difficulty_multiplier.toFixed(1)}x
+              遲戲難度倍率：{settings.game_difficulty_multiplier.toFixed(1)}x
             </Label>
             <Slider
               value={[settings.game_difficulty_multiplier]}
@@ -287,13 +286,13 @@ export function ParentalControlsSettings({
               className="mt-2"
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Easier</span>
-              <span>Harder</span>
+              <span>較易</span>
+              <span>較難</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="time-limits">Enable Time Limits on Games</Label>
+            <Label htmlFor="time-limits">開啟遲戲時間限制</Label>
             <Switch
               id="time-limits"
               checked={settings.enable_time_limits}
@@ -309,12 +308,12 @@ export function ParentalControlsSettings({
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <Bell className="h-5 w-5 text-yellow-500" />
-          <h3 className="text-lg font-semibold">Notifications & Reminders</h3>
+          <h3 className="text-lg font-semibold">通知與提醒</h3>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="daily-reminder">Daily Practice Reminder</Label>
+            <Label htmlFor="daily-reminder">每日練習提醒</Label>
             <Switch
               id="daily-reminder"
               checked={settings.daily_reminder_enabled}
@@ -326,7 +325,7 @@ export function ParentalControlsSettings({
 
           {settings.daily_reminder_enabled && (
             <div>
-              <Label htmlFor="reminder-time">Reminder Time</Label>
+              <Label htmlFor="reminder-time">提醒時間</Label>
               <Input
                 id="reminder-time"
                 type="time"
@@ -339,7 +338,7 @@ export function ParentalControlsSettings({
           )}
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="bedtime-reminder">Bedtime Story Reminder</Label>
+            <Label htmlFor="bedtime-reminder">睡前故事提醒</Label>
             <Switch
               id="bedtime-reminder"
               checked={settings.bedtime_story_reminder}
@@ -350,7 +349,7 @@ export function ParentalControlsSettings({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="weekly-report">Weekly Progress Report</Label>
+            <Label htmlFor="weekly-report">每週進度報告</Label>
             <Switch
               id="weekly-report"
               checked={settings.weekly_report_enabled}
@@ -361,7 +360,7 @@ export function ParentalControlsSettings({
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="achievement-notif">Achievement Notifications</Label>
+            <Label htmlFor="achievement-notif">成就通知</Label>
             <Switch
               id="achievement-notif"
               checked={settings.achievement_notifications}
@@ -382,7 +381,7 @@ export function ParentalControlsSettings({
           className="gap-2"
         >
           <Save className="h-4 w-4" />
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? "儲存中..." : "儲存設定"}
         </Button>
       </div>
     </div>

@@ -28,6 +28,29 @@ interface AISentencesProps {
   languagePreference: LanguagePreference;
 }
 
+function translateContext(context?: string): string {
+  const map: Record<string, string> = {
+    General: "一般", general: "一般",
+    Mealtime: "用餐", mealtime: "用餐",
+    Bedtime: "睡前", bedtime: "睡前",
+    Outdoor: "戶外", outdoor: "戶外",
+    Shopping: "購物", shopping: "購物",
+    Playtime: "遊戲", playtime: "遊戲",
+    School: "學校", school: "學校",
+    Home: "家庭", home: "家庭",
+  };
+  return map[context ?? ""] ?? context ?? "一般";
+}
+
+function translateDifficulty(difficulty?: string): string {
+  const map: Record<string, string> = {
+    easy: "初級", Easy: "初級",
+    medium: "中級", Medium: "中級",
+    hard: "進階", Hard: "進階",
+  };
+  return map[difficulty ?? ""] ?? "初級";
+}
+
 export function AISentences({ wordId, languagePreference }: AISentencesProps) {
   const [sentences, setSentences] = useState<GeneratedSentence[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +99,23 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
         });
 
         setSentences(generated.sentences.map(toSentence));
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError("未能載入 AI 例句，請稍後再試。");
+      } catch (err: any) {
+        // Ollama / AI service not running — hide component silently instead of red error
+        const msg: string = err?.message ?? String(err);
+        const status: number = err?.status ?? err?.statusCode ?? 0;
+        if (
+          status === 503 ||
+          status === 500 ||
+          msg.includes("Ollama") ||
+          msg.includes("Cannot connect") ||
+          msg.includes("connect to Ollama") ||
+          msg.includes("AI service") ||
+          msg.includes("generate-sentences")
+        ) {
+          setSentences([]);
+          return;
         }
+        setError(msg || "未能載入 AI 例句，請稍後再試。");
         setSentences([]);
       } finally {
         setLoading(false);
@@ -167,9 +201,6 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
           <h4 className="text-xl font-black text-purple-900 tracking-tight">
             AI 魔法造句
           </h4>
-          <p className="text-xs font-bold text-purple-400 uppercase tracking-wide">
-            Example Sentences
-          </p>
         </div>
       </div>
 
@@ -224,11 +255,11 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
               {/* Tags/Badges */}
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-full border border-purple-100">
-                  <Bot className="w-3 h-3" /> {sent.context || "General"}
+                  <Bot className="w-3 h-3" /> {translateContext(sent.context)}
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-600 px-3 py-1 rounded-full border border-green-100">
                   <GraduationCap className="w-3 h-3" />{" "}
-                  {sent.difficulty || "Easy"}
+                  {translateDifficulty(sent.difficulty)}
                 </span>
               </div>
             </div>

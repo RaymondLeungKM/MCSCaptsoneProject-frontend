@@ -73,7 +73,7 @@ export default function RegisterPage() {
 
   return (
     <CozyPageWrapper>
-      <Card className="w-full bg-white/95 backdrop-blur-md rounded-[48px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] border-4 border-white">
+      <Card className="w-full max-w-[420px] mx-auto bg-white/95 backdrop-blur-md rounded-[48px] shadow-[0_20px_40px_rgba(0,0,0,0.05)] border-4 border-white">
         <CardHeader className="space-y-2 pt-10 pb-2 text-center items-center">
           <h1 className="text-5xl font-black text-[#FF9800] tracking-widest drop-shadow-sm">
             加入冒險!

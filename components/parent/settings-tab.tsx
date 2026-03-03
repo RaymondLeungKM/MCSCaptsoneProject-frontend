@@ -79,9 +79,9 @@ export function SettingsTab({ profile }: SettingsTabProps) {
   // For consistency in this demo, I will apply the mock UI style even for the real component wrapper
   if (!isMockData) {
     return (
-      <div className="space-y-8 max-w-4xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+      <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
         <div className="text-center space-y-3 mb-4">
-           <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-slate-100 to-gray-200 rounded-2xl mb-2 shadow-sm">
+          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-slate-100 to-gray-200 rounded-2xl mb-2 shadow-sm">
             <Settings className="w-8 h-8 text-slate-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-800 tracking-tight">
@@ -98,7 +98,7 @@ export function SettingsTab({ profile }: SettingsTabProps) {
 
   // --- MOCK SETTINGS UI ---
   return (
-    <div className="space-y-8 max-w-4xl mx-auto p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
       
       {/* Header */}
       <div className="text-center space-y-3 mb-4">

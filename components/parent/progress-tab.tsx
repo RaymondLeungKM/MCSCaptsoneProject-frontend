@@ -161,7 +161,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
               {realStats.totalWords}
             </span>
             <span className="text-sm font-bold text-[#90A4AE] uppercase tracking-widest">
-              詞彙總量 (Total)
+              詞彙總量
             </span>
           </CardContent>
         </Card>
@@ -173,7 +173,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
               {realStats.masteredWords}
             </span>
             <span className="text-sm font-bold text-[#81C784] uppercase tracking-widest">
-              已掌握 (Mastered)
+              已掌握
             </span>
           </CardContent>
         </Card>
@@ -185,7 +185,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
               {realStats.totalWords - realStats.masteredWords}
             </span>
             <span className="text-sm font-bold text-[#FFB74D] uppercase tracking-widest">
-              學習中 (Learning)
+              學習中
             </span>
           </CardContent>
         </Card>
@@ -197,7 +197,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 className="text-xl font-black text-gray-700 flex items-center gap-2">
               <BookOpen className="w-6 h-6 text-[#29B6F6]" />
-              生字庫 (Word Library)
+              生字庫
             </h3>
 
             {/* SEARCH BAR */}
@@ -215,9 +215,9 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
           {/* FILTER BUTTONS */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             {[
-              { id: "all", label: "全部 (All)" },
-              { id: "mastered", label: "已掌握 (Mastered)" },
-              { id: "learning", label: "學習中 (Learning)" },
+              { id: "all", label: "全部" },
+              { id: "mastered", label: "已掌握" },
+              { id: "learning", label: "學習中" },
             ].map((f) => (
               <button
                 key={f.id}
@@ -239,7 +239,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
             {filteredWords.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-gray-400 font-bold">
-                  找不到相關生字 (No words found)
+                  找不到相關生字
                 </p>
               </div>
             ) : (
@@ -320,13 +320,12 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
           </div>
           <div>
             <h3 className="font-black text-[#1565C0] mb-1">
-              學習小貼士 (Learning Tip)
+              學習小貼士
             </h3>
             <p className="text-sm font-bold text-[#546E7A] leading-relaxed">
-              小朋友通常需要係唔同情況下接觸一個生字 6 到 12
-              次，先至會真正入腦。
+              小朋友通常需要在不同情境下接觸一個詞語六至十二次，才能真正掌握。
               <br />
-              建議多啲練習星星比較少嘅生字啦！
+              建議多加練習星星較少的詞語。
             </p>
           </div>
         </CardContent>

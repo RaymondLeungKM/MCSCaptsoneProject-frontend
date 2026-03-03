@@ -177,7 +177,7 @@ export function WordCard({
         <div className="flex items-center justify-center gap-4 pt-2 border-t border-slate-100">
            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-xs font-bold text-slate-400">
               <span className="w-2 h-2 rounded-full bg-green-400" />
-              {labels.difficulty}: {word.difficulty || "Easy"}
+              {labels.difficulty}: {{ easy: "初級", medium: "中級", hard: "進階" }[word.difficulty ?? ""] ?? "初級"}
            </div>
            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-xs font-bold text-slate-400">
               <Repeat className="w-3 h-3" />

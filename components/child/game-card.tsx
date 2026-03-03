@@ -25,7 +25,7 @@ interface GameCardProps {
   languagePreference?: LanguagePreference;
 }
 
-export function GameCard({ game, onPlay, languagePreference = "cantonese" }: GameCardProps) {
+export function GameCard({ game, onPlay }: GameCardProps) {
   const styles = getGameColorStyles(game.color);
 
   return (
@@ -37,7 +37,7 @@ export function GameCard({ game, onPlay, languagePreference = "cantonese" }: Gam
         "hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md",
         styles // Apply dynamic color styles
       )}
-      aria-label={languagePreference === "english" ? `Play ${game.name}` : `開始 ${game.name}`}
+      aria-label={`開始 ${game.name}`}
     >
       {/* Icon Box */}
       <div className="w-20 h-20 rounded-[24px] bg-white flex items-center justify-center text-4xl shadow-sm group-hover:scale-110 transition-transform duration-300">
@@ -62,7 +62,7 @@ export function GameCard({ game, onPlay, languagePreference = "cantonese" }: Gam
       {/* Decorative Badge (Optional - shows "New" or "Hot") */}
       {game.id === 'quiz' && (
          <div className="absolute -top-3 -right-2 bg-yellow-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm rotate-6">
-            POPULAR
+            熱門
          </div>
       )}
     </button>
@@ -80,7 +80,7 @@ interface GamesListProps {
 export function GamesList({ games, onPlayGame, languagePreference = "cantonese" }: GamesListProps) {
   return (
     // Wrapped in the white glass card to ensure visibility on dark backgrounds
-    <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full max-w-xl mx-auto">
+    <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full">
       
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
@@ -89,10 +89,10 @@ export function GamesList({ games, onPlayGame, languagePreference = "cantonese" 
         </div>
         <div>
           <h2 className="text-2xl font-black text-slate-700 tracking-tight">
-             {languagePreference === "english" ? "Fun Games" : "好玩遊戲"}
+             好玩遁戲
           </h2>
           <p className="text-sm font-bold text-slate-400">
-             {languagePreference === "english" ? "Learn while playing!" : "邊玩邊學！"}
+             邊玩邊學！
           </p>
         </div>
       </div>

@@ -65,19 +65,19 @@ function getColorKey(colorClass: string): string {
 
 const DIFFICULTY_CONFIG = {
   easy: {
-    label: "Easy",
+    label: "初級",
     bg: "bg-green-50",
     text: "text-green-600",
     border: "border-green-200",
   },
   medium: {
-    label: "Medium",
+    label: "中級",
     bg: "bg-yellow-50",
     text: "text-yellow-600",
     border: "border-yellow-200",
   },
   hard: {
-    label: "Hard",
+    label: "進階",
     bg: "bg-red-50",
     text: "text-red-600",
     border: "border-red-200",
