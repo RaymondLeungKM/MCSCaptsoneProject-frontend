@@ -77,10 +77,14 @@ export interface CategoryResponse {
 }
 
 /**
- * Get all categories
+ * Get all categories.
+ * Pass childId to receive per-child word counts for user-owned categories (e.g. My Collection).
  */
-export async function getCategories(): Promise<CategoryResponse[]> {
-  return apiRequest<CategoryResponse[]>("/categories/");
+export async function getCategories(
+  childId?: string,
+): Promise<CategoryResponse[]> {
+  const query = childId ? `?child_id=${childId}` : "";
+  return apiRequest<CategoryResponse[]>(`/categories/${query}`);
 }
 
 /**
@@ -104,12 +108,17 @@ export async function getWords(params?: {
 
 /**
  * Get words with child's progress
+ * @param ownOnly - when true, only return words uploaded by this child (use for My Collection)
  */
 export async function getWordsWithProgress(
   childId: string,
   category?: string,
+  ownOnly = false,
 ): Promise<(WordResponse & { progress?: WordProgressResponse })[]> {
-  const query = category ? `?category=${category}` : "";
+  const params = new URLSearchParams();
+  if (category) params.append("category", category);
+  if (ownOnly) params.append("own_only", "true");
+  const query = params.toString() ? `?${params.toString()}` : "";
   return apiRequest(`/vocabulary/child/${childId}${query}`);
 }
 

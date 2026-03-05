@@ -128,7 +128,7 @@ export default function ChildDashboard() {
         })
         .catch((e) => console.warn("[Session] Could not start:", e));
 
-      const categoryResponses = await getCategories();
+      const categoryResponses = await getCategories(selectedChild.id);
       setCategories(
         categoryResponses.map((category, index) => toCategory(category, index)),
       );
