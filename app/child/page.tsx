@@ -11,6 +11,7 @@ import { ProfileHeader } from "@/components/child/profile-header";
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { CategoryGrid } from "@/components/child/category-grid";
 import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
+import { CommunityFeed } from "@/components/child/community-feed";
 import { GamesList } from "@/components/child/game-card";
 import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
@@ -77,11 +78,15 @@ export default function ChildDashboard() {
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stories, setStories] = useState<GeneratedStory[]>([]);
-  const [selectedStory, setSelectedStory] = useState<GeneratedStory | null>(null);
+  const [selectedStory, setSelectedStory] = useState<GeneratedStory | null>(
+    null,
+  );
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [storiesError, setStoriesError] = useState<string | null>(null);
   const [playingStoryId, setPlayingStoryId] = useState<string | null>(null);
-  const [storyAudioLoadingId, setStoryAudioLoadingId] = useState<string | null>(null);
+  const [storyAudioLoadingId, setStoryAudioLoadingId] = useState<string | null>(
+    null,
+  );
   const storyAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +135,9 @@ export default function ChildDashboard() {
 
       await loadStories(selectedChild.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "載入資料失敗，請稍後再試。");
+      setError(
+        err instanceof Error ? err.message : "載入資料失敗，請稍後再試。",
+      );
     } finally {
       setLoading(false);
     }
@@ -266,11 +273,17 @@ export default function ChildDashboard() {
       <CozyPageWrapper type="dashboard">
         <div className="w-full px-4 py-8">
           <Alert variant="destructive" className="rounded-2xl">
-            <AlertDescription>{error || "目前沒有可用的小朋友資料。"}</AlertDescription>
+            <AlertDescription>
+              {error || "目前沒有可用的小朋友資料。"}
+            </AlertDescription>
           </Alert>
           <div className="mt-4 flex gap-3">
-            <Button onClick={() => router.push("/create-child")}>建立小朋友檔案</Button>
-            <Button variant="outline" onClick={() => void loadDashboardData()}>重新載入</Button>
+            <Button onClick={() => router.push("/create-child")}>
+              建立小朋友檔案
+            </Button>
+            <Button variant="outline" onClick={() => void loadDashboardData()}>
+              重新載入
+            </Button>
           </div>
         </div>
       </CozyPageWrapper>
@@ -346,7 +359,9 @@ export default function ChildDashboard() {
                   <div className="bg-blue-400 p-2 rounded-xl -rotate-3 shadow-sm">
                     <Book className="w-5 h-5 text-white" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-700">我的故事書</h2>
+                  <h2 className="text-2xl font-black text-slate-700">
+                    我的故事書
+                  </h2>
                 </div>
 
                 {storiesError && (
@@ -356,16 +371,24 @@ export default function ChildDashboard() {
                 )}
 
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {!storiesLoading && stories.length > 0 && stories.map((story) => (
-                    <StoryCard
-                      key={story.id}
-                      story={toStoryCard(story)}
-                      onRead={(cardStory) => void handleReadStory(cardStory.id)}
-                      onPlayAudio={story.audio_url ? () => void handlePlayStoryAudio(story.id) : undefined}
-                      isAudioPlaying={playingStoryId === story.id}
-                      isAudioLoading={storyAudioLoadingId === story.id}
-                    />
-                  ))}
+                  {!storiesLoading &&
+                    stories.length > 0 &&
+                    stories.map((story) => (
+                      <StoryCard
+                        key={story.id}
+                        story={toStoryCard(story)}
+                        onRead={(cardStory) =>
+                          void handleReadStory(cardStory.id)
+                        }
+                        onPlayAudio={
+                          story.audio_url
+                            ? () => void handlePlayStoryAudio(story.id)
+                            : undefined
+                        }
+                        isAudioPlaying={playingStoryId === story.id}
+                        isAudioLoading={storyAudioLoadingId === story.id}
+                      />
+                    ))}
 
                   {!storiesLoading && stories.length === 0 && (
                     <div className="min-w-45 h-70 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
@@ -384,13 +407,26 @@ export default function ChildDashboard() {
             </div>
           )}
 
+          {activeTab === "community" && profile && (
+            <section>
+              <CommunityFeed
+                childId={profile.id}
+                languagePreference={profile.languagePreference || "cantonese"}
+              />
+            </section>
+          )}
+
           {(activeTab === "rewards" || activeTab === "profile") && (
             <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-12 text-center border border-white/50 shadow-sm">
               <div className="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
                 <Construction className="w-10 h-10 text-yellow-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-700 mb-2">即將推出！</h2>
-              <p className="text-slate-500 font-bold">此功能正在開發中，敬請期待！</p>
+              <h2 className="text-2xl font-black text-slate-700 mb-2">
+                即將推出！
+              </h2>
+              <p className="text-slate-500 font-bold">
+                此功能正在開發中，敬請期待！
+              </p>
             </section>
           )}
         </main>

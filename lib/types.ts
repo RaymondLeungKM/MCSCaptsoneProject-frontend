@@ -358,3 +358,112 @@ export interface AnalyticsCharts {
   best_time_of_day: string;
   average_session_length: number;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 8 – Advanced AI & Personalization
+// ---------------------------------------------------------------------------
+
+export type RelationshipType =
+  | "semantic"
+  | "category"
+  | "phonetic"
+  | "contextual"
+  | "opposite";
+
+// Epic 8.1 – Knowledge Graph
+
+export interface WordNode {
+  word_id: string;
+  word: string;
+  word_cantonese?: string;
+  jyutping?: string;
+  category: string;
+  difficulty: "easy" | "medium" | "hard";
+  mastered: boolean;
+  exposure_count: number;
+}
+
+export interface WordEdge {
+  source_id: string;
+  target_id: string;
+  relationship_type: RelationshipType;
+  strength: number;
+}
+
+export interface WordGraph {
+  centre_word_id: string;
+  nodes: WordNode[];
+  edges: WordEdge[];
+}
+
+export interface GraphRecommendation {
+  recommended_words: WordNode[];
+  reason: string;
+  bridge_concepts: string[];
+}
+
+// Epic 8.2 – Spaced Repetition (SM-2)
+
+export interface SpacedRepetitionCard {
+  id: number;
+  child_id: string;
+  word_id: string;
+  easiness_factor: number;
+  interval: number; // days
+  repetitions: number;
+  last_quality?: number; // 0-5
+  next_review: string; // ISO datetime
+  last_reviewed?: string;
+  is_new: boolean;
+  is_graduated: boolean;
+  // enriched word fields
+  word?: string;
+  word_cantonese?: string;
+  jyutping?: string;
+  image_url?: string;
+  audio_url?: string;
+  definition_cantonese?: string;
+}
+
+export interface ReviewQueue {
+  cards: SpacedRepetitionCard[];
+  total_due: number;
+  new_cards_today: number;
+}
+
+export interface ReviewResult {
+  word_id: string;
+  new_interval: number;
+  easiness_factor: number;
+  next_review: string;
+  is_graduated: boolean;
+  message: string;
+}
+
+export interface LearningSpeedProfile {
+  avg_easiness_factor: number;
+  avg_interval: number;
+  graduation_rate: number;
+  total_cards: number;
+  assessment: string;
+}
+
+export interface LearningStyleResponse {
+  child_id: string;
+  learning_style: "visual" | "auditory" | "kinesthetic" | "mixed";
+  confidence: number;
+  explanation: string;
+}
+
+// Epic 8.2.4 – AI Tutor Chat
+
+export interface TutorChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface TutorChatResponse {
+  answer: string;
+  referenced_words: string[];
+  safe_mode: boolean;
+}

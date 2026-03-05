@@ -14,3 +14,5 @@ export * from "./audio";
 export * from "./missions";
 export * from "./games";
 export * from "./parent-dashboard";
+export * from "./community";
+export * from "./phase8";
