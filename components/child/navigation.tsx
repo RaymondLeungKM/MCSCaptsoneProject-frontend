@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Home,
-  BookOpen,
-  Gamepad2,
-  Trophy,
-  User,
-  Moon,
-  Users,
-} from "lucide-react";
+import { Home, BookOpen, Gamepad2, Trophy, User, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavigationProps {
@@ -45,13 +37,6 @@ const navItems = [
     label: "故事",
     activeBg: "bg-purple-400",
     activeText: "text-purple-600",
-  },
-  {
-    id: "community",
-    icon: Users,
-    label: "社區",
-    activeBg: "bg-pink-400",
-    activeText: "text-pink-600",
   },
   {
     id: "rewards",

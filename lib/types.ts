@@ -208,6 +208,8 @@ export interface GeneratedStory {
   ai_model?: string;
   created_at: string;
   updated_at?: string;
+  /** AI-generated illustration URLs for each of the 4 story parts */
+  part_images?: string[];
 }
 
 export interface StoryGenerationRequest {

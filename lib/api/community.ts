@@ -134,6 +134,27 @@ export async function submitCommunityPost(
   return res.json();
 }
 
+/**
+ * Submit a community post by picking an existing word from the child's
+ * My Collection.  No new file upload – reuses the word's existing image URL.
+ */
+export async function submitCommunityPostFromCollection(
+  childId: string,
+  wordId: string,
+  opts: { caption?: string } = {},
+): Promise<CommunityPost> {
+  return apiRequest<CommunityPost>(
+    `/community/posts/${childId}/from-collection`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        word_id: wordId,
+        caption: opts.caption?.slice(0, 120),
+      }),
+    },
+  );
+}
+
 /** Get posts awaiting parent moderation */
 export async function getPendingPosts(): Promise<CommunityPost[]> {
   return apiRequest<CommunityPost[]>("/community/posts/pending");

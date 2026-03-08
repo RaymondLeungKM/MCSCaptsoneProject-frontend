@@ -56,6 +56,14 @@ export function BedtimeStoryReader({
   const { speak, stop } = useSpeech();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Thematic decorations shown when no AI image has been generated yet
+  const PAGE_DECORATIONS = [
+    { emoji: "🌅", gradient: "from-amber-100 via-orange-100 to-yellow-50" },
+    { emoji: "🌳", gradient: "from-green-100 via-emerald-100 to-teal-50" },
+    { emoji: "⭐", gradient: "from-purple-100 via-violet-100 to-indigo-50" },
+    { emoji: "🌙", gradient: "from-blue-100 via-sky-100 to-slate-50" },
+  ] as const;
+
   const stopAllAudio = () => {
     stop();
     if (audioRef.current) {
@@ -77,35 +85,71 @@ export function BedtimeStoryReader({
 
   if (!story) return null;
 
-  // --- CONTENT SPLITTING LOGIC ---
+  // --- CONTENT SPLITTING LOGIC (always exactly 4 story pages) ---
+  const NUM_STORY_PAGES = 4;
+
   const pages = useMemo(() => {
-    const sentences =
-      story.content_cantonese?.split(/(?<=[.!?。！？])\s+/) || [];
-    const engSentences = story.content_english?.split(/(?<=[.!?])\s+/) || [];
-    const jyutSentences = story.jyutping?.split("\n") || [];
+    /** Split any text into exactly NUM_STORY_PAGES roughly equal parts */
+    const splitInto4 = (text: string): string[] => {
+      if (!text) return Array(NUM_STORY_PAGES).fill("");
 
-    const chunks = [];
-    let currentChunk = { cantonese: "", english: "", jyutping: "" };
-    let count = 0;
+      // Prefer paragraph-level splits first
+      const paras = text.split(/\n+/).filter((p) => p.trim());
+      const source =
+        paras.length >= NUM_STORY_PAGES
+          ? paras
+          : text.split(/(?<=[.!?。！？])\s+/).filter((s) => s.trim());
 
-    sentences.forEach((sentence, i) => {
-      currentChunk.cantonese += sentence + " ";
-      if (engSentences[i]) currentChunk.english += engSentences[i] + " ";
-      if (jyutSentences[i]) currentChunk.jyutping += jyutSentences[i] + " ";
-
-      count++;
-      if (count >= 3 || i === sentences.length - 1) {
-        chunks.push({ ...currentChunk });
-        currentChunk = { cantonese: "", english: "", jyutping: "" };
-        count = 0;
+      if (source.length <= NUM_STORY_PAGES) {
+        // Fewer chunks than pages — pad the rest with empty string
+        return Array.from(
+          { length: NUM_STORY_PAGES },
+          (_, i) => source[i]?.trim() ?? "",
+        );
       }
-    });
 
-    return chunks;
+      const partSize = Math.ceil(source.length / NUM_STORY_PAGES);
+      return Array.from({ length: NUM_STORY_PAGES }, (_, i) =>
+        source
+          .slice(i * partSize, (i + 1) * partSize)
+          .join(" ")
+          .trim(),
+      );
+    };
+
+    /** Split jyutping (newline-separated) into 4 parts */
+    const splitJyutInto4 = (text: string): string[] => {
+      if (!text) return Array(NUM_STORY_PAGES).fill("");
+      const lines = text.split("\n").filter((l) => l.trim());
+      if (lines.length <= NUM_STORY_PAGES) {
+        return Array.from(
+          { length: NUM_STORY_PAGES },
+          (_, i) => lines[i]?.trim() ?? "",
+        );
+      }
+      const partSize = Math.ceil(lines.length / NUM_STORY_PAGES);
+      return Array.from({ length: NUM_STORY_PAGES }, (_, i) =>
+        lines
+          .slice(i * partSize, (i + 1) * partSize)
+          .join(" ")
+          .trim(),
+      );
+    };
+
+    const cantParts = splitInto4(story.content_cantonese ?? "");
+    const engParts = splitInto4(story.content_english ?? "");
+    const jyutParts = splitJyutInto4(story.jyutping ?? "");
+
+    return Array.from({ length: NUM_STORY_PAGES }, (_, i) => ({
+      cantonese: cantParts[i] ?? "",
+      english: engParts[i] ?? "",
+      jyutping: jyutParts[i] ?? "",
+      imageUrl: story.part_images?.[i] ?? null,
+    }));
   }, [story]);
 
-  const totalPages = pages.length + 1;
-  const isStatsPage = currentPage === pages.length;
+  const totalPages = NUM_STORY_PAGES + 1; // 4 story pages + 1 stats page
+  const isStatsPage = currentPage === NUM_STORY_PAGES;
 
   // --- AUDIO ---
   const handlePlayPage = () => {
@@ -252,32 +296,62 @@ export function BedtimeStoryReader({
           </div>
 
           {/* MAIN PAGE AREA */}
-          <div className="flex-1 p-6 md:p-12 overflow-y-auto overscroll-contain min-h-0 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto overscroll-contain min-h-0 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
             {!isStatsPage ? (
               // --- STORY PAGES ---
-              <div className="flex flex-col h-full justify-center items-center text-center space-y-8 animate-in fade-in duration-500 key={currentPage}">
-                {/* Cantonese */}
-                <p className="text-2xl md:text-4xl font-black text-slate-800 leading-relaxed tracking-tight">
-                  {pages[currentPage]?.cantonese}
-                </p>
+              <div
+                key={currentPage}
+                className="flex flex-col h-full animate-in fade-in duration-500"
+              >
+                {/* Illustration Area */}
+                <div
+                  className="shrink-0 w-full rounded-2xl overflow-hidden relative mb-4 shadow-md"
+                  style={{ height: "210px" }}
+                >
+                  {pages[currentPage]?.imageUrl ? (
+                    <img
+                      src={pages[currentPage].imageUrl}
+                      alt={`第 ${currentPage + 1} 頁插圖`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        "w-full h-full flex items-center justify-center bg-linear-to-br",
+                        PAGE_DECORATIONS[currentPage]?.gradient,
+                      )}
+                    >
+                      <span className="text-8xl select-none drop-shadow-sm">
+                        {PAGE_DECORATIONS[currentPage]?.emoji}
+                      </span>
+                    </div>
+                  )}
+                  {/* Page badge */}
+                  <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#5D4037] shadow-sm">
+                    第 {currentPage + 1} 頁
+                  </div>
+                </div>
 
-                {/* Jyutping */}
-                {showJyutping && pages[currentPage]?.jyutping && (
-                  <p className="text-sm md:text-base font-mono text-purple-600 bg-purple-50 px-4 py-2 rounded-xl inline-block border border-purple-100">
-                    {pages[currentPage].jyutping}
+                {/* Text Area */}
+                <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4 overflow-y-auto pb-6">
+                  {/* Cantonese */}
+                  <p className="text-xl md:text-3xl font-black text-slate-800 leading-relaxed tracking-tight">
+                    {pages[currentPage]?.cantonese}
                   </p>
-                )}
 
-                {/* English */}
-                {showEnglish && pages[currentPage]?.english && (
-                  <p className="text-lg md:text-xl font-medium text-slate-500 italic font-serif">
-                    "{pages[currentPage].english}"
-                  </p>
-                )}
+                  {/* Jyutping */}
+                  {showJyutping && pages[currentPage]?.jyutping && (
+                    <p className="text-sm md:text-base font-mono text-purple-600 bg-purple-50 px-4 py-2 rounded-xl inline-block border border-purple-100">
+                      {pages[currentPage].jyutping}
+                    </p>
+                  )}
 
-                {/* Page Number Footer */}
-                <div className="absolute bottom-4 text-slate-300 text-xs font-bold">
-                  - {currentPage + 1} -
+                  {/* English */}
+                  {showEnglish && pages[currentPage]?.english && (
+                    <p className="text-base md:text-lg font-medium text-slate-500 italic font-serif">
+                      &ldquo;{pages[currentPage].english}&rdquo;
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (

@@ -320,6 +320,10 @@ export default function ChildDashboard() {
                 languagePreference={profile.languagePreference || "cantonese"}
                 onWordLearned={() => setProfileRefreshKey((k) => k + 1)}
               />
+              <CommunityFeed
+                childId={profile.id}
+                languagePreference={profile.languagePreference || "cantonese"}
+              />
             </section>
           )}
 
@@ -405,15 +409,6 @@ export default function ChildDashboard() {
                 </div>
               </section>
             </div>
-          )}
-
-          {activeTab === "community" && profile && (
-            <section>
-              <CommunityFeed
-                childId={profile.id}
-                languagePreference={profile.languagePreference || "cantonese"}
-              />
-            </section>
           )}
 
           {(activeTab === "rewards" || activeTab === "profile") && (

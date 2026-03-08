@@ -6,11 +6,20 @@
  * Kid-friendly discovery feed showing approved community photo check-ins.
  * - Anonymised: no real names or locations shown
  * - Children can star posts
- * - Parents can submit new photo check-ins from this view
+ * - Parents can share photos by picking from the child's existing My Collection
+ *   (no new file uploads – reuses photos already in the vocabulary)
  */
 
-import { useEffect, useState, useRef } from "react";
-import { Star, Camera, Loader2, ImageOff, Trophy, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Star,
+  GalleryHorizontalEnd,
+  Loader2,
+  ImageOff,
+  Trophy,
+  Users,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,9 +27,11 @@ import {
   getCommunityFeed,
   reactToPost,
   removeReaction,
-  submitCommunityPost,
+  submitCommunityPostFromCollection,
   type CommunityPost,
 } from "@/lib/api/community";
+import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
+import type { Word } from "@/lib/types";
 import { API_BASE_URL } from "@/lib/api/client";
 
 interface CommunityFeedProps {
@@ -35,6 +46,9 @@ function resolveImageUrl(url: string): string {
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
+const isImageUrl = (value?: string) =>
+  !!value && (value.startsWith("http") || value.startsWith("/"));
+
 export function CommunityFeed({
   childId,
   languagePreference = "cantonese",
@@ -43,9 +57,13 @@ export function CommunityFeed({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reactedIds, setReactedIds] = useState<Set<string>>(new Set());
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Collection picker state
+  const [showPicker, setShowPicker] = useState(false);
+  const [collectionWords, setCollectionWords] = useState<Word[]>([]);
+  const [loadingCollection, setLoadingCollection] = useState(false);
 
   // ─── Load Feed ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,21 +134,38 @@ export function CommunityFeed({
     }
   };
 
-  // ─── Photo Submission ────────────────────────────────────────────────────────
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadSuccess(false);
+  // ─── Open Collection Picker ─────────────────────────────────────────────────
+  const openPicker = async () => {
+    setShowPicker(true);
+    if (collectionWords.length > 0) return; // use cached list
+    setLoadingCollection(true);
     try {
-      await submitCommunityPost(childId, file);
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3000);
+      const responses = await getWordsWithProgress(childId, undefined, true);
+      const words = responses
+        .map((r) => toWord(r, r.progress))
+        .filter((w) => isImageUrl(w.image));
+      setCollectionWords(words);
     } catch {
-      setError("上傳失敗，請再試一次。");
+      setError("無法載入我的收藏，請稍後再試。");
+      setShowPicker(false);
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setLoadingCollection(false);
+    }
+  };
+
+  // ─── Pick & Submit ──────────────────────────────────────────────────────────
+  const handlePickWord = async (word: Word) => {
+    setShowPicker(false);
+    setSubmitting(true);
+    setSubmitSuccess(false);
+    try {
+      await submitCommunityPostFromCollection(childId, word.id);
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 3000);
+    } catch {
+      setError("提交失敗，請再試一次。");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -151,36 +186,97 @@ export function CommunityFeed({
           </div>
         </div>
 
-        {/* Upload button */}
+        {/* Pick from My Collection button */}
         <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
+          onClick={() => void openPicker()}
+          disabled={submitting}
           className={cn(
             "flex items-center gap-2 bg-linear-to-r from-pink-400 to-orange-400",
             "text-white px-4 py-2.5 rounded-full font-black text-sm shadow-md",
             "hover:scale-105 active:scale-95 transition-all",
-            uploading && "opacity-60 cursor-not-allowed",
+            submitting && "opacity-60 cursor-not-allowed",
           )}
         >
-          {uploading ? (
+          {submitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <Camera className="w-4 h-4" />
+            <GalleryHorizontalEnd className="w-4 h-4" />
           )}
           {languagePreference === "english" ? "Share a Find!" : "分享發現！"}
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={handleFileChange}
-        />
       </div>
 
-      {/* Upload success notice */}
-      {uploadSuccess && (
+      {/* Collection Picker Modal */}
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-4xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div>
+                <h3 className="text-xl font-black text-slate-700">
+                  {languagePreference === "english"
+                    ? "Pick from My Collection"
+                    : "選擇我的收藏"}
+                </h3>
+                <p className="text-xs font-bold text-slate-400 mt-0.5">
+                  {languagePreference === "english"
+                    ? "Choose a photo to share with friends!"
+                    : "選一張相片與大家分享！"}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPicker(false)}
+                className="bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-all"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto p-4 flex-1">
+              {loadingCollection ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loader2 className="w-8 h-8 animate-spin text-pink-400" />
+                </div>
+              ) : collectionWords.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-5xl mb-3">📸</p>
+                  <p className="text-slate-500 font-bold text-sm">
+                    {languagePreference === "english"
+                      ? "No photos in your collection yet!"
+                      : "你的收藏還沒有相片！"}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {collectionWords.map((word) => (
+                    <button
+                      key={word.id}
+                      onClick={() => void handlePickWord(word)}
+                      className="group relative aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 hover:border-pink-400 transition-all hover:scale-105 bg-slate-100"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveImageUrl(word.image)}
+                        alt={word.word_cantonese || word.word}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-2 py-1.5">
+                        <p className="text-white text-[10px] font-black truncate text-center">
+                          {word.word_cantonese || word.word}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit success notice */}
+      {submitSuccess && (
         <Alert className="bg-green-50 border-green-200 rounded-2xl">
           <AlertDescription className="text-green-700 font-bold">
             🎉{" "}
