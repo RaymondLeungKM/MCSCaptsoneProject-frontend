@@ -3,7 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Construction, Book, Sparkles, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Construction,
+  Book,
+  Sparkles,
+  Users,
+  Brain,
+  Zap,
+  BookMarked,
+} from "lucide-react";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 
 // --- COMPONENTS ---
@@ -29,6 +38,9 @@ import {
 } from "@/lib/api";
 import { getChildStories, getStory } from "@/lib/api/bedtime-stories";
 import { startLearningSession, endLearningSession } from "@/lib/api/progress";
+import { getWordOfTheDay, getNextActivity } from "@/lib/api/adaptive";
+import type { WordOfTheDayResponse } from "@/lib/api/adaptive";
+import { Phase8View } from "@/components/views/phase8-view";
 import type { Category, ChildProfile, Game, GeneratedStory } from "@/lib/types";
 import type { Story as StoryCardStory } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
@@ -92,6 +104,12 @@ export default function ChildDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const [wordOfDay, setWordOfDay] = useState<WordOfTheDayResponse | null>(null);
+  const [nextActivityRec, setNextActivityRec] = useState<{
+    recommended_activity: string;
+    reason: string;
+  } | null>(null);
+  const wordAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -134,6 +152,16 @@ export default function ChildDashboard() {
       );
 
       await loadStories(selectedChild.id);
+
+      // Load adaptive recommendations (non-blocking – failures are silent)
+      void Promise.all([
+        getWordOfTheDay(selectedChild.id)
+          .then(setWordOfDay)
+          .catch(() => null),
+        getNextActivity(selectedChild.id)
+          .then(setNextActivityRec)
+          .catch(() => null),
+      ]);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "載入資料失敗，請稍後再試。",
@@ -233,6 +261,21 @@ export default function ChildDashboard() {
     };
   }, []);
 
+  const handlePlayAudio = (url: string) => {
+    if (wordAudioRef.current) {
+      wordAudioRef.current.pause();
+      wordAudioRef.current = null;
+    }
+    const audio = new Audio(url);
+    wordAudioRef.current = audio;
+    audio.onended = () => {
+      wordAudioRef.current = null;
+    };
+    audio.play().catch(() => {
+      wordAudioRef.current = null;
+    });
+  };
+
   const handleReadStory = async (storyId: string) => {
     if (!profile) return;
     try {
@@ -314,6 +357,85 @@ export default function ChildDashboard() {
         <main className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           {activeTab === "home" && (
             <section className="space-y-6">
+              {/* AI Adaptive Recommendation Banner */}
+              {(wordOfDay || nextActivityRec) && (
+                <div className="bg-linear-to-r from-violet-50 to-indigo-50 border border-violet-200/60 rounded-3xl p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-violet-500 p-1.5 rounded-xl">
+                      <Brain className="w-4 h-4 text-white" />
+                    </div>
+                    <p
+                      className="font-black text-violet-700 text-sm"
+                      style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                    >
+                      AI 今日推薦
+                    </p>
+                  </div>
+
+                  {wordOfDay && (
+                    <div className="flex items-start gap-3 bg-white/70 rounded-2xl px-3 py-2.5">
+                      <BookMarked className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p
+                          className="text-xs text-slate-400 font-semibold"
+                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                        >
+                          今日重點詞彙
+                        </p>
+                        <p className="font-black text-slate-800">
+                          {wordOfDay.word}
+                        </p>
+                        <p
+                          className="text-xs text-slate-500 mt-0.5"
+                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                        >
+                          {wordOfDay.reason}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {nextActivityRec && (
+                    <div className="flex items-center gap-3 bg-white/70 rounded-2xl px-3 py-2.5">
+                      <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-xs text-slate-400 font-semibold"
+                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                        >
+                          建議下一步
+                        </p>
+                        <p
+                          className="text-xs text-slate-600"
+                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                        >
+                          {nextActivityRec.reason}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setActiveTab(
+                            nextActivityRec.recommended_activity === "story"
+                              ? "stories"
+                              : nextActivityRec.recommended_activity === "game"
+                                ? "games"
+                                : "learn",
+                          )
+                        }
+                        className="shrink-0 bg-amber-400 hover:bg-amber-500 text-white text-xs font-black px-3 py-1.5 rounded-full transition-colors"
+                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                      >
+                        {nextActivityRec.recommended_activity === "story"
+                          ? "去故事"
+                          : nextActivityRec.recommended_activity === "game"
+                            ? "去遊戲"
+                            : "去學習"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <DailyWordsViewer
                 childId={profile.id}
                 childName={profile.name}
@@ -409,6 +531,12 @@ export default function ChildDashboard() {
                 </div>
               </section>
             </div>
+          )}
+
+          {activeTab === "ai" && profile && (
+            <section>
+              <Phase8View profile={profile} onPlayAudio={handlePlayAudio} />
+            </section>
           )}
 
           {(activeTab === "rewards" || activeTab === "profile") && (
