@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { getWords, getWordsWithProgress } from "@/lib/api";
+import { getGraphRecommendations } from "@/lib/api/phase8";
 import type { LanguagePreference, Word } from "@/lib/types";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
@@ -59,6 +60,9 @@ export function DailyWordsViewer({
   // Camera tab state (API-backed)
   const [cameraWords, setCameraWords] = useState<DailyWordSummary[]>([]);
   const [cameraLoading, setCameraLoading] = useState(true);
+
+  // Graph recommendation reason for 預設字庫
+  const [graphReason, setGraphReason] = useState<string | null>(null);
 
   // Tab & Expansion State
   const [activeTab, setActiveTab] = useState<"default" | "camera">("camera");
@@ -149,37 +153,74 @@ export function DailyWordsViewer({
   const loadDailyWords = async () => {
     setLoading(true);
     setError(null);
+    setGraphReason(null);
 
     try {
       let dailyWords: DailyWordSummary[] = [];
 
       if (childId && childId !== "1") {
-        const wordsWithProgress = await getWordsWithProgress(childId);
-        dailyWords = wordsWithProgress
-          .map((item: any) => {
-            const progress = item.progress;
-            const exposureCount = progress?.exposure_count ?? 0;
-            const successRate = progress?.success_rate ?? 0;
+        // Fetch full word+progress data and graph recommendations in parallel
+        const [wordsWithProgress, graphRec] = await Promise.allSettled([
+          getWordsWithProgress(childId),
+          getGraphRecommendations(childId, 8),
+        ]);
 
-            return {
-              word_id: item.id,
-              word: item.word,
-              word_cantonese: item.word_cantonese,
-              jyutping: item.jyutping,
-              definition_cantonese:
-                item.definition_cantonese || item.definition,
-              image_url: item.image_url,
-              exposure_count: exposureCount,
-              used_actively: exposureCount >= 6 || successRate >= 0.7,
-              story_priority: Math.max(
-                1,
-                Math.min(10, Math.round(10 - Math.min(exposureCount, 9))),
-              ),
-              last_practiced: progress?.last_practiced,
-            };
-          })
-          .sort((a, b) => b.story_priority - a.story_priority)
-          .slice(0, 8);
+        const allWords =
+          wordsWithProgress.status === "fulfilled"
+            ? wordsWithProgress.value
+            : [];
+
+        // Build a map from word_id → mapped DailyWordSummary
+        const wordMap = new Map<string, DailyWordSummary>();
+        for (const item of allWords as any[]) {
+          const progress = item.progress;
+          const exposureCount = progress?.exposure_count ?? 0;
+          const successRate = progress?.success_rate ?? 0;
+          wordMap.set(item.id, {
+            word_id: item.id,
+            word: item.word,
+            word_cantonese: item.word_cantonese,
+            jyutping: item.jyutping,
+            definition_cantonese: item.definition_cantonese || item.definition,
+            image_url: item.image_url,
+            exposure_count: exposureCount,
+            used_actively: exposureCount >= 6 || successRate >= 0.7,
+            story_priority: Math.max(
+              1,
+              Math.min(10, Math.round(10 - Math.min(exposureCount, 9))),
+            ),
+            last_practiced: progress?.last_practiced,
+          });
+        }
+
+        // Use graph recommendations to order words if available
+        if (
+          graphRec.status === "fulfilled" &&
+          graphRec.value.recommended_words.length > 0
+        ) {
+          setGraphReason(graphRec.value.reason);
+          const recommendedIds = graphRec.value.recommended_words.map(
+            (w) => w.word_id,
+          );
+
+          // Boost: recommended words first (in recommendation order), then
+          // remaining words sorted by story_priority
+          const recommended = recommendedIds
+            .map((id) => wordMap.get(id))
+            .filter((w): w is DailyWordSummary => w !== undefined);
+
+          const recommendedSet = new Set(recommendedIds);
+          const remaining = Array.from(wordMap.values())
+            .filter((w) => !recommendedSet.has(w.word_id))
+            .sort((a, b) => b.story_priority - a.story_priority);
+
+          dailyWords = [...recommended, ...remaining].slice(0, 8);
+        } else {
+          // Fallback: sort by story_priority (existing behaviour)
+          dailyWords = Array.from(wordMap.values())
+            .sort((a, b) => b.story_priority - a.story_priority)
+            .slice(0, 8);
+        }
       }
 
       if (!dailyWords.length) {
@@ -335,7 +376,7 @@ export function DailyWordsViewer({
 
             <p className="text-slate-500 font-bold text-center mb-6 text-sm">
               {activeTab === "default"
-                ? "這些詞語將會出現在你的睡前故事中！"
+                ? (graphReason ?? "這些詞語將會出現在你的睡前故事中！")
                 : "這些是你用相機發現的新鮮事物！"}
             </p>
 

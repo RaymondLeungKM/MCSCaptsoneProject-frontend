@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   TrendingUp,
@@ -19,13 +26,16 @@ import {
   Lightbulb,
   CheckCircle2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getDashboardSummary,
   getAnalyticsCharts,
+  getWordsByDate,
 } from "@/lib/api/parent-dashboard";
-import { getAuthToken } from "@/lib/api/client";
+import { API_BASE_URL, getAuthToken } from "@/lib/api/client";
 
 // --- TYPES (Locally defined to ensure standalone functionality) ---
 interface DashboardSummary {
@@ -40,12 +50,13 @@ interface DashboardSummary {
   category_progress: {
     category_id: string;
     category_name: string;
+    category_name_cantonese?: string;
     words_learned: number;
     total_words: number;
     progress_percentage: number;
   }[];
   recent_insights: LearningInsight[];
-  latest_report: WeeklyReport;
+  latest_report?: WeeklyReport;
 }
 
 interface AnalyticsCharts {
@@ -73,6 +84,27 @@ interface WeeklyReport {
   growth_percentage: number;
   strengths: string[];
   recommendations: string[];
+}
+
+interface WordEntry {
+  id: string;
+  word: string;
+  word_cantonese?: string;
+  jyutping?: string;
+  image_url?: string;
+  category: string;
+  category_cantonese?: string;
+  definition: string;
+  definition_cantonese?: string;
+  exposure_count: number;
+  mastery_confidence?: number;
+}
+
+interface WordsByDateResult {
+  date: string;
+  child_id: string;
+  words_count: number;
+  words: WordEntry[];
 }
 
 // --- ROBUST MOCK DATA GENERATOR (Restored Full Logic) ---
@@ -186,7 +218,77 @@ const generateMockData = () => {
   };
 };
 
+const MOCK_WORDS_BY_DATE: WordEntry[] = [
+  {
+    id: "w1",
+    word: "cat",
+    word_cantonese: "貓",
+    jyutping: "maau1",
+    category: "Animals",
+    category_cantonese: "動物",
+    definition: "A small domesticated animal",
+    definition_cantonese: "一種小型家養動物",
+    exposure_count: 3,
+    mastery_confidence: 0.8,
+  },
+  {
+    id: "w2",
+    word: "dog",
+    word_cantonese: "狗",
+    jyutping: "gau2",
+    category: "Animals",
+    category_cantonese: "動物",
+    definition: "A common pet",
+    definition_cantonese: "常見的寵物",
+    exposure_count: 2,
+    mastery_confidence: 0.7,
+  },
+  {
+    id: "w3",
+    word: "apple",
+    word_cantonese: "蘋果",
+    jyutping: "ping4 gwo2",
+    category: "Food",
+    category_cantonese: "食物",
+    definition: "A fruit",
+    definition_cantonese: "一種水果",
+    exposure_count: 4,
+    mastery_confidence: 0.9,
+  },
+  {
+    id: "w4",
+    word: "red",
+    word_cantonese: "紅色",
+    jyutping: "hung4 sik1",
+    category: "Colors",
+    category_cantonese: "顏色",
+    definition: "A color",
+    definition_cantonese: "一種顏色",
+    exposure_count: 5,
+    mastery_confidence: 1.0,
+  },
+  {
+    id: "w5",
+    word: "tree",
+    word_cantonese: "樹",
+    jyutping: "syu6",
+    category: "Nature",
+    category_cantonese: "大自然",
+    definition: "A large plant",
+    definition_cantonese: "一種大型植物",
+    exposure_count: 2,
+    mastery_confidence: 0.6,
+  },
+];
+
 const MOCK_DB = generateMockData();
+
+function resolveImageUrl(url?: string): string {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+  return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 // Map global insight_type to local type labels
 function mapInsightType(
@@ -211,22 +313,12 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [charts, setCharts] = useState<AnalyticsCharts | null>(null);
-  const [period, setPeriod] = useState<"week" | "month" | "all">("week");
   const [loading, setLoading] = useState(true);
-  const [chartsLoading, setChartsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initial Load Logic
   useEffect(() => {
     loadData();
   }, [childId]);
-
-  // Chart Refresh Logic
-  useEffect(() => {
-    if (summary) {
-      loadCharts();
-    }
-  }, [period]);
 
   const loadData = async () => {
     setLoading(true);
@@ -243,7 +335,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
       const [apiSummary, apiCharts] = await Promise.all([
         getDashboardSummary(childId),
-        getAnalyticsCharts(childId, period),
+        getAnalyticsCharts(childId, "all"),
       ]);
 
       setSummary({
@@ -258,6 +350,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         category_progress: (apiSummary.category_progress ?? []).map((cp) => ({
           category_id: cp.category_id,
           category_name: cp.category_name,
+          category_name_cantonese: cp.category_name_cantonese,
           words_learned: cp.words_learned,
           total_words: cp.total_words,
           progress_percentage: cp.progress_percentage,
@@ -281,7 +374,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
               strengths: apiSummary.latest_report.strengths,
               recommendations: apiSummary.latest_report.recommendations,
             }
-          : MOCK_DB.summary.latest_report,
+          : undefined,
       });
 
       setCharts({
@@ -293,94 +386,10 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
       console.log("[Analytics] Loaded real data for child:", childId);
     } catch (error: any) {
-      console.error("Failed to load analytics, falling back to mock:", error);
-      setSummary(MOCK_DB.summary);
-      setCharts(MOCK_DB.charts);
+      console.error("Failed to load analytics:", error);
+      setError("無法載入分析數據，請稍後再試。");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCharts = async () => {
-    setChartsLoading(true);
-    try {
-      const token = getAuthToken();
-      const isMockChild = !childId || childId.length < 10;
-
-      if (!token || isMockChild) {
-        setChartsLoading(false);
-        return;
-      }
-
-      const apiCharts = await getAnalyticsCharts(childId, period);
-      setCharts({
-        time_series: {
-          dates: apiCharts.time_series.dates,
-          words_learned: apiCharts.time_series.words_learned,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to load charts:", error);
-      setCharts(MOCK_DB.charts);
-    } finally {
-      setChartsLoading(false);
-    }
-  };
-
-  // --- CORE LOGIC: DATA AGGREGATION (Restored) ---
-  const getAggregatedData = () => {
-    if (!charts) return { labels: [], values: [] };
-
-    const { dates, words_learned } = charts.time_series;
-    const dataPoints = dates.map((d, i) => ({
-      date: new Date(d),
-      value: words_learned[i],
-    }));
-
-    if (period === "week") {
-      // Show last 7 days
-      const last7 = dataPoints.slice(-7);
-      return {
-        labels: last7.map((d) =>
-          d.date.toLocaleDateString("zh-HK", { weekday: "short" }),
-        ), // e.g. 週一
-        values: last7.map((d) => d.value),
-      };
-    } else if (period === "month") {
-      // Aggregate into weeks for 30-day view
-      const last30 = dataPoints.slice(-30);
-      const weeklyMap: Record<string, number> = {};
-
-      last30.forEach((p) => {
-        // Calculate the "Week of" date
-        const d = new Date(p.date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust to Monday
-        const monday = new Date(d.setDate(diff));
-        const key = `${monday.getMonth() + 1}月${monday.getDate()}日`; // Format: 5月12日
-
-        weeklyMap[key] = (weeklyMap[key] || 0) + p.value;
-      });
-
-      return {
-        labels: Object.keys(weeklyMap),
-        values: Object.values(weeklyMap),
-      };
-    } else {
-      // Aggregate into months for all-time view
-      const monthlyMap: Record<string, number> = {};
-      dataPoints.forEach((p) => {
-        const key = p.date.toLocaleDateString("zh-HK", {
-          year: "numeric",
-          month: "short",
-        }); // e.g. 2023年 10月
-        monthlyMap[key] = (monthlyMap[key] || 0) + p.value;
-      });
-
-      return {
-        labels: Object.keys(monthlyMap),
-        values: Object.values(monthlyMap),
-      };
     }
   };
 
@@ -456,88 +465,8 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         />
       </div>
 
-      {/* 2. Main Chart with Logic-Based Period Selector */}
-      <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/80">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
-          <div>
-            <h4 className="text-xl font-bold text-slate-700 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-slate-400" />
-              學習進度趨勢
-            </h4>
-            {!chartsLoading && (
-              <p className="text-sm text-slate-500 mt-1">
-                這段期間共學習了{" "}
-                <span className="font-bold text-blue-600">
-                  {getAggregatedData().values.reduce((a, b) => a + b, 0)}
-                </span>{" "}
-                個新詞彙
-              </p>
-            )}
-          </div>
-
-          <div className="flex bg-slate-100 p-1 rounded-full shrink-0">
-            {(["week", "month", "all"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-xs font-bold transition-all",
-                  period === p
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700",
-                )}
-              >
-                {p === "week" ? "最近7天" : p === "month" ? "最近30天" : "全部"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {chartsLoading ? (
-          <div className="space-y-4 pt-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="flex-1 h-8 rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          (() => {
-            const { labels, values } = getAggregatedData();
-            const maxValue = Math.max(...values, 1);
-
-            return (
-              <div className="space-y-4 min-h-[200px]">
-                {labels.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400">
-                    <p>暫無學習活動</p>
-                  </div>
-                ) : (
-                  labels.map((label, i) => (
-                    <div key={label} className="group flex items-center gap-4">
-                      <span className="text-xs font-bold text-slate-400 w-16 text-right flex-shrink-0 truncate">
-                        {label}
-                      </span>
-                      <div className="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden relative">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-400 to-indigo-400 transition-all duration-1000 ease-out group-hover:from-blue-500 group-hover:to-indigo-500 relative"
-                          style={{
-                            width: `${Math.max((values[i] / maxValue) * 100, 2)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs font-bold text-slate-600 w-6 text-left">
-                        {values[i]}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            );
-          })()
-        )}
-      </Card>
+      {/* 2. Learning Calendar */}
+      <LearningCalendar charts={charts} childId={childId} />
 
       {/* 3. Stats Grid (Weekly & Category) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -585,7 +514,9 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
             {summary.category_progress.map((cat) => (
               <div key={cat.category_id} className="space-y-2">
                 <div className="flex justify-between text-sm font-bold">
-                  <span className="text-slate-700">{cat.category_name}</span>
+                  <span className="text-slate-700">
+                    {cat.category_name_cantonese || cat.category_name}
+                  </span>
                   <span className="text-slate-400">
                     {cat.words_learned} / {cat.total_words}
                   </span>
@@ -619,15 +550,23 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         )}
 
         {/* 5. Latest Report */}
-        {summary.latest_report && (
-          <Card className="p-6 rounded-[32px] border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 h-full">
-            <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-indigo-500" />
-              最新學習週報
-            </h4>
+        <Card className="p-6 rounded-[32px] border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 h-full">
+          <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-indigo-500" />
+            最新學習週報
+          </h4>
+          {summary.latest_report ? (
             <ReportSummary report={summary.latest_report} />
-          </Card>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
+              <BarChart3 className="w-10 h-10 text-indigo-200" />
+              <p className="text-sm font-bold text-indigo-400">暫無週報</p>
+              <p className="text-xs text-indigo-300 max-w-[200px]">
+                學習週報每週自動生成，繼續學習後即可查閱。
+              </p>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
@@ -804,5 +743,386 @@ function ReportSummary({ report }: { report: WeeklyReport }) {
         </div>
       )}
     </div>
+  );
+}
+
+// --- LEARNING CALENDAR ---
+
+function LearningCalendar({
+  charts,
+  childId,
+}: {
+  charts: AnalyticsCharts;
+  childId: string;
+}) {
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const [currentMonth, setCurrentMonth] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dateWords, setDateWords] = useState<WordsByDateResult | null>(null);
+  const [loadingWords, setLoadingWords] = useState(false);
+  const [countOverrides, setCountOverrides] = useState<Record<string, number>>(
+    {},
+  );
+  const wordsRequestIdRef = useRef(0);
+
+  // Build date (YYYY-MM-DD) → word count map from time_series data
+  const dateCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    const { dates, words_learned } = charts.time_series;
+    dates.forEach((d, i) => {
+      const dateStr =
+        d.length === 10 ? d : new Date(d).toISOString().split("T")[0];
+      map[dateStr] = (map[dateStr] ?? 0) + words_learned[i];
+    });
+    Object.entries(countOverrides).forEach(([dateStr, count]) => {
+      map[dateStr] = count;
+    });
+    return map;
+  }, [charts, countOverrides]);
+
+  // Build calendar cells for the currently displayed month
+  const calendarCells = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: Array<{ day: number | null; dateStr: string | null }> = [];
+    for (let i = 0; i < firstDay; i++) {
+      cells.push({ day: null, dateStr: null });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cells.push({ day: d, dateStr });
+    }
+    return cells;
+  }, [currentMonth]);
+
+  const handleDayClick = async (dateStr: string) => {
+    const requestId = ++wordsRequestIdRef.current;
+    setSelectedDate(dateStr);
+    setDateWords(null);
+
+    const count = dateCountMap[dateStr] ?? 0;
+    if (count === 0) {
+      setLoadingWords(false);
+      setDateWords({
+        date: dateStr,
+        child_id: childId,
+        words_count: 0,
+        words: [],
+      });
+      return;
+    }
+
+    const isMockChild = !childId || childId.length < 10;
+    if (isMockChild) {
+      setLoadingWords(false);
+      setCountOverrides((current) => ({
+        ...current,
+        [dateStr]: count,
+      }));
+      setDateWords({
+        date: dateStr,
+        child_id: childId,
+        words_count: count,
+        words: MOCK_WORDS_BY_DATE.slice(
+          0,
+          Math.min(count, MOCK_WORDS_BY_DATE.length),
+        ),
+      });
+      return;
+    }
+
+    setLoadingWords(true);
+    try {
+      const result = await getWordsByDate(childId, dateStr);
+      if (requestId !== wordsRequestIdRef.current) return;
+      const typedResult = result as WordsByDateResult;
+      setCountOverrides((current) => ({
+        ...current,
+        [dateStr]: typedResult.words_count,
+      }));
+      setDateWords(typedResult);
+    } catch {
+      if (requestId !== wordsRequestIdRef.current) return;
+      setCountOverrides((current) => ({
+        ...current,
+        [dateStr]: 0,
+      }));
+      setDateWords({
+        date: dateStr,
+        child_id: childId,
+        words_count: 0,
+        words: [],
+      });
+    } finally {
+      if (requestId === wordsRequestIdRef.current) {
+        setLoadingWords(false);
+      }
+    }
+  };
+
+  const goToPrevMonth = () => {
+    wordsRequestIdRef.current += 1;
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+    );
+    setSelectedDate(null);
+    setDateWords(null);
+    setLoadingWords(false);
+  };
+
+  const goToNextMonth = () => {
+    wordsRequestIdRef.current += 1;
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+    );
+    setSelectedDate(null);
+    setDateWords(null);
+    setLoadingWords(false);
+  };
+
+  const isCurrentMonth =
+    currentMonth.getMonth() === today.getMonth() &&
+    currentMonth.getFullYear() === today.getFullYear();
+
+  const closeDateDialog = (open: boolean) => {
+    if (!open) {
+      wordsRequestIdRef.current += 1;
+      setSelectedDate(null);
+      setDateWords(null);
+      setLoadingWords(false);
+    }
+  };
+
+  return (
+    <>
+      <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/80">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <h4 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-slate-400" />
+            學習進度趨勢
+          </h4>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={goToPrevMonth}
+              className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+              aria-label="上個月"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
+            </button>
+            <span className="text-sm font-bold text-slate-700 min-w-[90px] text-center">
+              {currentMonth.toLocaleDateString("zh-HK", {
+                year: "numeric",
+                month: "long",
+              })}
+            </span>
+            <button
+              onClick={goToNextMonth}
+              disabled={isCurrentMonth}
+              className={cn(
+                "p-2 rounded-full transition-colors",
+                isCurrentMonth
+                  ? "opacity-30 cursor-not-allowed"
+                  : "hover:bg-slate-100",
+              )}
+              aria-label="下個月"
+            >
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Day-of-week labels */}
+        <div className="grid grid-cols-7 mb-1">
+          {["日", "一", "二", "三", "四", "五", "六"].map((d) => (
+            <div
+              key={d}
+              className="text-center text-xs font-bold text-slate-400 py-1"
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {calendarCells.map((cell, idx) => {
+            if (!cell.day || !cell.dateStr) {
+              return <div key={`empty-${idx}`} className="aspect-square" />;
+            }
+            const count = dateCountMap[cell.dateStr] ?? 0;
+            const isToday = cell.dateStr === todayStr;
+            const isSelected = cell.dateStr === selectedDate;
+            const hasWords = count > 0;
+
+            return (
+              <button
+                key={cell.dateStr}
+                onClick={() => handleDayClick(cell.dateStr)}
+                className={cn(
+                  "relative flex flex-col items-center justify-center aspect-square rounded-xl text-sm font-bold transition-all duration-150",
+                  isSelected
+                    ? "bg-blue-500 text-white shadow-md"
+                    : hasWords
+                      ? count >= 5
+                        ? "bg-blue-300 text-blue-950 hover:bg-blue-400 cursor-pointer"
+                        : count >= 3
+                          ? "bg-blue-200 text-blue-900 hover:bg-blue-300 cursor-pointer"
+                          : "bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer"
+                      : "text-slate-300 hover:bg-slate-50 cursor-pointer",
+                  isToday &&
+                    !isSelected &&
+                    "ring-2 ring-blue-300 text-slate-600",
+                )}
+              >
+                <span>{cell.day}</span>
+                {hasWords && !isSelected && (
+                  <span className="absolute bottom-1 text-[10px] font-bold opacity-70">
+                    {count}
+                  </span>
+                )}
+                {isSelected && (
+                  <span className="absolute bottom-0.5 text-[9px] font-bold text-white/80">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 mt-4 justify-end text-xs text-slate-400">
+          <span>詞彙量：</span>
+          {[
+            ["1–2", "bg-blue-100"],
+            ["3–4", "bg-blue-200"],
+            ["5+", "bg-blue-300"],
+          ].map(([label, color]) => (
+            <div key={label} className="flex items-center gap-1">
+              <div
+                className={cn(
+                  "h-3 w-3 rounded-sm border border-blue-100",
+                  color,
+                )}
+              />
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Dialog open={selectedDate !== null} onOpenChange={closeDateDialog}>
+        <DialogContent className="max-w-2xl rounded-[28px] border-none p-0 overflow-hidden">
+          <div className="bg-linear-to-br from-blue-50 to-cyan-50 px-6 py-5">
+            <DialogHeader className="pr-10 text-left">
+              <DialogTitle className="pr-2 text-xl font-black leading-tight text-slate-800">
+                {selectedDate
+                  ? `${new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
+                      "zh-HK",
+                      {
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )} ・ 學習詞彙`
+                  : "學習詞彙"}
+              </DialogTitle>
+              <DialogDescription className="pr-2 text-left font-medium leading-6 text-slate-500">
+                {loadingWords
+                  ? "正在載入當天的學習記錄。"
+                  : `${dateWords?.words_count ?? 0} 個詞彙學習記錄`}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-4 py-5 sm:px-6">
+            {loadingWords ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 rounded-2xl" />
+                ))}
+              </div>
+            ) : !dateWords || dateWords.words.length === 0 ? (
+              <div className="py-10 text-center text-slate-400">
+                <p className="text-sm font-medium">這天沒有學習記錄</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                {dateWords.words.map((word) => (
+                  <div
+                    key={word.id}
+                    className="flex items-start gap-3 rounded-3xl bg-slate-50 p-4 sm:gap-4"
+                  >
+                    <WordDateImage word={word} />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <span className="wrap-break-word text-base font-black leading-tight text-slate-800">
+                          {word.word_cantonese || word.word}
+                        </span>
+                        {word.jyutping && (
+                          <span className="wrap-break-word text-xs font-medium text-slate-400">
+                            [{word.jyutping}]
+                          </span>
+                        )}
+                      </div>
+                      <p className="wrap-break-word text-sm leading-6 text-slate-500">
+                        {word.definition_cantonese || word.definition}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="outline"
+                          className="border-slate-200 text-[10px] text-slate-500"
+                        >
+                          {word.category_cantonese || word.category}
+                        </Badge>
+                        {word.word_cantonese &&
+                          word.word &&
+                          word.word_cantonese !== word.word && (
+                            <Badge
+                              variant="outline"
+                              className="border-slate-200 text-[10px] text-slate-500"
+                            >
+                              {word.word}
+                            </Badge>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function WordDateImage({ word }: { word: WordEntry }) {
+  const [failed, setFailed] = useState(false);
+  const imageSrc = failed ? "" : resolveImageUrl(word.image_url);
+
+  if (!imageSrc) {
+    return (
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100">
+        <BookOpen className="h-6 w-6 text-blue-400" />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageSrc}
+      alt={word.word_cantonese || word.word}
+      className="h-14 w-14 shrink-0 rounded-2xl object-cover bg-slate-100"
+      onError={() => setFailed(true)}
+    />
   );
 }

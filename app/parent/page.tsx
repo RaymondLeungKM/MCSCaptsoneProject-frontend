@@ -29,7 +29,10 @@ import { SettingsTab } from "@/components/parent/settings-tab";
 import { SocialTab } from "@/components/parent/social-tab";
 import { AnalyticsDashboard } from "@/components/parent/analytics-dashboard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-// import { getChildren, toChildProfile } from "@/lib/api"; // Commented out to prevent errors
+import { getChildren, toChildProfile } from "@/lib/api/children";
+import { getProgressStats } from "@/lib/api/progress";
+import { getDailyMissions } from "@/lib/api/missions";
+import { getAuthToken } from "@/lib/api/client";
 import type {
   ChildProfile,
   DailyMission,
@@ -43,21 +46,7 @@ function ParentDashboardContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<ChildProfile | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [profileError, setProfileError] = useState<string | null>(null);
-
-  // --- MOCK DATA ---
-  const MOCK_PROFILE: ChildProfile = {
-    id: "mock-123",
-    name: "Emma",
-    age: 5,
-    avatar: "👧",
-    learningStyle: "mixed",
-    languagePreference: "cantonese",
-    interests: ["Animals", "Space"],
-  };
-
-  const fallbackStats: ProgressStats = {
+  const [stats, setStats] = useState<ProgressStats>({
     totalWords: 42,
     masteredWords: 15,
     weeklyProgress: [2, 5, 8, 4, 10, 6, 7],
@@ -67,10 +56,12 @@ function ParentDashboardContent() {
     activeVocabulary: 10,
     passiveVocabulary: 32,
     multiSensoryEngagement: 85,
-  };
+  });
+  const [missions, setMissions] = useState<DailyMission[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const fallbackWords: Word[] = [];
-  const fallbackMissions: DailyMission[] = [];
 
   // Handle URL parameters for deep linking
   useEffect(() => {
@@ -79,25 +70,91 @@ function ParentDashboardContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    async function loadParentDashboardProfile() {
-      setIsLoadingProfile(true);
-      setProfileError(null);
-
-      try {
-        // --- MAGIC FIX: Mock Network Request ---
-        // Pretend to load data for 0.5 seconds, then set the mock profile
-        setTimeout(() => {
-          setProfile(MOCK_PROFILE);
-          setIsLoadingProfile(false);
-        }, 500);
-      } catch (error) {
-        setProfileError("載入家長中心失敗，請稍後再試。");
-        setIsLoadingProfile(false);
-      }
-    }
-
     void loadParentDashboardProfile();
   }, []);
+
+  async function loadParentDashboardProfile() {
+    setIsLoadingProfile(true);
+    setProfileError(null);
+
+    const token = getAuthToken();
+    if (!token) {
+      // Not authenticated – use mock data for demo
+      setProfile({
+        id: "mock-123",
+        name: "小明",
+        age: 5,
+        avatar: "👦",
+        learningStyle: "mixed",
+        languagePreference: "cantonese",
+        interests: ["Animals", "Space"],
+        dailyGoal: 5,
+        todayProgress: 3,
+        level: 5,
+        xp: 350,
+        wordsLearned: 47,
+        currentStreak: 7,
+        attentionSpan: 15,
+        preferredTimeOfDay: "morning",
+      });
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    try {
+      const children = await getChildren();
+      if (children.length === 0) {
+        setProfile(null);
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      const childProfile = toChildProfile(children[0]);
+      setProfile(childProfile);
+
+      // Fetch stats and missions in parallel with graceful fallbacks
+      const [statsResult, missionsResult] = await Promise.allSettled([
+        getProgressStats(childProfile.id),
+        getDailyMissions(childProfile.id),
+      ]);
+
+      if (statsResult.status === "fulfilled") {
+        const s = statsResult.value;
+        setStats({
+          totalWords: s.total_words,
+          masteredWords: s.mastered_words,
+          weeklyProgress: s.weekly_progress,
+          streakDays: s.streak_days,
+          categoryProgress: s.category_progress.map((cp) => ({
+            category: cp.category,
+            progress: cp.progress,
+          })),
+          averageExposuresPerWord: s.average_exposures_per_word,
+          activeVocabulary: s.active_vocabulary,
+          passiveVocabulary: s.passive_vocabulary,
+          multiSensoryEngagement: s.multi_sensory_engagement,
+        });
+      }
+
+      if (missionsResult.status === "fulfilled") {
+        setMissions(
+          missionsResult.value.map((m) => ({
+            id: m.id,
+            title: m.title,
+            description: m.description,
+            targetWord: m.target_words[0] ?? "",
+            completed: false,
+            context: m.context,
+          })),
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load parent dashboard:", error);
+      setProfileError("載入家長中心失敗，請稍後再試。");
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }
 
   if (isLoadingProfile) {
     return (
@@ -224,9 +281,7 @@ function ParentDashboardContent() {
               value="overview"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              {profile && (
-                <OverviewTab profile={profile} stats={fallbackStats} />
-              )}
+              {profile && <OverviewTab profile={profile} stats={stats} />}
             </TabsContent>
 
             <TabsContent
@@ -236,7 +291,7 @@ function ParentDashboardContent() {
               {profile && (
                 <ProgressTab
                   childId={profile.id}
-                  stats={fallbackStats}
+                  stats={stats}
                   words={fallbackWords}
                 />
               )}
@@ -253,7 +308,7 @@ function ParentDashboardContent() {
               value="missions"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              <MissionsTab missions={fallbackMissions} />
+              <MissionsTab missions={missions} />
             </TabsContent>
 
             <TabsContent

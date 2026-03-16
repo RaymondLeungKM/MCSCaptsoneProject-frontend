@@ -364,14 +364,9 @@ function GraphView({ childId }: GraphViewProps) {
       {/* Graph */}
       {graph ? (
         <>
-          <p
-            className="text-xs text-slate-500 text-center"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
-            點擊節點可查看詞彙詳情及擴展圖譜
-          </p>
           <WordKnowledgeGraph
             graph={graph}
+            childId={childId}
             onNodeClick={handleNodeClick}
             className="w-full"
           />
@@ -389,23 +384,25 @@ function GraphView({ childId }: GraphViewProps) {
       {recommendations && recommendations.recommended_words.length > 0 && (
         <div className="mt-2">
           <p
-            className="text-sm font-bold text-slate-700 mb-2"
+            className="text-sm font-bold text-slate-600 mb-3 text-center"
             style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
           >
-            📌 {recommendations.reason}
+            🌟 接下來可以學這些詞語！
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {recommendations.recommended_words.map((w) => (
               <button
                 key={w.word_id}
                 onClick={() => handleNodeClick(w)}
-                className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
+                className="flex flex-col items-center gap-0.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 border-2 border-emerald-200 text-emerald-800 rounded-2xl px-2 py-3 transition-all duration-150"
                 style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
               >
-                {w.word_cantonese || w.word}
+                <span className="text-xl font-black leading-none">
+                  {w.word_cantonese || w.word}
+                </span>
                 {w.jyutping && (
-                  <span className="text-emerald-400 text-xs font-normal">
-                    {w.jyutping}
+                  <span className="text-emerald-400 text-[11px] font-semibold">
+                    {w.jyutping.split(" ")[0]}
                   </span>
                 )}
               </button>
@@ -452,7 +449,7 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
       </div>
 
       {/* Tab content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-100">
         {activeTab === "review" && (
           <ReviewView childId={profile.id} onPlayAudio={onPlayAudio} />
         )}

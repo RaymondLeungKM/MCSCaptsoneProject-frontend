@@ -64,6 +64,11 @@ export interface FriendProgress {
   children_stats: FriendChildStats[];
 }
 
+export interface UserSearchResult {
+  id: string;
+  full_name: string;
+}
+
 export interface CommunityChallenge {
   id: string;
   title: string;
@@ -178,12 +183,14 @@ export async function getCommunityFeed(
     limit?: number;
     offset?: number;
     wordId?: string;
+    childId?: string;
   } = {},
 ): Promise<CommunityPost[]> {
   const params = new URLSearchParams();
   if (opts.limit !== undefined) params.set("limit", String(opts.limit));
   if (opts.offset !== undefined) params.set("offset", String(opts.offset));
   if (opts.wordId) params.set("word_id", opts.wordId);
+  if (opts.childId) params.set("child_id", opts.childId);
   const qs = params.toString();
   return apiRequest<CommunityPost[]>(`/community/feed${qs ? `?${qs}` : ""}`);
 }
@@ -225,6 +232,25 @@ export async function sendFriendRequest(
   return apiRequest<Friendship>("/social/friends/request", {
     method: "POST",
     body: JSON.stringify({ addressee_email: addresseeEmail }),
+  });
+}
+
+/** Look up a parent by their exact user ID (returns only id + display name) */
+export async function searchUserById(
+  userId: string,
+): Promise<UserSearchResult> {
+  return apiRequest<UserSearchResult>(
+    `/social/users/search?user_id=${encodeURIComponent(userId)}`,
+  );
+}
+
+/** Send a friend request using the target parent's user ID */
+export async function sendFriendRequestById(
+  addresseeId: string,
+): Promise<Friendship> {
+  return apiRequest<Friendship>("/social/friends/request-by-id", {
+    method: "POST",
+    body: JSON.stringify({ addressee_id: addresseeId }),
   });
 }
 
