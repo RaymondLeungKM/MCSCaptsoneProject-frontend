@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Construction,
+  Bell,
   Book,
+  Clock3,
   Sparkles,
+  ShieldAlert,
   Users,
   Brain,
   Zap,
@@ -24,24 +26,39 @@ import { CommunityFeed } from "@/components/child/community-feed";
 import { GamesList } from "@/components/child/game-card";
 import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
+import { ProfileView } from "@/components/views/profile-view";
+import { RewardsView } from "@/components/views/rewards-view";
 
 import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import {
   getCategories,
+  getChild,
   getChildren,
   toCategory,
   toChildProfile,
 } from "@/lib/api";
 import { getChildStories, getStory } from "@/lib/api/bedtime-stories";
-import { startLearningSession, endLearningSession } from "@/lib/api/progress";
+import {
+  endLearningSession,
+  getLearningControlStatus,
+  startLearningSession,
+} from "@/lib/api/progress";
+import type { LearningControlStatusResponse } from "@/lib/api/progress";
 import { getWordOfTheDay, getNextActivity } from "@/lib/api/adaptive";
 import type { WordOfTheDayResponse } from "@/lib/api/adaptive";
 import { Phase8View } from "@/components/views/phase8-view";
-import type { Category, ChildProfile, Game, GeneratedStory } from "@/lib/types";
+import type {
+  Category,
+  ChildProfile,
+  Game,
+  GeneratedStory,
+  LearningControlStatus,
+} from "@/lib/types";
 import type { Story as StoryCardStory } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
 
@@ -82,9 +99,136 @@ const GAMES_DATA: Game[] = [
   },
 ];
 
+const IDLE_TIMEOUT_MS = 60_000;
+const IDLE_CHECK_INTERVAL_MS = 15_000;
+
+function getLocalDateString(value: Date = new Date()): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toLearningControlStatus(
+  response: LearningControlStatusResponse,
+): LearningControlStatus {
+  return {
+    childId: response.child_id,
+    localDate: response.local_date,
+    todayMinutes: response.today_minutes,
+    activeSessionMinutes: response.active_session_minutes,
+    sessionCount: response.session_count,
+    hasActivityToday: response.has_activity_today,
+    dailyScreenTimeLimit: response.daily_screen_time_limit,
+    screenTimeWarningThreshold: response.screen_time_warning_threshold,
+    enableTimeLimits: response.enable_time_limits,
+    remainingMinutes: response.remaining_minutes,
+    warningReached: response.warning_reached,
+    limitReached: response.limit_reached,
+    dailyReminderEnabled: response.daily_reminder_enabled,
+    dailyReminderTime: response.daily_reminder_time,
+  };
+}
+
+function hasReachedReminderTime(now: Date, reminderTime: string): boolean {
+  const [hours, minutes] = reminderTime.split(":").map(Number);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return false;
+  }
+
+  if (now.getHours() > hours) {
+    return true;
+  }
+
+  return now.getHours() === hours && now.getMinutes() >= minutes;
+}
+
+function getReminderStorageKey(childId: string, localDate: string): string {
+  return `practice-reminder:${childId}:${localDate}`;
+}
+
+function normalizeLearningStyleLabel(value?: string | null): string {
+  const normalized = (value || "")
+    .replace(/^LearningStyle\./i, "")
+    .trim()
+    .toLowerCase();
+
+  switch (normalized) {
+    case "visual":
+      return "視覺型";
+    case "auditory":
+      return "聽覺型";
+    case "kinesthetic":
+      return "動作型";
+    case "mixed":
+      return "混合型";
+    default:
+      return "你的學習風格";
+  }
+}
+
+function getLocalizedActivityLabel(activity?: string | null): string {
+  switch ((activity || "").toLowerCase()) {
+    case "story":
+      return "故事時間";
+    case "game":
+      return "互動遊戲";
+    case "learn":
+      return "開始學習";
+    case "mixed":
+      return "綜合練習";
+    default:
+      return "下一步練習";
+  }
+}
+
+function getActivityButtonLabel(activity?: string | null): string {
+  switch ((activity || "").toLowerCase()) {
+    case "story":
+      return "去故事";
+    case "game":
+      return "去遊戲";
+    default:
+      return "去學習";
+  }
+}
+
+function localizeAdaptiveReason(reason?: string | null): string {
+  if (!reason) {
+    return "系統已為你準備好今天的推薦內容。";
+  }
+
+  const trimmedReason = reason.trim();
+
+  const exactReasons: Record<string, string> = {
+    "New word to learn!": "這是今天很適合開始學的新詞語。",
+    "Needs more practice for retention":
+      "這個詞語還需要多練習幾次，會更容易記住。",
+    "Almost mastered - one more push!": "差一點就完全掌握了，再努力一次。",
+    "Review time!": "現在很適合重溫這個詞語。",
+    "Mixed approach for comprehensive learning":
+      "今天適合用多種方式一起學，記憶會更穩固。",
+  };
+
+  if (exactReasons[trimmedReason]) {
+    return exactReasons[trimmedReason];
+  }
+
+  if (/^Based on .+ learning style$/i.test(trimmedReason)) {
+    const styleToken = trimmedReason
+      .replace(/^Based on /i, "")
+      .replace(/ learning style$/i, "");
+    return `根據你的${normalizeLearningStyleLabel(styleToken)}學習風格，系統幫你安排了最合適的下一步。`;
+  }
+
+  return trimmedReason;
+}
+
 export default function ChildDashboard() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("home");
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [profile, setProfile] = useState<ChildProfile | null>(null);
@@ -101,9 +245,21 @@ export default function ChildDashboard() {
   );
   const storyAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const sessionChildIdRef = useRef<string | null>(null);
+  const sessionStartPendingRef = useRef(false);
+  const sessionShouldRemainOpenRef = useRef(false);
+  const lastInteractionAtRef = useRef<number>(Date.now());
+  const endingSessionRef = useRef(false);
+  const warningToastKeyRef = useRef<string | null>(null);
+  const limitToastKeyRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const [learningControl, setLearningControl] =
+    useState<LearningControlStatus | null>(null);
+  const [isIdle, setIsIdle] = useState(true);
+  const [sessionStartedAt, setSessionStartedAt] = useState<Date | null>(null);
+  const [sessionClockMinutes, setSessionClockMinutes] = useState(0);
   const [wordOfDay, setWordOfDay] = useState<WordOfTheDayResponse | null>(null);
   const [nextActivityRec, setNextActivityRec] = useState<{
     recommended_activity: string;
@@ -121,9 +277,109 @@ export default function ChildDashboard() {
     }
   }, [authLoading, user, router]);
 
+  const startActiveSession = (
+    childId: string,
+    startTime: Date = new Date(),
+  ) => {
+    if (
+      sessionIdRef.current ||
+      sessionStartPendingRef.current ||
+      endingSessionRef.current
+    ) {
+      return;
+    }
+
+    sessionShouldRemainOpenRef.current = true;
+    sessionStartPendingRef.current = true;
+    sessionChildIdRef.current = childId;
+
+    startLearningSession({
+      child_id: childId,
+      start_time: startTime.toISOString(),
+    })
+      .then((session) => {
+        sessionStartPendingRef.current = false;
+
+        if (!sessionShouldRemainOpenRef.current) {
+          void endLearningSession(session.id, {
+            end_time: new Date().toISOString(),
+            words_encountered: [],
+            activities_completed: [],
+            engagement_level: "medium",
+            interactions_count: 0,
+          }).catch((sessionError) =>
+            console.warn(
+              "[Session] Could not close deferred session:",
+              sessionError,
+            ),
+          );
+          return;
+        }
+
+        sessionIdRef.current = session.id;
+        setSessionStartedAt(startTime);
+        setSessionClockMinutes(0);
+        void loadLearningStatus(childId);
+      })
+      .catch((sessionError) => {
+        sessionStartPendingRef.current = false;
+        if (sessionShouldRemainOpenRef.current) {
+          console.warn("[Session] Could not start:", sessionError);
+        }
+      });
+  };
+
+  const endActiveSession = async (endTime: Date = new Date()) => {
+    sessionShouldRemainOpenRef.current = false;
+    if (endingSessionRef.current) {
+      return;
+    }
+
+    const sessionId = sessionIdRef.current;
+    sessionIdRef.current = null;
+    setSessionStartedAt(null);
+    setSessionClockMinutes(0);
+
+    if (!sessionId) {
+      return;
+    }
+
+    endingSessionRef.current = true;
+
+    try {
+      await endLearningSession(sessionId, {
+        end_time: endTime.toISOString(),
+        words_encountered: [],
+        activities_completed: [],
+        engagement_level: "medium",
+        interactions_count: 0,
+      });
+    } catch (sessionError) {
+      console.warn("[Session] Could not end:", sessionError);
+    } finally {
+      endingSessionRef.current = false;
+    }
+  };
+
+  const loadLearningStatus = async (childId: string) => {
+    try {
+      const status = await getLearningControlStatus(childId, {
+        localDate: getLocalDateString(new Date()),
+        timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      });
+      setLearningControl(toLearningControlStatus(status));
+      return status;
+    } catch (statusError) {
+      console.warn("[Controls] Could not load learning status:", statusError);
+      setLearningControl(null);
+      return null;
+    }
+  };
+
   const loadDashboardData = async () => {
     setLoading(true);
     setError(null);
+    await endActiveSession(new Date());
 
     try {
       const children = await getChildren();
@@ -136,21 +392,17 @@ export default function ChildDashboard() {
 
       const selectedChild = toChildProfile(children[0]);
       setProfile(selectedChild);
+      lastInteractionAtRef.current = Date.now();
+      setIsIdle(true);
 
-      startLearningSession({
-        child_id: selectedChild.id,
-        start_time: new Date().toISOString(),
-      })
-        .then((session) => {
-          sessionIdRef.current = session.id;
-        })
-        .catch((e) => console.warn("[Session] Could not start:", e));
+      const [categoryResponses, controlStatus] = await Promise.all([
+        getCategories(selectedChild.id),
+        loadLearningStatus(selectedChild.id),
+      ]);
 
-      const categoryResponses = await getCategories(selectedChild.id);
       setCategories(
         categoryResponses.map((category, index) => toCategory(category, index)),
       );
-
       await loadStories(selectedChild.id);
 
       // Load adaptive recommendations (non-blocking – failures are silent)
@@ -245,19 +497,31 @@ export default function ChildDashboard() {
   };
 
   useEffect(() => {
+    if (!sessionStartedAt || learningControl?.limitReached) {
+      setSessionClockMinutes(0);
+      return;
+    }
+
+    const updateSessionClock = () => {
+      const elapsedMinutes = Math.max(
+        Math.floor((Date.now() - sessionStartedAt.getTime()) / 60000),
+        0,
+      );
+      setSessionClockMinutes(elapsedMinutes);
+    };
+
+    updateSessionClock();
+    const intervalId = window.setInterval(updateSessionClock, 30000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [learningControl?.limitReached, sessionStartedAt]);
+
+  useEffect(() => {
     return () => {
       stopStoryAudio();
-      if (sessionIdRef.current) {
-        const sessionId = sessionIdRef.current;
-        sessionIdRef.current = null;
-        endLearningSession(sessionId, {
-          end_time: new Date().toISOString(),
-          words_encountered: [],
-          activities_completed: [],
-          engagement_level: "medium",
-          interactions_count: 0,
-        }).catch((e) => console.warn("[Session] Could not end:", e));
-      }
+      void endActiveSession(new Date());
     };
   }, []);
 
@@ -300,6 +564,274 @@ export default function ChildDashboard() {
     setIsReaderOpen(true);
   };
 
+  const completedMinutes = learningControl
+    ? Math.max(
+        learningControl.todayMinutes - learningControl.activeSessionMinutes,
+        0,
+      )
+    : null;
+  const liveSessionMinutes = sessionStartedAt
+    ? sessionClockMinutes
+    : (learningControl?.activeSessionMinutes ?? 0);
+  const totalMinutesUsed =
+    completedMinutes !== null ? completedMinutes + liveSessionMinutes : null;
+  const timeLimitsEnabled = Boolean(
+    learningControl?.enableTimeLimits &&
+    learningControl.dailyScreenTimeLimit !== null &&
+    learningControl.dailyScreenTimeLimit !== undefined,
+  );
+  const remainingMinutes =
+    timeLimitsEnabled &&
+    learningControl?.dailyScreenTimeLimit !== undefined &&
+    learningControl.dailyScreenTimeLimit !== null &&
+    totalMinutesUsed !== null
+      ? Math.max(learningControl.dailyScreenTimeLimit - totalMinutesUsed, 0)
+      : (learningControl?.remainingMinutes ?? null);
+  const warningReached = Boolean(
+    timeLimitsEnabled &&
+    remainingMinutes !== null &&
+    remainingMinutes > 0 &&
+    learningControl &&
+    remainingMinutes <= learningControl.screenTimeWarningThreshold,
+  );
+  const limitReached = Boolean(
+    timeLimitsEnabled && remainingMinutes !== null && remainingMinutes <= 0,
+  );
+  const hasPracticeToday = Boolean(
+    (totalMinutesUsed ?? 0) > 0 || sessionStartedAt,
+  );
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        setIsIdle(true);
+        void endActiveSession(new Date());
+        return;
+      }
+
+      lastInteractionAtRef.current = Date.now();
+    };
+
+    const handlePageHide = () => {
+      void endActiveSession(new Date());
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [limitReached, profile]);
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+
+    const markInteraction = () => {
+      lastInteractionAtRef.current = Date.now();
+
+      if (document.visibilityState !== "visible" || limitReached) {
+        return;
+      }
+
+      setIsIdle(false);
+      startActiveSession(profile.id, new Date(lastInteractionAtRef.current));
+    };
+
+    const checkIdle = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      const shouldBeIdle =
+        Date.now() - lastInteractionAtRef.current >= IDLE_TIMEOUT_MS;
+
+      if (!shouldBeIdle) {
+        return;
+      }
+
+      setIsIdle(true);
+      void endActiveSession(new Date());
+    };
+
+    const interactionEvents: Array<keyof WindowEventMap> = [
+      "pointerdown",
+      "keydown",
+      "touchstart",
+      "focus",
+    ];
+
+    interactionEvents.forEach((eventName) => {
+      window.addEventListener(eventName, markInteraction, { passive: true });
+    });
+
+    const intervalId = window.setInterval(checkIdle, IDLE_CHECK_INTERVAL_MS);
+
+    return () => {
+      interactionEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, markInteraction);
+      });
+      window.clearInterval(intervalId);
+    };
+  }, [limitReached, profile]);
+
+  useEffect(() => {
+    if (!learningControl || !warningReached || remainingMinutes === null) {
+      return;
+    }
+
+    const warningKey = `${learningControl.childId}:${learningControl.localDate}:${remainingMinutes}`;
+    if (warningToastKeyRef.current === warningKey) {
+      return;
+    }
+
+    warningToastKeyRef.current = warningKey;
+    toast({
+      title: "快到時間上限了",
+      description: `今天還剩 ${remainingMinutes} 分鐘學習時間。`,
+    });
+  }, [learningControl, remainingMinutes, toast, warningReached]);
+
+  useEffect(() => {
+    if (!learningControl || !limitReached) {
+      return;
+    }
+
+    const limitKey = `${learningControl.childId}:${learningControl.localDate}`;
+    if (limitToastKeyRef.current !== limitKey) {
+      limitToastKeyRef.current = limitKey;
+      toast({
+        title: "今日學習時間已到",
+        description: "請由家長到家長中心調整設定，或明天再繼續。",
+        variant: "destructive",
+      });
+    }
+
+    stopStoryAudio();
+    setActiveTab("home");
+    setIsReaderOpen(false);
+    setSelectedStory(null);
+    void endActiveSession(new Date());
+  }, [learningControl, limitReached, toast]);
+
+  useEffect(() => {
+    if (
+      !profile ||
+      !learningControl?.dailyReminderEnabled ||
+      hasPracticeToday
+    ) {
+      return;
+    }
+
+    const maybeNotify = () => {
+      const now = new Date();
+      const localDate = getLocalDateString(now);
+      const storageKey = getReminderStorageKey(profile.id, localDate);
+
+      if (localStorage.getItem(storageKey) === "sent") {
+        return;
+      }
+
+      if (!hasReachedReminderTime(now, learningControl.dailyReminderTime)) {
+        return;
+      }
+
+      localStorage.setItem(storageKey, "sent");
+      toast({
+        title: "每日練習提醒",
+        description: `現在是 ${learningControl.dailyReminderTime}，可以開始今天的粵語學習了。`,
+      });
+
+      if (
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        new Notification("每日練習提醒", {
+          body: "現在可以開始今天的粵語詞彙練習。",
+        });
+      }
+    };
+
+    maybeNotify();
+    const intervalId = window.setInterval(maybeNotify, 60000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [
+    hasPracticeToday,
+    learningControl?.dailyReminderEnabled,
+    learningControl?.dailyReminderTime,
+    profile,
+    toast,
+  ]);
+
+  const handleTabChange = (tab: string) => {
+    if (limitReached) {
+      return;
+    }
+
+    setActiveTab(tab);
+  };
+
+  const handleOpenParentDashboard = async () => {
+    await endActiveSession(new Date());
+    router.push("/parent");
+  };
+
+  const refreshChildProfile = async (
+    childId: string,
+    options?: { incrementRefreshKey?: boolean },
+  ) => {
+    try {
+      const refreshedChild = toChildProfile(await getChild(childId));
+      setProfile(refreshedChild);
+
+      if (options?.incrementRefreshKey) {
+        setProfileRefreshKey((key) => key + 1);
+      }
+
+      return refreshedChild;
+    } catch (error) {
+      console.warn("[ChildDashboard] Failed to refresh child profile:", error);
+      return null;
+    }
+  };
+
+  const handleLearningProgressUpdated = () => {
+    if (!profile) {
+      return;
+    }
+
+    void refreshChildProfile(profile.id, { incrementRefreshKey: true });
+  };
+
+  const handleProfileUpdated = (nextProfile: ChildProfile) => {
+    setProfile(nextProfile);
+    setProfileRefreshKey((key) => key + 1);
+  };
+
+  const showDashboardHeader = activeTab === "home";
+  const recommendedWordLabel = wordOfDay?.word_cantonese || wordOfDay?.word;
+  const localizedWordReason = localizeAdaptiveReason(wordOfDay?.reason);
+  const localizedNextStepReason = localizeAdaptiveReason(
+    nextActivityRec?.reason,
+  );
+  const nextStepLabel = getLocalizedActivityLabel(
+    nextActivityRec?.recommended_activity,
+  );
+  const nextStepButtonLabel = getActivityButtonLabel(
+    nextActivityRec?.recommended_activity,
+  );
+
   if (authLoading || loading) {
     return (
       <CozyPageWrapper type="dashboard">
@@ -336,103 +868,169 @@ export default function ChildDashboard() {
   return (
     <CozyPageWrapper type="dashboard">
       <div className="w-full min-h-screen pb-32 px-4">
-        {/* --- HEADER --- */}
-        <header className="flex flex-row items-center justify-between gap-2 py-4">
-          <ProfileHeader childId={profile.id} refreshKey={profileRefreshKey} />
+        {showDashboardHeader && (
+          <header className="flex flex-row items-center justify-between gap-2 py-4">
+            <ProfileHeader
+              childId={profile.id}
+              refreshKey={profileRefreshKey}
+            />
 
-          <Link
-            href="/parent"
-            className="group flex items-center gap-2 bg-gradient-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
-          >
-            <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
-              <Users className="w-4 h-4" />
-            </span>
-            <span className="hidden sm:inline">家長中心</span>
-            <span className="sm:hidden">家長</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </header>
+            <button
+              type="button"
+              onClick={() => void handleOpenParentDashboard()}
+              className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
+            >
+              <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
+                <Users className="w-4 h-4" />
+              </span>
+              <span className="hidden sm:inline">家長中心</span>
+              <span className="sm:hidden">家長</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </header>
+        )}
 
         {/* --- MAIN CONTENT AREA --- */}
-        <main className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <main
+          className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ${showDashboardHeader ? "" : "pt-4 md:pt-4"}`}
+        >
+          {warningReached && remainingMinutes !== null && (
+            <Alert className="rounded-3xl border-amber-300 bg-amber-50/90 text-amber-950 shadow-sm">
+              <Clock3 className="h-4 w-4" />
+              <AlertDescription className="font-semibold">
+                今天已使用 {totalMinutesUsed} 分鐘，還剩 {remainingMinutes}{" "}
+                分鐘。
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!hasPracticeToday && learningControl?.dailyReminderEnabled && (
+            <Alert className="rounded-3xl border-sky-300 bg-sky-50/90 text-sky-950 shadow-sm">
+              <Bell className="h-4 w-4" />
+              <AlertDescription className="font-semibold">
+                每日提醒已開啟，系統會在 {learningControl.dailyReminderTime}{" "}
+                提醒開始今天的學習。
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {profile && isIdle && !limitReached && (
+            <Alert className="rounded-3xl border-slate-300 bg-slate-50/90 text-slate-800 shadow-sm">
+              <Clock3 className="h-4 w-4" />
+              <AlertDescription className="font-semibold">
+                閒置超過 1
+                分鐘後會暫停計時。點一下畫面或開始互動後才會繼續計算使用時間。
+              </AlertDescription>
+            </Alert>
+          )}
+
           {activeTab === "home" && (
             <section className="space-y-6">
               {/* AI Adaptive Recommendation Banner */}
               {(wordOfDay || nextActivityRec) && (
-                <div className="bg-linear-to-r from-violet-50 to-indigo-50 border border-violet-200/60 rounded-3xl p-4 flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-violet-500 p-1.5 rounded-xl">
-                      <Brain className="w-4 h-4 text-white" />
+                <div className="rounded-4xl border border-violet-200/70 bg-linear-to-br from-violet-50/95 via-white/95 to-indigo-50/90 p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500 text-white shadow-sm">
+                      <Brain className="h-5 w-5" />
                     </div>
-                    <p
-                      className="font-black text-violet-700 text-sm"
-                      style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                    >
-                      AI 今日推薦
-                    </p>
-                  </div>
-
-                  {wordOfDay && (
-                    <div className="flex items-start gap-3 bg-white/70 rounded-2xl px-3 py-2.5">
-                      <BookMarked className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
-                      <div>
-                        <p
-                          className="text-xs text-slate-400 font-semibold"
-                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                        >
-                          今日重點詞彙
-                        </p>
-                        <p className="font-black text-slate-800">
-                          {wordOfDay.word}
-                        </p>
-                        <p
-                          className="text-xs text-slate-500 mt-0.5"
-                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                        >
-                          {wordOfDay.reason}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {nextActivityRec && (
-                    <div className="flex items-center gap-3 bg-white/70 rounded-2xl px-3 py-2.5">
-                      <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="text-xs text-slate-400 font-semibold"
-                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                        >
-                          建議下一步
-                        </p>
-                        <p
-                          className="text-xs text-slate-600"
-                          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                        >
-                          {nextActivityRec.reason}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setActiveTab(
-                            nextActivityRec.recommended_activity === "story"
-                              ? "stories"
-                              : nextActivityRec.recommended_activity === "game"
-                                ? "games"
-                                : "learn",
-                          )
-                        }
-                        className="shrink-0 bg-amber-400 hover:bg-amber-500 text-white text-xs font-black px-3 py-1.5 rounded-full transition-colors"
+                    <div>
+                      <p
+                        className="text-sm font-black text-violet-700"
                         style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
                       >
-                        {nextActivityRec.recommended_activity === "story"
-                          ? "去故事"
-                          : nextActivityRec.recommended_activity === "game"
-                            ? "去遊戲"
-                            : "去學習"}
-                      </button>
+                        AI 今日推薦
+                      </p>
+                      <p
+                        className="text-xs font-semibold text-slate-400"
+                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                      >
+                        幫你揀好今日最值得先開始的內容
+                      </p>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {wordOfDay && (
+                      <div className="rounded-[28px] border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-500">
+                            <BookMarked className="h-4.5 w-4.5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="text-xs font-black tracking-[0.12em] text-slate-400"
+                              style={{
+                                fontFamily: "'Noto Sans TC', sans-serif",
+                              }}
+                            >
+                              今日重點詞彙
+                            </p>
+                            <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
+                              {recommendedWordLabel}
+                            </p>
+                            <p
+                              className="mt-2 text-sm font-semibold leading-6 text-slate-500"
+                              style={{
+                                fontFamily: "'Noto Sans TC', sans-serif",
+                              }}
+                            >
+                              {localizedWordReason}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {nextActivityRec && (
+                      <div className="rounded-[28px] border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+                        <div className="flex h-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-500">
+                              <Zap className="h-4.5 w-4.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p
+                                className="text-xs font-black tracking-[0.12em] text-slate-400"
+                                style={{
+                                  fontFamily: "'Noto Sans TC', sans-serif",
+                                }}
+                              >
+                                建議下一步
+                              </p>
+                              <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
+                                {nextStepLabel}
+                              </p>
+                              <p
+                                className="mt-2 text-sm font-semibold leading-6 text-slate-500"
+                                style={{
+                                  fontFamily: "'Noto Sans TC', sans-serif",
+                                }}
+                              >
+                                {localizedNextStepReason}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              setActiveTab(
+                                nextActivityRec.recommended_activity === "story"
+                                  ? "stories"
+                                  : nextActivityRec.recommended_activity ===
+                                      "game"
+                                    ? "games"
+                                    : "learn",
+                              )
+                            }
+                            className="shrink-0 rounded-full bg-amber-400 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-amber-500"
+                            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
+                          >
+                            {nextStepButtonLabel}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -440,7 +1038,7 @@ export default function ChildDashboard() {
                 childId={profile.id}
                 childName={profile.name}
                 languagePreference={profile.languagePreference || "cantonese"}
-                onWordLearned={() => setProfileRefreshKey((k) => k + 1)}
+                onWordLearned={handleLearningProgressUpdated}
               />
               <CommunityFeed
                 childId={profile.id}
@@ -455,7 +1053,7 @@ export default function ChildDashboard() {
                 categories={categories}
                 languagePreference={profile.languagePreference || "cantonese"}
                 childId={profile.id}
-                onWordLearned={() => setProfileRefreshKey((k) => k + 1)}
+                onWordLearned={handleLearningProgressUpdated}
               />
             </section>
           )}
@@ -539,22 +1137,68 @@ export default function ChildDashboard() {
             </section>
           )}
 
-          {(activeTab === "rewards" || activeTab === "profile") && (
-            <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-12 text-center border border-white/50 shadow-sm">
-              <div className="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <Construction className="w-10 h-10 text-yellow-600" />
-              </div>
-              <h2 className="text-2xl font-black text-slate-700 mb-2">
-                即將推出！
-              </h2>
-              <p className="text-slate-500 font-bold">
-                此功能正在開發中，敬請期待！
-              </p>
-            </section>
+          {activeTab === "profile" && (
+            <ProfileView
+              profile={profile}
+              onProfileUpdated={handleProfileUpdated}
+              onOpenParentDashboard={() => {
+                void handleOpenParentDashboard();
+              }}
+              onOpenTab={handleTabChange}
+            />
+          )}
+
+          {activeTab === "rewards" && (
+            <RewardsView
+              profile={profile}
+              onOpenTab={handleTabChange}
+              refreshKey={profileRefreshKey}
+            />
           )}
         </main>
 
-        <ChildNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <ChildNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {limitReached && (
+          <div className="fixed inset-0 z-60 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-6">
+            <div className="w-full max-w-md rounded-4xl bg-white p-8 shadow-2xl border border-white/60 text-center space-y-5">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                <ShieldAlert className="h-8 w-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black text-slate-800">
+                  今天的學習時間已完成
+                </h2>
+                <p className="text-slate-600 font-semibold">
+                  已使用{" "}
+                  {totalMinutesUsed ?? learningControl?.todayMinutes ?? 0} 分鐘
+                  {learningControl?.dailyScreenTimeLimit
+                    ? ` / ${learningControl.dailyScreenTimeLimit} 分鐘上限`
+                    : ""}
+                  。
+                </p>
+                <p className="text-sm text-slate-500">
+                  請由家長到家長中心調整設定，或明天再繼續學習。
+                </p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button
+                  className="rounded-full font-black"
+                  onClick={() => void handleOpenParentDashboard()}
+                >
+                  前往家長中心
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full font-black"
+                  onClick={() => void loadDashboardData()}
+                >
+                  重新檢查設定
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal only opens when a story is active */}
         {selectedStory && (

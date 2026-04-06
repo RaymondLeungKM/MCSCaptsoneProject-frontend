@@ -1,8 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { User, Target, Bell, Shield, Palette, Save, Settings, Clock } from "lucide-react";
-import type { ChildProfile } from "@/lib/types";
+import { useEffect, useState } from "react";
+import {
+  User,
+  Target,
+  Bell,
+  Shield,
+  Palette,
+  Save,
+  Settings,
+  Clock,
+  Loader2,
+} from "lucide-react";
+
+import { useToast } from "@/hooks/use-toast";
+import { updateChild, toChildProfile } from "@/lib/api/children";
+import {
+  getParentalControls,
+  updateParentalControls,
+} from "@/lib/api/parent-dashboard";
+import { getCategories } from "@/lib/api/vocabulary";
+import type { ChildProfile, ParentalControl } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -15,15 +33,20 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { ParentalControlsSettings } from "./parental-controls";
 import { cn } from "@/lib/utils";
 
 interface SettingsTabProps {
   profile: ChildProfile;
+  onProfileUpdated?: (profile: ChildProfile) => void;
 }
 
-// Interest Options (Translated)
-const INTEREST_OPTIONS = [
+interface InterestOption {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+const FALLBACK_INTEREST_OPTIONS: InterestOption[] = [
   { id: "Animals", label: "動物", icon: "🦁" },
   { id: "Food", label: "食物", icon: "🍎" },
   { id: "Colors", label: "顏色", icon: "🎨" },
@@ -34,75 +57,218 @@ const INTEREST_OPTIONS = [
   { id: "Music", label: "音樂", icon: "🎵" },
 ];
 
-export function SettingsTab({ profile }: SettingsTabProps) {
-  // If we have a real child ID (not mock), use the parental controls component
+function buildDefaultParentalControls(childId: string): ParentalControl {
+  return {
+    id: `default-${childId}`,
+    child_id: childId,
+    enabled_categories: [],
+    disabled_categories: [],
+    max_difficulty: "hard",
+    min_difficulty: "easy",
+    daily_screen_time_limit: null,
+    screen_time_warning_threshold: 20,
+    tts_voice: "default",
+    tts_speech_rate: 0.8,
+    enable_bilingual_mode: false,
+    show_jyutping: true,
+    game_difficulty_multiplier: 1,
+    enable_time_limits: false,
+    safe_mode_enabled: false,
+    require_parent_unlock: false,
+    daily_reminder_enabled: true,
+    daily_reminder_time: "18:00",
+    bedtime_story_reminder: true,
+    weekly_report_enabled: true,
+    achievement_notifications: true,
+  };
+}
+
+function mergeInterestOptions(
+  baseOptions: InterestOption[],
+  selectedInterests: string[],
+): InterestOption[] {
+  const optionMap = new Map(baseOptions.map((option) => [option.id, option]));
+
+  for (const interest of selectedInterests) {
+    if (!optionMap.has(interest)) {
+      optionMap.set(interest, {
+        id: interest,
+        label: interest,
+        icon: "✨",
+      });
+    }
+  }
+
+  return Array.from(optionMap.values());
+}
+
+export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
+  const { toast } = useToast();
   const isMockData =
     !profile.id ||
     profile.id === "1" ||
     profile.id === "mock-child-id" ||
     profile.id.length < 10;
 
-  // --- MOCK STATE ---
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(profile.age);
   const [dailyGoal, setDailyGoal] = useState(profile.dailyGoal);
   const [interests, setInterests] = useState(profile.interests);
   const [notifications, setNotifications] = useState(true);
-  const [reminderTime, setReminderTime] = useState("09:00");
+  const [reminderTime, setReminderTime] = useState("18:00");
   const [screenTimeLimit, setScreenTimeLimit] = useState(30);
-  const [parentalControls, setParentalControls] = useState(true);
+  const [parentalControls, setParentalControls] = useState(false);
+  const [interestOptions, setInterestOptions] = useState<InterestOption[]>(
+    mergeInterestOptions(FALLBACK_INTEREST_OPTIONS, profile.interests),
+  );
+  const [settingsLoading, setSettingsLoading] = useState(!isMockData);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setName(profile.name);
+    setAge(profile.age);
+    setDailyGoal(profile.dailyGoal);
+    setInterests(profile.interests);
+    setInterestOptions((prev) => mergeInterestOptions(prev, profile.interests));
+  }, [profile]);
+
+  useEffect(() => {
+    if (isMockData) {
+      setSettingsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSettings() {
+      setSettingsLoading(true);
+
+      try {
+        const [controls, categories] = await Promise.all([
+          getParentalControls(profile.id),
+          getCategories(profile.id),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setNotifications(controls.daily_reminder_enabled);
+        setReminderTime(controls.daily_reminder_time || "18:00");
+        setParentalControls(controls.enable_time_limits);
+        setScreenTimeLimit(controls.daily_screen_time_limit ?? 30);
+
+        if (categories.length > 0) {
+          const mappedOptions = categories.map((category) => ({
+            id: category.name,
+            label: category.name_cantonese || category.name,
+            icon: category.icon || "📚",
+          }));
+
+          setInterestOptions(
+            mergeInterestOptions(mappedOptions, profile.interests),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load settings tab data:", error);
+        if (!cancelled) {
+          const defaults = buildDefaultParentalControls(profile.id);
+          setNotifications(defaults.daily_reminder_enabled);
+          setReminderTime(defaults.daily_reminder_time);
+          setParentalControls(defaults.enable_time_limits);
+          setScreenTimeLimit(defaults.daily_screen_time_limit ?? 30);
+          toast({
+            title: "載入部分設定失敗",
+            description: "已使用預設值，你仍可修改並重新儲存。",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setSettingsLoading(false);
+        }
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isMockData, profile.id, profile.interests, toast]);
 
   const toggleInterest = (interestId: string) => {
     setInterests((prev) =>
       prev.includes(interestId)
-        ? prev.filter((i) => i !== interestId)
+        ? prev.filter((interest) => interest !== interestId)
         : [...prev, interestId],
     );
   };
 
-  const handleSave = () => {
-    // In a real app, this would save to the database
-    console.log("Saving settings:", {
-      name,
-      age,
-      dailyGoal,
-      interests,
-      notifications,
-      reminderTime,
-      screenTimeLimit,
-      parentalControls,
-    });
-    alert("設定已儲存！");
+  const handleSave = async () => {
+    if (isMockData) {
+      toast({
+        title: "示範模式",
+        description: "設定已暫存在此頁面，但未寫入後端。",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const [updatedChild, updatedControls] = await Promise.all([
+        updateChild(profile.id, {
+          name: name.trim(),
+          age,
+          daily_goal: dailyGoal,
+          interests,
+        }),
+        updateParentalControls(profile.id, {
+          daily_reminder_enabled: notifications,
+          daily_reminder_time: reminderTime,
+          enable_time_limits: parentalControls,
+          daily_screen_time_limit: parentalControls ? screenTimeLimit : null,
+        }),
+      ]);
+
+      const nextProfile = toChildProfile(updatedChild);
+
+      setName(nextProfile.name);
+      setAge(nextProfile.age);
+      setDailyGoal(nextProfile.dailyGoal);
+      setInterests(nextProfile.interests);
+      setInterestOptions((prev) =>
+        mergeInterestOptions(prev, nextProfile.interests),
+      );
+
+      setNotifications(updatedControls.daily_reminder_enabled);
+      setReminderTime(updatedControls.daily_reminder_time || "18:00");
+      setParentalControls(updatedControls.enable_time_limits);
+      setScreenTimeLimit(updatedControls.daily_screen_time_limit ?? 30);
+
+      onProfileUpdated?.(nextProfile);
+
+      toast({
+        title: "設定已儲存",
+        description: "家長中心設定已成功更新。",
+      });
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+      toast({
+        title: "儲存失敗",
+        description: "未能更新設定，請稍後再試。",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // If real data component exists, render it (Assuming it handles its own UI)
-  // For consistency in this demo, I will apply the mock UI style even for the real component wrapper
-  if (!isMockData) {
-    return (
-      <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
-        <div className="text-center space-y-3 mb-4">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-slate-100 to-gray-200 rounded-2xl mb-2 shadow-sm">
-            <Settings className="w-8 h-8 text-slate-600" />
-          </div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-            {profile.name} 的設定
-          </h2>
-          <p className="text-slate-500 font-medium">
-            管理學習偏好與家長監護功能
-          </p>
-        </div>
-        <ParentalControlsSettings childId={profile.id} />
-      </div>
-    );
-  }
-
-  // --- MOCK SETTINGS UI ---
   return (
-    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
-      
-      {/* Header */}
+    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-4xl">
       <div className="text-center space-y-3 mb-4">
-        <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-slate-100 to-gray-200 rounded-2xl mb-2 shadow-sm">
+        <div className="inline-flex items-center justify-center p-3 bg-linear-to-br from-slate-100 to-gray-200 rounded-2xl mb-2 shadow-sm">
           <Settings className="w-8 h-8 text-slate-600 animate-spin-slow" />
         </div>
         <h2 className="text-3xl font-black text-slate-800 tracking-tight">
@@ -113,9 +279,14 @@ export function SettingsTab({ profile }: SettingsTabProps) {
         </p>
       </div>
 
+      {settingsLoading && !isMockData && (
+        <div className="flex items-center justify-center gap-3 rounded-3xl bg-white px-4 py-5 text-slate-500 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          正在載入設定...
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* 1. Child Profile Card */}
         <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -127,31 +298,34 @@ export function SettingsTab({ profile }: SettingsTabProps) {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-600 font-bold">名字</Label>
+              <Label htmlFor="name" className="text-slate-600 font-bold">
+                名字
+              </Label>
               <Input
                 id="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="輸入小朋友名字"
                 className="rounded-xl border-slate-200 focus:ring-blue-200 h-11"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="age" className="text-slate-600 font-bold">年齡</Label>
+              <Label htmlFor="age" className="text-slate-600 font-bold">
+                年齡
+              </Label>
               <Input
                 id="age"
                 type="number"
                 min={2}
                 max={7}
                 value={age}
-                onChange={(e) => setAge(Number(e.target.value))}
+                onChange={(event) => setAge(Number(event.target.value))}
                 className="rounded-xl border-slate-200 focus:ring-blue-200 h-11"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* 2. Learning Goals Card */}
         <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -185,7 +359,6 @@ export function SettingsTab({ profile }: SettingsTabProps) {
         </Card>
       </div>
 
-      {/* 3. Interests Card */}
       <Card className="border-none shadow-sm bg-white rounded-[28px]">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -200,17 +373,19 @@ export function SettingsTab({ profile }: SettingsTabProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            {INTEREST_OPTIONS.map((interest) => {
+            {interestOptions.map((interest) => {
               const isSelected = interests.includes(interest.id);
+
               return (
                 <button
                   key={interest.id}
+                  type="button"
                   onClick={() => toggleInterest(interest.id)}
                   className={cn(
                     "px-4 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 border-2",
                     isSelected
                       ? "bg-yellow-100 text-yellow-800 border-yellow-200 shadow-sm transform scale-105"
-                      : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100"
+                      : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100",
                   )}
                 >
                   <span className="text-base">{interest.icon}</span>
@@ -223,8 +398,6 @@ export function SettingsTab({ profile }: SettingsTabProps) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* 4. Notifications Card */}
         <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -245,28 +418,34 @@ export function SettingsTab({ profile }: SettingsTabProps) {
               <Switch
                 checked={notifications}
                 onCheckedChange={setNotifications}
+                disabled={settingsLoading}
               />
             </div>
 
             {notifications && (
               <div className="space-y-2 px-1">
-                <Label htmlFor="reminder-time" className="text-slate-600 font-bold">提醒時間</Label>
+                <Label
+                  htmlFor="reminder-time"
+                  className="text-slate-600 font-bold"
+                >
+                  提醒時間
+                </Label>
                 <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <Input
-                        id="reminder-time"
-                        type="time"
-                        value={reminderTime}
-                        onChange={(e) => setReminderTime(e.target.value)}
-                        className="rounded-xl border-slate-200 h-11 w-full font-medium text-slate-700"
-                    />
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <Input
+                    id="reminder-time"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(event) => setReminderTime(event.target.value)}
+                    disabled={settingsLoading}
+                    className="rounded-xl border-slate-200 h-11 w-full font-medium text-slate-700"
+                  />
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* 5. Parental Controls Card */}
         <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -287,6 +466,7 @@ export function SettingsTab({ profile }: SettingsTabProps) {
               <Switch
                 checked={parentalControls}
                 onCheckedChange={setParentalControls}
+                disabled={settingsLoading}
               />
             </div>
 
@@ -304,6 +484,7 @@ export function SettingsTab({ profile }: SettingsTabProps) {
                   min={10}
                   max={60}
                   step={5}
+                  disabled={settingsLoading}
                   className="py-4"
                 />
               </div>
@@ -312,15 +493,19 @@ export function SettingsTab({ profile }: SettingsTabProps) {
         </Card>
       </div>
 
-      {/* Save Button */}
       <div className="sticky bottom-4 z-10 pt-4">
         <Button
-            onClick={handleSave}
-            className="w-full h-14 text-lg font-bold gap-2 rounded-full shadow-xl shadow-blue-200 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all active:scale-[0.98]"
-            size="lg"
+          onClick={handleSave}
+          disabled={saving || settingsLoading}
+          className="w-full h-14 text-lg font-bold gap-2 rounded-full shadow-xl shadow-blue-200 bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+          size="lg"
         >
+          {saving ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
             <Save className="w-5 h-5" />
-            儲存所有設定
+          )}
+          {saving ? "儲存中..." : "儲存所有設定"}
         </Button>
       </div>
     </div>

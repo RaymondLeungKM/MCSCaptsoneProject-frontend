@@ -160,7 +160,7 @@ function ParentDashboardContent() {
     return (
       <CozyPageWrapper type="dashboard">
         <div className="container mx-auto px-4 py-6 max-w-2xl md:max-w-6xl pb-32">
-          <div className="bg-white/90 backdrop-blur-md p-6 rounded-[32px] shadow-sm border border-white/50 flex items-center justify-center gap-3 text-slate-600 font-bold">
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-4xl shadow-sm border border-white/50 flex items-center justify-center gap-3 text-slate-600 font-bold">
             <Loader2 className="w-5 h-5 animate-spin" />
             載入家長中心中...
           </div>
@@ -194,7 +194,7 @@ function ParentDashboardContent() {
       <div className="container mx-auto px-4 py-6 max-w-2xl md:max-w-6xl pb-32">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* --- UNIFIED HEADER + NAV CARD --- */}
-          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-[32px] shadow-sm border border-white/50 mb-6 overflow-hidden">
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-4xl shadow-sm border border-white/50 mb-6 overflow-hidden">
             {/* Header row */}
             <div className="flex flex-row items-center justify-between px-4 py-3 md:px-5 md:py-4 gap-3">
               <div className="flex items-center gap-3">
@@ -214,7 +214,7 @@ function ParentDashboardContent() {
 
               <button
                 onClick={() => router.push("/child")}
-                className="group flex items-center gap-2 bg-gradient-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
+                className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
               >
                 <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
                   <Baby className="w-4 h-4" />
@@ -329,7 +329,9 @@ function ParentDashboardContent() {
               value="settings"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              {profile && <SettingsTab profile={profile} />}
+              {profile && (
+                <SettingsTab profile={profile} onProfileUpdated={setProfile} />
+              )}
             </TabsContent>
 
             <TabsContent

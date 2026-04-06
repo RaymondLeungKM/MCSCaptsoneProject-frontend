@@ -18,6 +18,11 @@ import {
   CheckCircle2,
   Loader2,
   AlertCircle,
+  BookOpen,
+  Clock3,
+  Sparkles,
+  Star,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -31,6 +36,9 @@ import type {
 import { SpacedRepetitionCard } from "@/components/child/spaced-repetition-card";
 import { WordKnowledgeGraph } from "@/components/child/word-knowledge-graph";
 import { AITutorChat } from "@/components/child/ai-tutor-chat";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   getReviewQueue,
   submitReview,
@@ -48,25 +56,125 @@ const TABS = [
     label: "間隔重複",
     labelEn: "Review",
     icon: Brain,
-    color: "indigo",
+    description: "用智能複習卡，按最適合你的節奏記住詞彙。",
+    heroGradient: "from-indigo-100/80 via-sky-100/70 to-violet-100/70",
+    iconTone: "bg-indigo-100 text-indigo-600",
+    activeTone: "text-indigo-600",
+    panelTone: "border-indigo-100 bg-indigo-50/50",
+    cta: "先翻卡，再評分，系統會安排下一次複習。",
   },
   {
     id: "graph" as const,
     label: "詞彙關係圖",
     labelEn: "Word Graph",
     icon: GitBranch,
-    color: "emerald",
+    description: "看見單字之間的連結，讓新詞更容易記住。",
+    heroGradient: "from-emerald-100/80 via-teal-100/70 to-cyan-100/70",
+    iconTone: "bg-emerald-100 text-emerald-600",
+    activeTone: "text-emerald-600",
+    panelTone: "border-emerald-100 bg-emerald-50/50",
+    cta: "點擊節點探索更多相關詞語和語意關係。",
   },
   {
     id: "tutor" as const,
     label: "小博士",
     labelEn: "AI Tutor",
     icon: MessageSquare,
-    color: "amber",
+    description: "用對話方式問問題，讓 AI 陪你理解和造句。",
+    heroGradient: "from-amber-100/80 via-orange-100/70 to-yellow-100/70",
+    iconTone: "bg-amber-100 text-amber-600",
+    activeTone: "text-amber-600",
+    panelTone: "border-amber-100 bg-amber-50/50",
+    cta: "想知道意思、讀音或例句時，直接向小博士發問。",
   },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+const learningStyleLabels = {
+  visual: "視覺型",
+  auditory: "聽覺型",
+  kinesthetic: "動作型",
+  mixed: "混合型",
+} as const;
+
+const languageLabels = {
+  cantonese: "粵語",
+  english: "英文",
+  bilingual: "雙語",
+} as const;
+
+function SmartStatCard({
+  icon: Icon,
+  value,
+  label,
+  helper,
+  tone,
+}: {
+  icon: typeof Brain;
+  value: string;
+  label: string;
+  helper: string;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-[28px] border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-md">
+      <div
+        className={cn(
+          "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl",
+          tone,
+        )}
+      >
+        <Icon className="h-6 w-6" />
+      </div>
+      <p className="text-3xl font-black text-slate-800">{value}</p>
+      <p className="mt-1 text-sm font-black text-slate-600">{label}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function StatusPanel({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+  tone,
+}: {
+  icon: typeof Brain;
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-4xl border border-white/60 bg-white/80 p-8 text-center shadow-sm backdrop-blur-md">
+      <div
+        className={cn(
+          "mx-auto flex h-16 w-16 items-center justify-center rounded-full",
+          tone,
+        )}
+      >
+        <Icon className="h-8 w-8" />
+      </div>
+      <h3 className="mt-5 text-2xl font-black text-slate-800">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">
+        {description}
+      </p>
+      {actionLabel && onAction && (
+        <Button
+          type="button"
+          className="mt-5 rounded-full font-black"
+          onClick={onAction}
+        >
+          {actionLabel}
+        </Button>
+      )}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Sub-view: Spaced Repetition
@@ -128,103 +236,71 @@ function ReviewView({ childId, onPlayAudio }: ReviewViewProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <p
-          className="text-sm"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          載入複習卡…
-        </p>
-      </div>
+      <StatusPanel
+        icon={Loader2}
+        title="載入複習卡中"
+        description="正在準備今天最適合你的複習內容。"
+        tone="bg-indigo-100 text-indigo-600"
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-slate-500">
-        <AlertCircle className="w-8 h-8 text-red-400" />
-        <p
-          className="text-sm text-center max-w-xs"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          {error}
-        </p>
-        <button
-          onClick={load}
-          className="mt-2 text-sm text-indigo-500 hover:underline"
-        >
-          重試
-        </button>
-      </div>
+      <StatusPanel
+        icon={AlertCircle}
+        title="暫時打不開複習卡"
+        description={error}
+        actionLabel="重新載入"
+        onAction={() => void load()}
+        tone="bg-rose-100 text-rose-500"
+      />
     );
   }
 
   if (!queue || queue.cards.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <CheckCircle2 className="w-14 h-14 text-emerald-400" />
-        <p
-          className="text-xl font-black text-slate-700"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          今日複習全部完成！🎉
-        </p>
-        <p
-          className="text-sm text-slate-400"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          繼續保持，明天再來複習！
-        </p>
+      <div className="space-y-5 rounded-4xl border border-white/60 bg-white/80 p-8 text-center shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-500">
+          <CheckCircle2 className="h-8 w-8" />
+        </div>
+        <div>
+          <h3 className="text-2xl font-black text-slate-800">
+            今日複習全部完成
+          </h3>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            你的記憶節奏很穩定，明天再回來系統會安排新的複習卡。
+          </p>
+        </div>
         {profile && (
-          <div className="mt-4 bg-indigo-50 rounded-2xl p-4 text-left w-full max-w-sm">
-            <p
-              className="font-bold text-indigo-700 text-sm mb-2"
-              style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-            >
-              你的學習速度分析
-            </p>
-            <p
-              className="text-xs text-slate-600"
-              style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-            >
+          <div className="grid gap-3 rounded-3xl border border-indigo-100 bg-indigo-50/80 p-5 text-left sm:grid-cols-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500">
+                總卡數
+              </p>
+              <p className="mt-2 text-2xl font-black text-slate-800">
+                {profile.total_cards}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500">
+                畢業率
+              </p>
+              <p className="mt-2 text-2xl font-black text-slate-800">
+                {Math.round(profile.graduation_rate * 100)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">
+                平均間隔
+              </p>
+              <p className="mt-2 text-2xl font-black text-slate-800">
+                {profile.avg_interval.toFixed(1)}天
+              </p>
+            </div>
+            <p className="sm:col-span-3 text-sm font-medium text-slate-500">
               {profile.assessment}
             </p>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-lg font-black text-indigo-600">
-                  {profile.total_cards}
-                </p>
-                <p
-                  className="text-[10px] text-slate-400"
-                  style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                >
-                  總卡數
-                </p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-emerald-600">
-                  {Math.round(profile.graduation_rate * 100)}%
-                </p>
-                <p
-                  className="text-[10px] text-slate-400"
-                  style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                >
-                  畢業率
-                </p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-amber-600">
-                  {profile.avg_interval.toFixed(1)}天
-                </p>
-                <p
-                  className="text-[10px] text-slate-400"
-                  style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                >
-                  平均間隔
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -233,22 +309,14 @@ function ReviewView({ childId, onPlayAudio }: ReviewViewProps) {
 
   if (cardIndex >= queue.cards.length) {
     return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <CheckCircle2 className="w-14 h-14 text-emerald-400" />
-        <p
-          className="text-xl font-black text-slate-700"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          本節複習完成！👏
-        </p>
-        <button
-          onClick={load}
-          className="mt-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold px-6 py-2.5 rounded-full transition-colors"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          再次載入
-        </button>
-      </div>
+      <StatusPanel
+        icon={CheckCircle2}
+        title="本節複習完成"
+        description="這一輪卡片已經結束，可以再載入一組新的複習內容。"
+        actionLabel="再次載入"
+        onAction={() => void load()}
+        tone="bg-emerald-100 text-emerald-500"
+      />
     );
   }
 
@@ -333,29 +401,25 @@ function GraphView({ childId }: GraphViewProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <p
-          className="text-sm"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          載入詞彙關係圖…
-        </p>
-      </div>
+      <StatusPanel
+        icon={Loader2}
+        title="載入詞彙關係圖中"
+        description="正在整理你最近學過的單字連結。"
+        tone="bg-emerald-100 text-emerald-600"
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 py-12 text-slate-500">
-        <AlertCircle className="w-8 h-8 text-red-400" />
-        <p
-          className="text-sm text-center max-w-xs"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          {error}
-        </p>
-      </div>
+      <StatusPanel
+        icon={AlertCircle}
+        title="暫時打不開詞彙圖譜"
+        description={error}
+        actionLabel="重新整理"
+        onAction={() => void loadRecommendations()}
+        tone="bg-rose-100 text-rose-500"
+      />
     );
   }
 
@@ -372,24 +436,23 @@ function GraphView({ childId }: GraphViewProps) {
           />
         </>
       ) : (
-        <p
-          className="text-sm text-slate-400 text-center py-6"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
-          繼續學習詞彙，詞彙圖譜會自動建立！
-        </p>
+        <div className="rounded-4xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
+          <p className="text-lg font-black text-slate-700">
+            繼續學習詞彙，詞彙圖譜會自動建立
+          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            當你學的詞越多，這張圖會變得越完整。
+          </p>
+        </div>
       )}
 
       {/* Graph-based recommendations */}
       {recommendations && recommendations.recommended_words.length > 0 && (
-        <div className="mt-2">
-          <p
-            className="text-sm font-bold text-slate-600 mb-3 text-center"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+        <div className="mt-2 rounded-4xl border border-emerald-100 bg-emerald-50/70 p-5">
+          <p className="mb-3 text-center text-sm font-black text-emerald-700">
             🌟 接下來可以學這些詞語！
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {recommendations.recommended_words.map((w) => (
               <button
                 key={w.word_id}
@@ -397,7 +460,7 @@ function GraphView({ childId }: GraphViewProps) {
                 className="flex flex-col items-center gap-0.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 border-2 border-emerald-200 text-emerald-800 rounded-2xl px-2 py-3 transition-all duration-150"
                 style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
               >
-                <span className="text-xl font-black leading-none">
+                <span className="line-clamp-3 text-center text-lg font-black leading-tight sm:text-xl">
                   {w.word_cantonese || w.word}
                 </span>
                 {w.jyutping && (
@@ -424,40 +487,337 @@ interface Phase8ViewProps {
 
 export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
   const [activeTab, setActiveTab] = useState<TabId>("review");
+  const activeTabMeta = TABS.find((tab) => tab.id === activeTab) ?? TABS[0];
+  const ActiveIcon = activeTabMeta.icon;
+  const dailyGoalProgress =
+    profile.dailyGoal > 0
+      ? Math.min((profile.todayProgress / profile.dailyGoal) * 100, 100)
+      : 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Tab bar */}
-      <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={cn(
-              "flex-1 flex flex-col items-center gap-0.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all duration-200",
-              activeTab === id
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-slate-500 hover:text-slate-700",
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span style={{ fontFamily: "'Noto Sans TC', sans-serif" }}>
-              {label}
-            </span>
-          </button>
-        ))}
-      </div>
+    <section className="space-y-6">
+      <div className="overflow-hidden rounded-[40px] border border-white/60 bg-white/80 shadow-sm backdrop-blur-md">
+        <div
+          className={cn(
+            "px-4 py-5 md:px-8 md:py-8",
+            `bg-linear-to-r ${activeTabMeta.heroGradient}`,
+          )}
+        >
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-3 md:space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm md:px-4 md:py-2 md:text-sm">
+                <Brain className="h-4 w-4 text-violet-500" />
+                Brain Lab
+              </div>
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-800 md:text-4xl">
+                  {profile.name} 的智能學習站
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-500 md:text-base">
+                  用 AI 複習、詞彙圖譜和即時問答，讓練習方式跟上你的學習節奏。
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge className="rounded-full bg-sky-500 px-3 py-1 text-white hover:bg-sky-500">
+                  {learningStyleLabels[profile.learningStyle]}
+                </Badge>
+                <Badge className="rounded-full bg-emerald-500 px-3 py-1 text-white hover:bg-emerald-500">
+                  {languageLabels[profile.languagePreference || "cantonese"]}
+                </Badge>
+                <Badge className="rounded-full bg-violet-500 px-3 py-1 text-white hover:bg-violet-500">
+                  專注 {profile.attentionSpan} 分鐘
+                </Badge>
+              </div>
 
-      {/* Tab content */}
-      <div className="min-h-100">
-        {activeTab === "review" && (
-          <ReviewView childId={profile.id} onPlayAudio={onPlayAudio} />
-        )}
-        {activeTab === "graph" && <GraphView childId={profile.id} />}
-        {activeTab === "tutor" && (
-          <AITutorChat childId={profile.id} className="h-full" />
-        )}
+              <div className="grid grid-cols-3 gap-2 md:hidden">
+                <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    XP
+                  </p>
+                  <p className="mt-1 text-lg font-black text-slate-800">
+                    {profile.xp}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    目標
+                  </p>
+                  <p className="mt-1 text-lg font-black text-slate-800">
+                    {profile.todayProgress}/{profile.dailyGoal}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    專注
+                  </p>
+                  <p className="mt-1 text-lg font-black text-slate-800">
+                    {profile.attentionSpan} 分
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden rounded-4xl border border-white/70 bg-white/75 p-5 shadow-sm backdrop-blur-md md:block md:w-85">
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl",
+                    activeTabMeta.iconTone,
+                  )}
+                >
+                  <ActiveIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                    {activeTabMeta.labelEn}
+                  </p>
+                  <h3 className="mt-1 text-2xl font-black text-slate-800">
+                    {activeTabMeta.label}
+                  </h3>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    {activeTabMeta.description}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-3xl bg-white/80 p-4">
+                <p className="text-sm font-semibold text-slate-500">
+                  {activeTabMeta.cta}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 px-4 py-4 md:grid md:grid-cols-[0.9fr_1.1fr] md:gap-6 md:px-8 md:py-8">
+          <div className="order-2 space-y-4 md:order-1 md:space-y-6">
+            <div className="hidden gap-4 sm:grid-cols-3 md:grid md:grid-cols-1 xl:grid-cols-3">
+              <SmartStatCard
+                icon={Star}
+                value={`${profile.xp}`}
+                label="總 XP"
+                helper="每次互動都在累積智能學習能量。"
+                tone="bg-amber-100 text-amber-500"
+              />
+              <SmartStatCard
+                icon={Target}
+                value={`${profile.todayProgress}/${profile.dailyGoal}`}
+                label="今日目標"
+                helper="看看今天還差多少就能達標。"
+                tone="bg-emerald-100 text-emerald-600"
+              />
+              <SmartStatCard
+                icon={Clock3}
+                value={`${profile.attentionSpan} 分鐘`}
+                label="專注節奏"
+                helper="這個 Brain 頁面會配合你的專注時間。"
+                tone="bg-violet-100 text-violet-600"
+              />
+            </div>
+
+            <section className="hidden rounded-4xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md md:block">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+                  <BookOpen className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800">
+                    智能工具
+                  </h3>
+                  <p className="text-sm font-semibold text-slate-500">
+                    選擇你現在想用的 AI 學習方式。
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "rounded-3xl border p-4 text-left transition-all",
+                        isActive
+                          ? `bg-white shadow-sm ${tab.panelTone} ring-1 ring-white`
+                          : "border-slate-100 bg-slate-50/70 hover:border-slate-200 hover:bg-slate-50",
+                      )}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={cn(
+                            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+                            isActive ? tab.iconTone : "bg-white text-slate-500",
+                          )}
+                        >
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-lg font-black text-slate-800">
+                                {tab.label}
+                              </p>
+                              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                                {tab.labelEn}
+                              </p>
+                            </div>
+                            {isActive && (
+                              <Badge className="rounded-full bg-slate-800 px-3 py-1 text-white hover:bg-slate-800">
+                                使用中
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="mt-2 text-sm font-semibold text-slate-500">
+                            {tab.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="hidden rounded-4xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md md:block">
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl",
+                    activeTabMeta.iconTone,
+                  )}
+                >
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800">
+                    今日智能提示
+                  </h3>
+                  <p className="text-sm font-semibold text-slate-500">
+                    目前工具會根據你的進度這樣幫你。
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={cn(
+                  "mt-5 rounded-3xl border p-5",
+                  activeTabMeta.panelTone,
+                )}
+              >
+                <p className="text-base font-black text-slate-800">
+                  {activeTabMeta.label}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  {activeTabMeta.cta}
+                </p>
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-500">
+                    <span>今日智能學習進度</span>
+                    <span>
+                      {profile.todayProgress}/{profile.dailyGoal}
+                    </span>
+                  </div>
+                  <Progress
+                    value={dailyGoalProgress}
+                    className="h-3 rounded-full bg-white"
+                    indicatorClassName="bg-linear-to-r from-emerald-400 to-sky-400"
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="order-1 space-y-4 md:order-2 md:space-y-6">
+            <section className="rounded-4xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur-md md:p-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl",
+                    activeTabMeta.iconTone,
+                  )}
+                >
+                  <ActiveIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800">
+                    {activeTabMeta.label}
+                  </h3>
+                  <p className="hidden text-sm font-semibold text-slate-500 md:block">
+                    {activeTabMeta.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2 md:hidden">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "min-w-0 rounded-[28px] border px-2 py-3 text-center text-[13px] font-black leading-tight transition-all",
+                        isActive
+                          ? `${tab.panelTone} ${tab.activeTone} shadow-sm`
+                          : "border-slate-200 bg-slate-50 text-slate-500",
+                      )}
+                    >
+                      <span className="flex flex-col items-center justify-center gap-1.5">
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="text-balance">{tab.label}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className={cn(
+                  "mt-4 rounded-3xl border p-4 md:hidden",
+                  activeTabMeta.panelTone,
+                )}
+              >
+                <p className="text-sm font-black text-slate-700">
+                  {activeTabMeta.description}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  {activeTabMeta.cta}
+                </p>
+                <div className="mt-3">
+                  <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>今日進度</span>
+                    <span>
+                      {profile.todayProgress}/{profile.dailyGoal}
+                    </span>
+                  </div>
+                  <Progress
+                    value={dailyGoalProgress}
+                    className="h-2.5 rounded-full bg-white"
+                    indicatorClassName="bg-linear-to-r from-emerald-400 to-sky-400"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 min-h-80 md:mt-5 md:min-h-112">
+                {activeTab === "review" && (
+                  <ReviewView childId={profile.id} onPlayAudio={onPlayAudio} />
+                )}
+                {activeTab === "graph" && <GraphView childId={profile.id} />}
+                {activeTab === "tutor" && (
+                  <AITutorChat childId={profile.id} className="h-full" />
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -122,7 +122,7 @@ export function SpacedRepetitionCard({
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl flex flex-col items-center justify-center p-6 [backface-visibility:hidden]">
             {/* Cantonese word */}
             <p
-              className="text-white font-black text-center leading-tight text-6xl mb-2"
+              className="text-white font-black text-center leading-tight text-4xl mb-2"
               style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
             >
               {card.word_cantonese || card.word || "?"}

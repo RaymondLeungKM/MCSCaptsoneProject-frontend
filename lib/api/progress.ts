@@ -44,6 +44,44 @@ export interface ProgressStatsResponse {
   multi_sensory_engagement: number;
 }
 
+export interface LearningControlStatusResponse {
+  child_id: string;
+  local_date: string;
+  today_minutes: number;
+  active_session_minutes: number;
+  session_count: number;
+  has_activity_today: boolean;
+  daily_screen_time_limit: number | null;
+  screen_time_warning_threshold: number;
+  enable_time_limits: boolean;
+  remaining_minutes: number | null;
+  warning_reached: boolean;
+  limit_reached: boolean;
+  daily_reminder_enabled: boolean;
+  daily_reminder_time: string;
+}
+
+export interface DailyStatsResponse {
+  date: string;
+  total_minutes: number;
+  words_encountered: number;
+  words_mastered: number;
+  activities_completed: number;
+  xp_earned: number;
+  session_count: number;
+  average_engagement: number;
+  daily_goal_progress: number;
+  goal_achieved: boolean;
+}
+
+export interface ChildAchievementResponse {
+  achievement_id: string;
+  achievement_name: string;
+  achievement_icon: string;
+  earned_at: string;
+  viewed: boolean;
+}
+
 /**
  * Start a learning session
  */
@@ -79,18 +117,53 @@ export async function getProgressStats(
 }
 
 /**
+ * Get today's accumulated learning time and effective reminder/time-limit state
+ */
+export async function getLearningControlStatus(
+  childId: string,
+  options?: {
+    localDate?: string;
+    timezoneOffsetMinutes?: number;
+  },
+): Promise<LearningControlStatusResponse> {
+  const params = new URLSearchParams();
+
+  if (options?.localDate) {
+    params.set("local_date", options.localDate);
+  }
+
+  if (options?.timezoneOffsetMinutes !== undefined) {
+    params.set(
+      "timezone_offset_minutes",
+      String(options.timezoneOffsetMinutes),
+    );
+  }
+
+  const query = params.toString();
+  return apiRequest<LearningControlStatusResponse>(
+    `/progress/${childId}/usage-status${query ? `?${query}` : ""}`,
+  );
+}
+
+/**
  * Get daily stats
  */
 export async function getDailyStats(
   childId: string,
   days: number = 7,
-): Promise<any[]> {
-  return apiRequest(`/analytics/${childId}/daily?days=${days}`);
+): Promise<DailyStatsResponse[]> {
+  return apiRequest<DailyStatsResponse[]>(
+    `/analytics/${childId}/daily?days=${days}`,
+  );
 }
 
 /**
  * Get achievements
  */
-export async function getAchievements(childId: string): Promise<any[]> {
-  return apiRequest(`/analytics/${childId}/achievements`);
+export async function getAchievements(
+  childId: string,
+): Promise<ChildAchievementResponse[]> {
+  return apiRequest<ChildAchievementResponse[]>(
+    `/analytics/${childId}/achievements`,
+  );
 }

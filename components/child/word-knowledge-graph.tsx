@@ -41,6 +41,28 @@ const GRADIENTS = [
 const isImageUrl = (v?: string) =>
   !!v && (v.startsWith("http") || v.startsWith("/"));
 
+function getWordTextClasses(text: string, variant: "hero" | "card") {
+  const length = text.length;
+
+  if (variant === "hero") {
+    if (length >= 12) {
+      return "text-3xl sm:text-4xl md:text-5xl";
+    }
+    if (length >= 8) {
+      return "text-4xl sm:text-5xl md:text-[3.25rem]";
+    }
+    return "text-5xl sm:text-5xl md:text-[3.25rem]";
+  }
+
+  if (length >= 12) {
+    return "text-[1.5rem] sm:text-[1.8rem] md:text-[2rem]";
+  }
+  if (length >= 8) {
+    return "text-[1.6rem] sm:text-[2rem] md:text-[2rem]";
+  }
+  return "text-[2.2rem] sm:text-[2.3rem] md:text-[2rem]";
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
@@ -123,6 +145,7 @@ export function WordKnowledgeGraph({
 
   const centreWord = wordDetails.get(centreNode.word_id);
   const centreImage = centreWord?.image;
+  const centreLabel = centreNode.word_cantonese || centreNode.word;
 
   return (
     <>
@@ -146,7 +169,7 @@ export function WordKnowledgeGraph({
         {/* ── Centre word hero card ── */}
         <button
           onClick={() => openModal(centreNode)}
-          className="relative flex flex-col items-center bg-linear-to-br from-indigo-500 to-violet-600 rounded-3xl px-6 py-7 shadow-md text-white text-center overflow-hidden w-full active:scale-[0.98] transition-transform duration-150"
+          className="relative flex w-full flex-col items-center overflow-hidden rounded-3xl bg-linear-to-br from-indigo-500 to-violet-600 px-4 py-5 text-center text-white shadow-md transition-transform duration-150 active:scale-[0.98] md:px-6 md:py-7"
         >
           {/* decorative blobs */}
           <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
@@ -154,10 +177,10 @@ export function WordKnowledgeGraph({
 
           {/* Word photo */}
           {isImageUrl(centreImage) ? (
-            <div className="w-28 h-28 mb-4 rounded-2xl overflow-hidden shadow-lg ring-4 ring-white/30 shrink-0">
+            <div className="mb-3 h-20 w-20 shrink-0 overflow-hidden rounded-2xl shadow-lg ring-4 ring-white/30 md:mb-4 md:h-28 md:w-28">
               <img
                 src={centreImage}
-                alt={centreNode.word_cantonese || centreNode.word}
+                alt={centreLabel}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
@@ -165,33 +188,38 @@ export function WordKnowledgeGraph({
               />
             </div>
           ) : centreWord?.image ? (
-            <span className="text-6xl mb-3">{centreWord.image}</span>
+            <span className="mb-2 text-5xl md:mb-3 md:text-5xl">
+              {centreWord.image}
+            </span>
           ) : null}
 
           <p
-            className="text-[3.25rem] font-black leading-none tracking-tight"
+            className={cn(
+              "max-w-full wrap-break-word text-center font-black leading-[0.92] tracking-tight line-clamp-3",
+              getWordTextClasses(centreLabel, "hero"),
+            )}
             style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
           >
-            {centreNode.word_cantonese || centreNode.word}
+            {centreLabel}
           </p>
 
           {centreNode.jyutping && (
-            <p className="mt-2 text-indigo-200 font-semibold text-lg tracking-widest">
+            <p className="mt-2 text-sm font-semibold tracking-widest text-indigo-200 md:text-lg">
               {centreNode.jyutping}
             </p>
           )}
 
-          <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             {centreNode.mastered && (
-              <span className="flex items-center gap-1 bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
+              <span className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white md:text-sm">
                 <Star className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" />
                 已掌握
               </span>
             )}
-            <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white md:text-sm">
               接觸 {centreNode.exposure_count} 次
             </span>
-            <span className="bg-white/20 text-white text-sm font-bold px-3 py-1 rounded-full">
+            <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white md:text-sm">
               點擊查看詳情 →
             </span>
           </div>
@@ -209,7 +237,7 @@ export function WordKnowledgeGraph({
 
         {/* ── Neighbour cards — 2-column grid ── */}
         {neighbours.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 items-stretch">
+          <div className="grid grid-cols-2 gap-2.5 items-stretch md:gap-3">
             {neighbours.map((node, i) => {
               const rel = relMap.get(node.word_id);
               const relStyle = rel ? REL_STYLES[rel] : REL_STYLES.category;
@@ -218,6 +246,7 @@ export function WordKnowledgeGraph({
                 : GRADIENTS[i % GRADIENTS.length];
               const nodeDetails = wordDetails.get(node.word_id);
               const nodeImage = nodeDetails?.image;
+              const nodeLabel = node.word_cantonese || node.word;
 
               return (
                 <div
@@ -229,7 +258,7 @@ export function WordKnowledgeGraph({
                     onClick={() => openModal(node)}
                     className={cn(
                       "flex-1 w-full flex flex-col items-center justify-start gap-1.5",
-                      "rounded-3xl px-4 pt-4 pb-5 transition-all duration-200",
+                      "rounded-3xl px-3 pt-3 pb-4 transition-all duration-200 md:px-4 md:pt-4 md:pb-5",
                       "active:scale-95 shadow-sm",
                       `bg-linear-to-br ${gradient} text-white`,
                       "hover:scale-[1.02]",
@@ -237,10 +266,10 @@ export function WordKnowledgeGraph({
                   >
                     {/* Word photo */}
                     {isImageUrl(nodeImage) ? (
-                      <div className="w-16 h-16 rounded-xl overflow-hidden ring-2 ring-white/40 shadow mb-1 shrink-0">
+                      <div className="mb-1 h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-2 ring-white/40 shadow md:h-16 md:w-16">
                         <img
                           src={nodeImage}
-                          alt={node.word_cantonese || node.word}
+                          alt={nodeLabel}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display =
@@ -249,22 +278,27 @@ export function WordKnowledgeGraph({
                         />
                       </div>
                     ) : nodeDetails?.image ? (
-                      <span className="text-4xl mb-1">{nodeDetails.image}</span>
+                      <span className="mb-1 text-3xl md:text-4xl">
+                        {nodeDetails.image}
+                      </span>
                     ) : (
-                      <div className="w-16 h-16 rounded-xl bg-white/20 mb-1 shrink-0" />
+                      <div className="mb-1 h-14 w-14 shrink-0 rounded-xl bg-white/20 md:h-16 md:w-16" />
                     )}
 
                     {/* Word */}
                     <span
-                      className="text-[2rem] font-black leading-none"
+                      className={cn(
+                        "max-w-full wrap-break-word text-center font-black leading-[0.95] line-clamp-4",
+                        getWordTextClasses(nodeLabel, "card"),
+                      )}
                       style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
                     >
-                      {node.word_cantonese || node.word}
+                      {nodeLabel}
                     </span>
 
                     {/* Jyutping */}
                     {node.jyutping && (
-                      <span className="text-white/80 font-semibold text-sm tracking-widest">
+                      <span className="text-xs font-semibold tracking-widest text-white/80 md:text-sm">
                         {node.jyutping.split(" ")[0]}
                       </span>
                     )}
@@ -295,7 +329,7 @@ export function WordKnowledgeGraph({
                         onNodeClick(node);
                       }}
                       title="探索此詞的相關詞語"
-                      className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center transition-colors active:scale-90"
+                      className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/25 transition-colors hover:bg-white/40 active:scale-90 md:h-8 md:w-8"
                     >
                       <Compass className="w-4 h-4 text-white" />
                     </button>

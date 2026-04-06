@@ -299,7 +299,7 @@ export interface ParentalControl {
   disabled_categories: string[];
   max_difficulty: "easy" | "medium" | "hard";
   min_difficulty: "easy" | "medium" | "hard";
-  daily_screen_time_limit?: number;
+  daily_screen_time_limit?: number | null;
   screen_time_warning_threshold: number;
   tts_voice: string;
   tts_speech_rate: number;
@@ -314,6 +314,23 @@ export interface ParentalControl {
   bedtime_story_reminder: boolean;
   weekly_report_enabled: boolean;
   achievement_notifications: boolean;
+}
+
+export interface LearningControlStatus {
+  childId: string;
+  localDate: string;
+  todayMinutes: number;
+  activeSessionMinutes: number;
+  sessionCount: number;
+  hasActivityToday: boolean;
+  dailyScreenTimeLimit?: number | null;
+  screenTimeWarningThreshold: number;
+  enableTimeLimits: boolean;
+  remainingMinutes?: number | null;
+  warningReached: boolean;
+  limitReached: boolean;
+  dailyReminderEnabled: boolean;
+  dailyReminderTime: string;
 }
 
 export interface CategoryProgress {
