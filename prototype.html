@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>廣東話學習 — 兒童儀表板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coral:   '#e8754a',
+            sky:     '#7ec8e3',
+            mint:    '#a8d5b5',
+            lavender:'#c3b1e1',
+            sunny:   '#f9e06b',
+            ocean:   '#5b8dd9',
+            peach:   '#f5c5a3',
+          },
+          borderRadius: {
+            '4xl': '2rem',
+            '5xl': '2.5rem',
+          },
+          fontFamily: {
+            nunito: ['Nunito', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { font-family: 'Nunito', sans-serif; }
+    body { background: linear-gradient(135deg, #fff7ed 0%, #f0f9ff 50%, #faf5ff 100%); min-height: 100vh; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeSlide 0.3s ease; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .word-card-expanded { display: none; }
+    .word-card-expanded.open { display: block; }
+    .nav-icon-bubble {
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 9999px; transition: all 0.3s;
+      width: 2rem; height: 2rem;
+    }
+    .nav-icon-bubble.active-bubble {
+      width: 3rem; height: 3rem;
+      transform: translateY(-1rem);
+      border: 4px solid white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .overlay { display:none; position:fixed; inset:0; z-index:100; }
+    .overlay.open { display:flex; }
+    .modal { display:none; position:fixed; inset:0; z-index:200; }
+    .modal.open { display:flex; }
+    .shake { animation: shake 0.4s ease; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .learn-word-panel { display: none; }
+    .learn-word-panel.open { display: block; animation: fadeSlide 0.25s ease; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+<div class="max-w-[430px] mx-auto min-h-screen relative pb-32 px-4">
+
+<!-- HEADER -->
+<header class="flex items-center justify-between gap-2 py-4 sticky top-0 z-10">
+  <!-- Profile Card -->
+  <div class="bg-white/80 backdrop-blur-md rounded-[32px] p-4 shadow-sm border border-white/50 flex-1">
+    <div class="flex items-center gap-4">
+      <!-- Avatar -->
+      <div class="relative shrink-0">
+        <div class="w-16 h-16 rounded-full bg-orange-100 border-4 border-white shadow-md flex items-center justify-center text-2xl font-black text-orange-500">
+          明
+        </div>
+        <div class="absolute -bottom-1.5 -right-1 bg-[#7ec8e3] text-white text-xs font-black px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
+          Lv.5
+        </div>
+      </div>
+      <!-- Info -->
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-black text-slate-700 truncate">你好，小明！</h1>
+        <!-- XP bar -->
+        <div class="mt-1">
+          <div class="flex justify-between text-xs font-bold text-slate-400 mb-1">
+            <span class="text-yellow-500">⭐ 465 XP</span>
+            <span>35 to Lv.6</span>
+          </div>
+          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full" style="width:65%"></div>
+          </div>
+        </div>
+        <!-- Stats row -->
+        <div class="flex gap-3 mt-2 text-xs font-bold">
+          <span class="text-orange-500">🔥 7天</span>
+          <span class="text-blue-500">📖 <span id="words-learned-count">42</span> 字</span>
+          <span class="text-green-500">🎯 3/5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Parent Link -->
+  <a href="#" onclick="return false"
+     class="flex items-center gap-1.5 bg-gradient-to-r from-[#7ec8e3] to-[#5b8dd9] text-white px-3 py-2 rounded-full font-black text-sm shadow-lg shrink-0 hover:scale-105 active:scale-95 transition-all">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    家長
+  </a>
+</header>
+<!-- MAIN CONTENT -->
+<main class="space-y-6">
+
+  <!-- ═══ HOME TAB ═══ -->
+  <div id="tab-home" class="tab-content space-y-6">
+    <!-- Daily Words Section -->
+    <section class="bg-white/80 backdrop-blur-md rounded-[32px] p-5 shadow-sm border border-white/50">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-yellow-400 p-2 rounded-2xl shadow-sm rotate-3">
+            <span class="text-white text-lg">💡</span>
+          </div>
+          <div>
+            <h2 class="text-xl font-black text-slate-700">今日單字</h2>
+            <p class="text-xs font-bold text-slate-400">5 個單字等你學習</p>
+          </div>
+        </div>
+        <button onclick="toggleAllWords()"
+                class="text-xs font-black text-slate-400 hover:text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full transition-colors">
+          全部展開
+        </button>
+      </div>
+      <!-- Word Cards -->
+      <div id="daily-word-list" class="space-y-3"></div>
+    </section>
+  </div>
+
+  <!-- ═══ LEARN TAB ═══ -->
+  <div id="tab-learn" class="tab-content">
+    <div id="category-grid-view">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="bg-emerald-400 p-2 rounded-xl shadow-sm text-white text-lg">📚</div>
+        <h2 class="text-2xl font-black text-slate-700">學習分類</h2>
+      </div>
+      <div id="category-grid" class="grid grid-cols-2 gap-3"></div>
+    </div>
+    <!-- Word List Panel (slides in on category click) -->
+    <div id="category-words-panel" class="learn-word-panel">
+      <div class="flex items-center gap-3 mb-5">
+        <button onclick="closeCategoryPanel()"
+                class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center font-black text-slate-500 hover:bg-slate-50 active:scale-95 transition-all">
+          ←
+        </button>
+        <div class="text-3xl" id="cat-panel-icon"></div>
+        <div>
+          <h2 class="text-xl font-black text-slate-700" id="cat-panel-name"></h2>
+          <p class="text-xs font-bold text-slate-400" id="cat-panel-count"></p>
+        </div>
+      </div>
+      <div id="cat-word-list" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- ═══ GAMES TAB ═══ -->
+  <div id="tab-games" class="tab-content space-y-4">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="bg-orange-400 p-2 rounded-xl shadow-sm text-white text-lg">🎮</div>
+      <h2 class="text-2xl font-black text-slate-700">遊戲時間</h2>
+    </div>
+    <div id="games-list" class="space-y-4"></div>
+  </div>
+
+  <!-- ═══ STORIES TAB ═══ -->
+  <div id="tab-stories" class="tab-content space-y-5">
+    <!-- Story generator -->
+    <div class="bg-gradient-to-r from-pink-400 to-rose-400 rounded-[32px] p-5 text-white shadow-lg">
+      <p class="font-black text-xl mb-2">✨ 生成新故事</p>
+      <p class="text-sm font-bold opacity-90 mb-4">用今日學識嘅字，創作屬於你的故事！</p>
+      <button onclick="generateStory()" id="gen-btn"
+              class="w-full bg-white text-pink-600 font-black py-3 rounded-[20px] text-base hover:bg-pink-50 active:scale-95 transition-all">
+        🪄 生成故事
+      </button>
+    </div>
+
+    <!-- Story shelf -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-black text-slate-700 text-lg">📚 我的故事</h3>
+        <span id="story-count" class="text-xs font-bold text-slate-400"></span>
+      </div>
+      <div id="story-shelf" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- ═══ COMMUNITY TAB ═══ -->
+  <div id="tab-community" class="tab-content space-y-5">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="bg-sky-400 p-2 rounded-xl text-white text-lg">🌍</div>
+      <h2 class="text-2xl font-black text-slate-700">社區</h2>
+    </div>
+    <!-- Sub-tab switcher -->
+    <div class="flex gap-2 bg-slate-100 p-1 rounded-[20px]">
+      <button id="sub-tab-mine" onclick="switchCommunityTab('mine')"
+              class="flex-1 py-2 rounded-[16px] font-black text-sm transition-all bg-white text-sky-600 shadow-sm">我的相片詞彙</button>
+      <button id="sub-tab-community" onclick="switchCommunityTab('community')"
+              class="flex-1 py-2 rounded-[16px] font-black text-sm transition-all text-slate-400">社區詞彙</button>
+    </div>
+    <!-- Grid -->
+    <div id="community-word-grid" class="grid grid-cols-3 gap-3"></div>
+  </div>
+
+  <!-- ═══ REWARDS TAB ═══ -->
+  <div id="tab-rewards" class="tab-content">
+    <div class="flex flex-col items-center justify-center py-20 text-center gap-4">
+      <div class="text-6xl animate-bounce">🚧</div>
+      <p class="font-black text-2xl text-slate-600">獎勵即將推出！</p>
+      <p class="text-slate-400 font-bold">你的勛章和成就將會在這裡顯示。</p>
+      <div class="flex gap-3 mt-4 flex-wrap justify-center">
+        <div class="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center text-3xl shadow-sm">🏆</div>
+        <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-3xl shadow-sm opacity-40">⭐</div>
+        <div class="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center text-3xl shadow-sm opacity-40">🎖️</div>
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-3xl shadow-sm opacity-40">🌟</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PROFILE TAB ═══ -->
+  <div id="tab-profile" class="tab-content space-y-5">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="bg-lavender p-2 rounded-xl text-white text-lg">👤</div>
+      <h2 class="text-2xl font-black text-slate-700">我的資料</h2>
+    </div>
+    <!-- Avatar + name card -->
+    <div class="bg-gradient-to-br from-lavender/30 to-sky/20 rounded-[32px] p-6 text-center border border-white shadow-sm">
+      <div class="w-20 h-20 rounded-full bg-[#c3b1e1] flex items-center justify-center text-3xl font-black text-white shadow-md mx-auto mb-3">明</div>
+      <p class="font-black text-2xl text-slate-700">阿明</p>
+      <p class="font-bold text-slate-400 text-sm mt-1">Level 5 學習者 · 🔥 7天連勝</p>
+    </div>
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-white rounded-[24px] p-4 text-center shadow-sm border border-slate-100">
+        <p class="font-black text-2xl text-coral-500 text-[#e8754a]" id="profile-words-count">0</p>
+        <p class="text-xs font-bold text-slate-400 mt-1">識嘅字</p>
+      </div>
+      <div class="bg-white rounded-[24px] p-4 text-center shadow-sm border border-slate-100">
+        <p class="font-black text-2xl text-sky-400">7</p>
+        <p class="text-xs font-bold text-slate-400 mt-1">連勝天</p>
+      </div>
+      <div class="bg-white rounded-[24px] p-4 text-center shadow-sm border border-slate-100">
+        <p class="font-black text-2xl text-mint-400 text-[#a8d5b5]">5</p>
+        <p class="text-xs font-bold text-slate-400 mt-1">故事讀完</p>
+      </div>
+    </div>
+    <!-- Coming soon banner -->
+    <div class="flex flex-col items-center justify-center py-6 text-center gap-3">
+      <div class="text-4xl animate-bounce">🚧</div>
+      <p class="font-bold text-slate-400 text-sm">更多個人資料功能即將推出！</p>
+    </div>
+  </div>
+
+</main>
+
+</div><!-- end container -->
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav" class="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-2">
+  <div class="flex items-end justify-between w-full max-w-[430px] px-2 py-3 bg-white/95 backdrop-blur-xl border-[3px] border-white/50 rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
+  </div>
+</nav>
+
+  <!-- QUIZ OVERLAY -->
+  <div id="overlay-quiz" class="overlay items-end justify-center bg-black/50">
+    <div class="bg-white w-full max-w-[430px] rounded-t-[40px] p-6 pb-10">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-purple-700">🎯 單字大挑戰</h2>
+        <button onclick="closeOverlay('quiz')" class="w-10 h-10 rounded-full bg-slate-100 font-black text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+      </div>
+      <div id="quiz-content"></div>
+    </div>
+  </div>
+
+  <!-- WORD BUILDER OVERLAY -->
+  <div id="overlay-word-builder" class="overlay items-end justify-center bg-black/50">
+    <div class="bg-white w-full max-w-[430px] rounded-t-[40px] p-6 pb-10">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-green-700">🔤 粵語拼字</h2>
+        <button onclick="closeOverlay('word-builder')" class="w-10 h-10 rounded-full bg-slate-100 font-black text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+      </div>
+      <div class="text-center py-8 space-y-4">
+        <div class="text-6xl animate-bounce">🔤</div>
+        <p class="font-black text-xl text-slate-700">學識廣東話點寫！</p>
+        <p class="text-slate-400 font-bold">請大聲讀出以下漢字：</p>
+        <div class="text-5xl font-black text-green-600 py-4">貓</div>
+        <p class="text-sm font-bold text-slate-400">maau1</p>
+        <button onclick="closeOverlay('word-builder'); showToast('做得好！+15 XP 🌟')"
+                class="w-full bg-green-400 hover:bg-green-500 text-white font-black py-4 rounded-[20px] text-lg transition-all active:scale-95">
+          ✓ 完成！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPEAKING OVERLAY -->
+  <div id="overlay-speaking" class="overlay items-end justify-center bg-black/50">
+    <div class="bg-white w-full max-w-[430px] rounded-t-[40px] p-6 pb-10">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-orange-700">🎤 發音練習</h2>
+        <button onclick="closeOverlay('speaking')" class="w-10 h-10 rounded-full bg-slate-100 font-black text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+      </div>
+      <div class="text-center py-6 space-y-4">
+        <div class="text-6xl">🐶</div>
+        <p class="font-black text-xl text-slate-700">大聲讀出：狗</p>
+        <p class="text-slate-400 font-bold text-lg">gau2</p>
+        <button id="mic-btn" onclick="activateMic()"
+                class="w-20 h-20 rounded-full bg-orange-400 hover:bg-orange-500 text-5xl mx-auto flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all">
+          🎤
+        </button>
+        <p class="text-sm font-bold text-slate-400">按下麥克風開始錄音</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- STORY READER MODAL -->
+  <div id="modal-story" class="overlay items-center justify-center bg-black/60 p-4">
+    <div class="bg-white w-full max-w-[390px] rounded-[40px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+      <!-- modal header -->
+      <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+        <h3 id="modal-story-title" class="font-black text-xl text-slate-700 truncate"></h3>
+        <button onclick="closeModal('story')" class="w-10 h-10 rounded-full bg-slate-100 font-black text-slate-500 hover:bg-slate-200 transition-colors shrink-0 ml-3">✕</button>
+      </div>
+      <!-- page dots -->
+      <div id="story-dots" class="flex justify-center gap-2 py-3 border-b border-slate-100"></div>
+      <!-- page content -->
+      <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div id="story-page-content" class="text-center space-y-4"></div>
+      </div>
+      <!-- footer nav -->
+      <div class="flex items-center justify-between px-6 py-4 border-t border-slate-100">
+        <button onclick="storyPrev()" class="w-12 h-12 rounded-full bg-slate-100 font-black text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-30" id="story-prev-btn">◀</button>
+        <button onclick="playBeep(event)" class="w-12 h-12 rounded-full bg-sky-100 font-black text-sky-600 hover:bg-sky-200 transition-colors">🔊</button>
+        <button onclick="storyNext()" class="w-12 h-12 rounded-full bg-coral-400 bg-[#e8754a] font-black text-white hover:opacity-90 transition-colors" id="story-next-btn">▶</button>
+      </div>
+    </div>
+  </div>
+
+<div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[300] bg-slate-800 text-white text-sm font-black px-5 py-2.5 rounded-full shadow-xl pointer-events-none" style="opacity:0;transition:opacity 0.3s;"></div>
+<script>
+// ─── MOCK DATA ──────────────────────────────────────────────────────────────
+const CHILD = {
+  id: 'child-001', name: '小明', age: 5, level: 5, xp: 465,
+  words_learned: 42, current_streak: 7, daily_goal: 5, today_progress: 3
+};
+
+const DAILY_WORDS = [
+  { id:'w1', word:'Cat',       word_cantonese:'貓',   jyutping:'maau1',       definition_cantonese:'一種常見的寵物，喜歡玩耍',         difficulty:'easy',   exposure_count:3, mastered:true,  image:'🐱' },
+  { id:'w2', word:'Apple',     word_cantonese:'蘋果', jyutping:'ping4 gwo2',  definition_cantonese:'一種甜美的紅色水果',               difficulty:'easy',   exposure_count:1, mastered:false, image:'🍎' },
+  { id:'w3', word:'Butterfly', word_cantonese:'蝴蝶', jyutping:'wu4 dip6',    definition_cantonese:'一種美麗的昆蟲，有彩色的翅膀',     difficulty:'medium', exposure_count:0, mastered:false, image:'🦋' },
+  { id:'w4', word:'Dog',       word_cantonese:'狗',   jyutping:'gau2',        definition_cantonese:'人類最忠實的動物朋友',             difficulty:'easy',   exposure_count:5, mastered:true,  image:'🐶' },
+  { id:'w5', word:'Cup',       word_cantonese:'水杯', jyutping:'seoi2 bui1',  definition_cantonese:'用來盛水的容器',                   difficulty:'easy',   exposure_count:2, mastered:false, image:'🥤' },
+];
+
+const CATEGORIES = [
+  { id:'animals',  name:'Animals',   name_cantonese:'動物',     icon:'🐾', color:'bg-yellow-200', word_count:12,
+    words:[
+      { word_cantonese:'貓',   jyutping:'maau1',      image:'🐱', definition_cantonese:'一種常見的寵物' },
+      { word_cantonese:'狗',   jyutping:'gau2',       image:'🐶', definition_cantonese:'忠實的動物朋友' },
+      { word_cantonese:'鳥',   jyutping:'niu5',       image:'🐦', definition_cantonese:'有翅膀會飛的動物' },
+      { word_cantonese:'魚',   jyutping:'jyu2',       image:'🐟', definition_cantonese:'住在水裡的動物' },
+    ]
+  },
+  { id:'food',     name:'Food',      name_cantonese:'食物',     icon:'🍎', color:'bg-red-200',    word_count:10,
+    words:[
+      { word_cantonese:'蘋果', jyutping:'ping4 gwo2', image:'🍎', definition_cantonese:'甜美的紅色水果' },
+      { word_cantonese:'香蕉', jyutping:'hoeng1 ziu1',image:'🍌', definition_cantonese:'黃色的彎曲水果' },
+      { word_cantonese:'飯',   jyutping:'faan6',      image:'🍚', definition_cantonese:'我們每天吃的主食' },
+      { word_cantonese:'麵',   jyutping:'min6',       image:'🍜', definition_cantonese:'長條形的食物' },
+    ]
+  },
+  { id:'colors',   name:'Colors',    name_cantonese:'顏色',     icon:'🌈', color:'bg-blue-200',   word_count:8,
+    words:[
+      { word_cantonese:'紅色', jyutping:'hung4 sik1', image:'🔴', definition_cantonese:'火和蘋果的顏色' },
+      { word_cantonese:'藍色', jyutping:'laam4 sik1', image:'🔵', definition_cantonese:'天空和海洋的顏色' },
+      { word_cantonese:'綠色', jyutping:'luk6 sik1',  image:'🟢', definition_cantonese:'草地和樹葉的顏色' },
+      { word_cantonese:'黃色', jyutping:'wong4 sik1', image:'🟡', definition_cantonese:'太陽和香蕉的顏色' },
+    ]
+  },
+  { id:'nature',   name:'Nature',    name_cantonese:'大自然',   icon:'🌿', color:'bg-green-200',  word_count:9,
+    words:[
+      { word_cantonese:'樹',   jyutping:'syu6',       image:'🌳', definition_cantonese:'高大的植物' },
+      { word_cantonese:'花',   jyutping:'faa1',       image:'🌸', definition_cantonese:'漂亮的植物' },
+      { word_cantonese:'太陽', jyutping:'taai3 joeng4',image:'☀️', definition_cantonese:'給我們光和暖的星球' },
+      { word_cantonese:'雨',   jyutping:'jyu5',       image:'🌧️', definition_cantonese:'從天上落下的水' },
+    ]
+  },
+  { id:'family',   name:'Family',    name_cantonese:'家人',     icon:'👨‍👩‍👧', color:'bg-purple-200', word_count:7,
+    words:[
+      { word_cantonese:'媽媽', jyutping:'maa1 maa1',  image:'👩', definition_cantonese:'我的媽媽' },
+      { word_cantonese:'爸爸', jyutping:'baa4 baa1',  image:'👨', definition_cantonese:'我的爸爸' },
+      { word_cantonese:'哥哥', jyutping:'go1 go1',    image:'👦', definition_cantonese:'年長的兄弟' },
+      { word_cantonese:'妹妹', jyutping:'mui4 mui2',  image:'👧', definition_cantonese:'年幼的姐妹' },
+    ]
+  },
+  { id:'vehicles', name:'Vehicles',  name_cantonese:'交通工具', icon:'🚗', color:'bg-orange-200', word_count:6,
+    words:[
+      { word_cantonese:'車',   jyutping:'ce1',        image:'🚗', definition_cantonese:'在路上行走的交通工具' },
+      { word_cantonese:'巴士', jyutping:'baa1 si2',   image:'🚌', definition_cantonese:'載很多人的大車' },
+      { word_cantonese:'火車', jyutping:'fo2 ce1',    image:'🚂', definition_cantonese:'在鐵路上行走的交通工具' },
+      { word_cantonese:'船',   jyutping:'syun4',      image:'🚢', definition_cantonese:'在水上行走的交通工具' },
+    ]
+  },
+  { id:'body',     name:'Body',      name_cantonese:'身體',     icon:'🦶', color:'bg-pink-200',   word_count:8,
+    words:[
+      { word_cantonese:'手',   jyutping:'sau2',       image:'🖐', definition_cantonese:'用來觸摸和拿東西的身體部位' },
+      { word_cantonese:'腳',   jyutping:'goek3',      image:'🦶', definition_cantonese:'用來走路的身體部位' },
+      { word_cantonese:'眼',   jyutping:'ngaan5',     image:'👁', definition_cantonese:'用來看東西的器官' },
+      { word_cantonese:'耳',   jyutping:'ji5',        image:'👂', definition_cantonese:'用來聽聲音的器官' },
+    ]
+  },
+  { id:'clothing', name:'Clothing',  name_cantonese:'衣物',     icon:'👕', color:'bg-indigo-200', word_count:5,
+    words:[
+      { word_cantonese:'衫',   jyutping:'saam1',      image:'👕', definition_cantonese:'穿在身上保暖的東西' },
+      { word_cantonese:'褲',   jyutping:'fu3',        image:'👖', definition_cantonese:'穿在腿上的衣物' },
+      { word_cantonese:'帽',   jyutping:'mou2',       image:'🎩', definition_cantonese:'戴在頭上的東西' },
+      { word_cantonese:'鞋',   jyutping:'haai4',      image:'👟', definition_cantonese:'穿在腳上的東西' },
+    ]
+  },
+];
+
+const GAMES = [
+  { id:'quiz',         name:'單字大挑戰', desc:'聽聲音，選出正確的圖片！', icon:'🎯', color:'purple' },
+  { id:'word-builder', name:'粵語拼字',   desc:'學識廣東話點寫！',         icon:'🔤', color:'green'  },
+  { id:'speaking',     name:'發音練習',   desc:'大聲讀出單字，贏取獎勵！', icon:'🎤', color:'orange' },
+];
+
+const STORIES = [
+  { id:'s1', title:'貓咪和蝴蝶',   minutes:3, read_count:1, emoji:'🐱', color:'purple' },
+  { id:'s2', title:'蘋果樹的故事', minutes:5, read_count:0, emoji:'🍎', color:'green'  },
+  { id:'s3', title:'小狗找朋友',   minutes:4, read_count:2, emoji:'🐶', color:'blue'   },
+];
+
+const STORY_PAGES = [
+  '從前，有一隻可愛的小貓咪，牠住在一個漂亮的花園裡。花園裡有很多五顏六色的花，還有很多蝴蝶飛來飛去。',
+  '有一天，小貓咪看見了一隻美麗的蝴蝶，牠的翅膀是彩虹色的。小貓咪好奇地跟著蝴蝶跑。「你好！」小貓咪說。',
+  '蝴蝶停了下來，微笑著說：「你好，小貓咪！我叫做蝴蝶，我喜歡花的香味。」從此，貓咪和蝴蝶成為了好朋友。',
+];
+
+const COMMUNITY_WORDS = [
+  { word_cantonese:'書包', jyutping:'syu1 baau1', image:'🎒', by:'阿樂' },
+  { word_cantonese:'鉛筆', jyutping:'jyun4 bat1', image:'✏️', by:'小花' },
+  { word_cantonese:'橡皮', jyutping:'zoeng6 pei4',image:'🧹', by:'阿明' },
+  { word_cantonese:'尺',   jyutping:'cek3',        image:'📏', by:'小芬' },
+  { word_cantonese:'膠水', jyutping:'gaau1 seoi2', image:'🧴', by:'阿強' },
+  { word_cantonese:'剪刀', jyutping:'zin2 dou1',   image:'✂️', by:'小美' },
+];
+
+// ─── APP STATE ───────────────────────────────────────────────────────────────
+const STATE = {
+  activeTab: 'home',
+  wordStates: Object.fromEntries(DAILY_WORDS.map(w => [w.id, { mastered: w.mastered, expanded: false }])),
+  masteredCount: DAILY_WORDS.filter(w => w.mastered).length,
+  selectedCategory: null,
+  storyPage: 0,
+  communitySubTab: 'mine',
+  generatingStory: false,
+  generatedStories: [...STORIES],
+};
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  { id:'home',      icon:'🏠', label:'首頁',   activeBg:'bg-blue-400'   },
+  { id:'learn',     icon:'📖', label:'學習',   activeBg:'bg-emerald-400'},
+  { id:'games',     icon:'🎮', label:'遊戲',   activeBg:'bg-orange-400' },
+  { id:'stories',   icon:'🌙', label:'故事',   activeBg:'bg-purple-400' },
+  { id:'community', icon:'👥', label:'社區',   activeBg:'bg-teal-400'   },
+  { id:'rewards',   icon:'🏆', label:'獎勵',   activeBg:'bg-yellow-400' },
+  { id:'profile',   icon:'👤', label:'我的',   activeBg:'bg-pink-400'   },
+];
+
+function renderNav() {
+  const container = document.querySelector('#bottom-nav > div');
+  if (!container) return;
+  container.innerHTML = NAV_ITEMS.map(item => {
+    const isActive = item.id === STATE.activeTab;
+    return `
+      <button onclick="switchTab('${item.id}')"
+              class="group relative flex flex-col items-center justify-end w-full gap-0.5">
+        <div class="nav-icon-bubble ${isActive ? item.activeBg + ' active-bubble' : 'bg-transparent text-slate-400'} flex items-center justify-center">
+          <span class="${isActive ? 'text-xl' : 'text-lg'} leading-none">${item.icon}</span>
+        </div>
+        <span class="text-[10px] font-bold ${isActive ? 'text-slate-700' : 'text-slate-400'}">${item.label}</span>
+      </button>`;
+  }).join('');
+}
+
+function switchTab(tabId) {
+  STATE.activeTab = tabId;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('tab-' + tabId);
+  if (target) target.classList.add('active');
+  renderNav();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav();
+  renderDailyWords();
+  renderCategories();
+  renderGames();
+  renderStoryShelf();
+  renderCommunityWords();
+  updateProfileStats();
+  switchTab('home');
+});
+
+// ─── HOME TAB: DAILY WORDS ───────────────────────────────────────────────────
+function renderDailyWords() {
+  const container = document.getElementById('daily-word-list');
+  if (!container) return;
+  container.innerHTML = DAILY_WORDS.map(w => {
+    const st = STATE.wordStates[w.id];
+    const isNew = w.exposure_count === 0;
+    return `
+    <div class="rounded-[24px] border-2 overflow-hidden transition-all duration-300 ${st.mastered ? 'border-emerald-300 bg-emerald-50' : 'border-slate-100 bg-white'}">
+      <!-- Collapsed Row -->
+      <div class="flex items-center gap-4 p-4 cursor-pointer" onclick="toggleWord('${w.id}')">
+        <!-- Emoji Image -->
+        <div class="relative shrink-0 w-14 h-14 rounded-[16px] bg-white border-2 border-slate-100 flex items-center justify-center text-3xl shadow-sm">
+          ${w.image}
+          ${isNew ? '<div class="absolute -top-2 -left-2 bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border border-white animate-bounce">+10 XP</div>' : ''}
+        </div>
+        <!-- Text -->
+        <div class="flex-1 min-w-0">
+          <div class="text-2xl font-black text-slate-700">${w.word_cantonese}</div>
+          <div class="text-xs font-bold text-slate-400">${w.jyutping}</div>
+        </div>
+        <!-- Controls -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="playBeep(event)" class="w-9 h-9 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center transition-colors" title="播放">
+            🔊
+          </button>
+          <button onclick="toggleMastered(event,'${w.id}')"
+                  class="w-9 h-9 rounded-full flex items-center justify-center transition-all font-black text-lg ${st.mastered ? 'bg-emerald-400 text-white' : 'bg-slate-100 text-slate-400 hover:bg-emerald-100'}">
+            ✓
+          </button>
+          <span class="text-slate-300 text-lg select-none">${st.expanded ? '▲' : '▼'}</span>
+        </div>
+      </div>
+      <!-- Expanded Detail -->
+      <div class="word-card-expanded ${st.expanded ? 'open' : ''} px-4 pb-4">
+        <div class="h-px bg-slate-100 mb-3"></div>
+        <p class="text-sm font-bold text-slate-600">${w.definition_cantonese}</p>
+        <div class="mt-2 flex items-center gap-2">
+          <span class="text-xs font-black px-2 py-0.5 rounded-full ${w.difficulty === 'easy' ? 'bg-green-100 text-green-600' : w.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'}">
+            ${w.difficulty === 'easy' ? '簡單' : w.difficulty === 'medium' ? '中等' : '困難'}
+          </span>
+          <span class="text-xs text-slate-400 font-bold">練習了 ${w.exposure_count} 次</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWord(id) {
+  STATE.wordStates[id].expanded = !STATE.wordStates[id].expanded;
+  renderDailyWords();
+}
+
+function toggleMastered(event, id) {
+  event.stopPropagation();
+  const was = STATE.wordStates[id].mastered;
+  STATE.wordStates[id].mastered = !was;
+  if (!was) {
+    STATE.masteredCount++;
+    showToast('+10 XP 🎉 掌握了！');
+  } else {
+    STATE.masteredCount = Math.max(0, STATE.masteredCount - 1);
+  }
+  const el = document.getElementById('words-learned-count');
+  if (el) el.textContent = String(42 + STATE.masteredCount - 2); // base 42, starts with 2 mastered
+  renderDailyWords();
+}
+
+function toggleAllWords() {
+  const anyOpen = Object.values(STATE.wordStates).some(s => s.expanded);
+  Object.keys(STATE.wordStates).forEach(id => {
+    STATE.wordStates[id].expanded = !anyOpen;
+  });
+  renderDailyWords();
+}
+
+function playBeep(event) {
+  event.stopPropagation();
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 523.25; // C5
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
+// ─── LEARN TAB: CATEGORY GRID ────────────────────────────────────────────────
+const CAT_BG_MAP = {
+  animals:'bg-yellow-100 border-yellow-200', food:'bg-red-100 border-red-200',
+  colors:'bg-blue-100 border-blue-200', nature:'bg-green-100 border-green-200',
+  family:'bg-purple-100 border-purple-200', vehicles:'bg-orange-100 border-orange-200',
+  body:'bg-pink-100 border-pink-200', clothing:'bg-indigo-100 border-indigo-200'
+};
+const CAT_TEXT_MAP = {
+  animals:'text-yellow-700', food:'text-red-600', colors:'text-blue-600',
+  nature:'text-green-700', family:'text-purple-600', vehicles:'text-orange-600',
+  body:'text-pink-600', clothing:'text-indigo-600'
+};
+
+function renderCategories() {
+  const grid = document.getElementById('category-grid');
+  if (!grid) return;
+  grid.innerHTML = CATEGORIES.map(cat => `
+    <button onclick="openCategory('${cat.id}')"
+            class="group relative p-5 rounded-[28px] border-2 ${CAT_BG_MAP[cat.id]} bg-opacity-60 hover:bg-opacity-100 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.97] text-left">
+      <div class="text-4xl mb-3">${cat.icon}</div>
+      <div class="font-black text-slate-700 text-lg leading-tight">${cat.name_cantonese}</div>
+      <div class="text-xs font-bold text-slate-400 mt-0.5">${cat.name}</div>
+      <div class="absolute top-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-full ${CAT_BG_MAP[cat.id]} ${CAT_TEXT_MAP[cat.id]}">
+        ${cat.word_count}字
+      </div>
+    </button>
+  `).join('');
+}
+
+function openCategory(catId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+  STATE.selectedCategory = cat;
+  document.getElementById('cat-panel-icon').textContent = cat.icon;
+  document.getElementById('cat-panel-name').textContent = cat.name_cantonese;
+  document.getElementById('cat-panel-count').textContent = cat.word_count + ' 個詞語';
+  document.getElementById('cat-word-list').innerHTML = cat.words.map(w => `
+    <div class="flex items-center gap-4 p-4 bg-white/80 rounded-[20px] border-2 border-slate-100 hover:border-slate-200 transition-all">
+      <div class="w-14 h-14 rounded-[16px] bg-slate-50 border-2 border-slate-100 flex items-center justify-center text-3xl shrink-0">${w.image}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-2xl font-black text-slate-700">${w.word_cantonese}</div>
+        <div class="text-xs font-bold text-slate-400">${w.jyutping}</div>
+        <div class="text-xs font-bold text-slate-500 mt-0.5 line-clamp-1">${w.definition_cantonese}</div>
+      </div>
+      <button onclick="playBeep(event)" class="w-9 h-9 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center shrink-0 transition-colors">🔊</button>
+    </div>
+  `).join('');
+  document.getElementById('category-grid-view').style.display = 'none';
+  document.getElementById('category-words-panel').classList.add('open');
+}
+
+function closeCategoryPanel() {
+  document.getElementById('category-grid-view').style.display = 'block';
+  document.getElementById('category-words-panel').classList.remove('open');
+  STATE.selectedCategory = null;
+}
+
+// ─── GAMES TAB ───────────────────────────────────────────────────────────────
+const GAME_COLORS = {
+  purple: { card:'border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300', text:'text-purple-600', play:'bg-purple-100 group-hover:bg-purple-500 group-hover:text-white' },
+  green:  { card:'border-green-200 bg-green-50 hover:bg-green-100 hover:border-green-300',     text:'text-green-600',  play:'bg-green-100  group-hover:bg-green-500  group-hover:text-white' },
+  orange: { card:'border-orange-200 bg-orange-50 hover:bg-orange-100 hover:border-orange-300', text:'text-orange-600', play:'bg-orange-100 group-hover:bg-orange-500 group-hover:text-white' },
+};
+
+function renderGames() {
+  const list = document.getElementById('games-list');
+  if (!list) return;
+  list.innerHTML = GAMES.map((g, i) => {
+    const c = GAME_COLORS[g.color];
+    return `
+    <button onclick="openOverlay('${g.id}')"
+            class="group w-full flex items-center gap-5 p-5 rounded-[32px] border-4 ${c.card} hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md transition-all duration-300 text-left relative">
+      <div class="w-20 h-20 rounded-[24px] bg-white flex items-center justify-center text-4xl shadow-sm group-hover:scale-110 transition-transform duration-300 shrink-0">${g.icon}</div>
+      <div class="flex-1 min-w-0">
+        <h3 class="font-black text-slate-700 text-xl tracking-tight mb-1">${g.name}</h3>
+        <p class="text-sm font-bold ${c.text} opacity-80 line-clamp-2">${g.desc}</p>
+      </div>
+      <div class="w-12 h-12 rounded-full ${c.play} flex items-center justify-center shadow-sm transition-colors shrink-0 font-black">▶</div>
+      ${i === 0 ? '<div class="absolute -top-3 -right-2 bg-yellow-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm rotate-6">熱門</div>' : ''}
+    </button>`;
+  }).join('');
+}
+
+const QUIZ_QUESTIONS = [
+  { question:'下面哪個是「貓」？',  correct:0, options:['🐱','🐶','🐦','🐟'] },
+  { question:'下面哪個是「蘋果」？', correct:1, options:['🍌','🍎','🍇','🍊'] },
+  { question:'下面哪個是「蝴蝶」？', correct:2, options:['🐝','🐛','🦋','🐞'] },
+];
+let quizIndex = 0;
+
+function renderQuiz() {
+  const q = QUIZ_QUESTIONS[quizIndex % QUIZ_QUESTIONS.length];
+  document.getElementById('quiz-content').innerHTML = `
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-2">🔊</div>
+      <p class="font-black text-lg text-slate-700">${q.question}</p>
+      <p class="text-sm text-slate-400 font-bold mt-1">問題 ${(quizIndex % QUIZ_QUESTIONS.length) + 1}/${QUIZ_QUESTIONS.length}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      ${q.options.map((opt, i) => `
+        <button id="quiz-opt-${i}" onclick="answerQuiz(${i}, ${q.correct})"
+                class="h-24 rounded-[20px] bg-slate-50 border-4 border-slate-200 text-5xl hover:bg-purple-50 hover:border-purple-300 transition-all active:scale-95">
+          ${opt}
+        </button>
+      `).join('')}
+    </div>`;
+}
+
+function answerQuiz(chosen, correct) {
+  const btns = document.querySelectorAll('[id^="quiz-opt-"]');
+  btns.forEach(b => b.disabled = true);
+  document.getElementById('quiz-opt-' + correct).classList.add('bg-green-100','border-green-400');
+  if (chosen !== correct) {
+    const wb = document.getElementById('quiz-opt-' + chosen);
+    wb.classList.add('bg-red-100','border-red-400','shake');
+  } else {
+    showToast('+10 XP 🎉 答啱喇！');
+    quizIndex++;
+    setTimeout(() => renderQuiz(), 1500);
+  }
+}
+
+function openOverlay(id) {
+  if (id === 'quiz') renderQuiz();
+  const el = document.getElementById('overlay-' + id);
+  if (el) el.classList.add('open');
+}
+
+function closeOverlay(id) {
+  const el = document.getElementById('overlay-' + id);
+  if (el) el.classList.remove('open');
+}
+
+function activateMic() {
+  const btn = document.getElementById('mic-btn');
+  if (!btn) return;
+  btn.textContent = '⏺';
+  btn.classList.add('animate-pulse');
+  setTimeout(() => {
+    btn.textContent = '🎤';
+    btn.classList.remove('animate-pulse');
+    showToast('做得好！+15 XP 🌟');
+    setTimeout(() => closeOverlay('speaking'), 500);
+  }, 2000);
+}
+
+// ─── STORIES TAB ─────────────────────────────────────────────────────────────
+function renderStoryShelf() {
+  const shelf = document.getElementById('story-shelf');
+  const countEl = document.getElementById('story-count');
+  if (!shelf) return;
+  const all = [...STORIES, ...(STATE.generatedStories || [])];
+  if (countEl) countEl.textContent = all.length + ' 個故事';
+  const STORY_BG = ['from-pink-100 to-rose-100','from-purple-100 to-indigo-100','from-yellow-100 to-orange-100','from-teal-100 to-green-100'];
+  const STORY_ICON = ['🐱','🐼','🦋','🌟'];
+  shelf.innerHTML = all.map((s, i) => `
+    <button onclick="openStoryReader('${s.id}')"
+            class="group w-full flex items-center gap-4 p-4 rounded-[28px] border-2 border-white bg-gradient-to-r ${STORY_BG[i % STORY_BG.length]} hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md transition-all duration-300 text-left">
+      <div class="w-14 h-14 rounded-[18px] bg-white flex items-center justify-center text-3xl shadow-sm shrink-0">${STORY_ICON[i % STORY_ICON.length]}</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-black text-slate-700 text-base truncate">${s.title}</p>
+        <p class="text-xs font-bold text-slate-400 mt-1">${s.reading_time_minutes} 分鐘 · ${s.pages ? s.pages.length : 3} 頁</p>
+      </div>
+      <div class="text-slate-400 group-hover:text-slate-600 font-black shrink-0">▶</div>
+    </button>
+  `).join('');
+}
+
+function openStoryReader(storyId) {
+  const story = [...STORIES, ...(STATE.generatedStories || [])].find(s => s.id === storyId);
+  if (!story) return;
+  STATE.activeStoryId = storyId;
+  STATE.storyPage = 0;
+  const titleEl = document.getElementById('modal-story-title');
+  if (titleEl) titleEl.textContent = story.title;
+  updateReaderPage();
+  openModal('story');
+}
+
+function updateReaderPage() {
+  const story = [...STORIES, ...(STATE.generatedStories || [])].find(s => s.id === STATE.activeStoryId);
+  if (!story) return;
+  const pages = story.pages || STORY_PAGES;
+  const page = pages[STATE.storyPage] || pages[0];
+  const total = pages.length;
+  const contentEl = document.getElementById('story-page-content');
+  const dotsEl = document.getElementById('story-dots');
+  const prevBtn = document.getElementById('story-prev-btn');
+  const nextBtn = document.getElementById('story-next-btn');
+  if (contentEl) {
+    contentEl.innerHTML = `
+      <div class="text-6xl mb-4">${page.image || '📖'}</div>
+      <p class="font-bold text-slate-700 text-lg leading-relaxed">${page.text}</p>
+      <p class="mt-4 text-sm font-bold text-slate-400 bg-slate-50 rounded-xl p-3">${page.cantonese_text || ''}</p>
+    `;
+  }
+  if (dotsEl) {
+    dotsEl.innerHTML = Array.from({length: total}, (_, i) =>
+      `<div class="w-2 h-2 rounded-full transition-all ${i === STATE.storyPage ? 'bg-pink-400 w-4' : 'bg-slate-200'}"></div>`
+    ).join('');
+  }
+  if (prevBtn) prevBtn.disabled = STATE.storyPage === 0;
+  if (nextBtn) nextBtn.disabled = STATE.storyPage >= total - 1;
+}
+
+function storyPrev() {
+  if (STATE.storyPage > 0) { STATE.storyPage--; updateReaderPage(); }
+}
+function storyNext() {
+  const story = [...STORIES, ...(STATE.generatedStories || [])].find(s => s.id === STATE.activeStoryId);
+  const pages = story ? (story.pages || STORY_PAGES) : STORY_PAGES;
+  if (STATE.storyPage < pages.length - 1) { STATE.storyPage++; updateReaderPage(); }
+}
+
+function openModal(id) {
+  const el = document.getElementById('modal-' + id);
+  if (el) el.classList.add('open');
+}
+function closeModal(id) {
+  const el = document.getElementById('modal-' + id);
+  if (el) el.classList.remove('open');
+}
+
+function generateStory() {
+  const btn = document.getElementById('gen-btn');
+  if (!btn || STATE.generatingStory) return;
+  STATE.generatingStory = true;
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 生成中...';
+  btn.disabled = true;
+  btn.classList.add('opacity-60');
+  setTimeout(() => {
+    STATE.generatingStory = false;
+    btn.textContent = origText;
+    btn.disabled = false;
+    btn.classList.remove('opacity-60');
+    const newId = 'gen-' + Date.now();
+    STATE.generatedStories = STATE.generatedStories || [];
+    STATE.generatedStories.push({
+      id: newId,
+      title: '🌈 新故事 #' + (STATE.generatedStories.length + 1),
+      reading_time_minutes: 2,
+      pages: [
+        { text:'Once upon a time, a little cat named 小明 loved learning new words.', cantonese_text:'從前，有隻小貓叫小明，非常喜歡學新字。', image:'🐱' },
+        { text:'Every morning, 小明 looked at the word of the day and practised.', cantonese_text:'每朝早，小明都會睇今日嘅生字，跟著練習。', image:'📖' },
+        { text:'Soon 小明 knew 100 words and all the animals cheered!', cantonese_text:'很快，小明識了一百個字，所有動物都拍手歡呼！', image:'🎉' },
+      ],
+    });
+    renderStoryShelf();
+    showToast('✨ 新故事生成咗！');
+  }, 2000);
+}
+
+// ─── COMMUNITY TAB ───────────────────────────────────────────────────────────
+function switchCommunityTab(tab) {
+  STATE.communitySubTab = tab;
+  const mineBtn = document.getElementById('sub-tab-mine');
+  const commBtn = document.getElementById('sub-tab-community');
+  if (!mineBtn || !commBtn) return;
+  if (tab === 'mine') {
+    mineBtn.classList.add('bg-white', 'text-sky-600', 'shadow-sm');
+    mineBtn.classList.remove('text-slate-400');
+    commBtn.classList.remove('bg-white', 'text-sky-600', 'shadow-sm');
+    commBtn.classList.add('text-slate-400');
+  } else {
+    commBtn.classList.add('bg-white', 'text-sky-600', 'shadow-sm');
+    commBtn.classList.remove('text-slate-400');
+    mineBtn.classList.remove('bg-white', 'text-sky-600', 'shadow-sm');
+    mineBtn.classList.add('text-slate-400');
+  }
+  renderCommunityWords();
+}
+
+function renderCommunityWords() {
+  const grid = document.getElementById('community-word-grid');
+  if (!grid) return;
+  const words = COMMUNITY_WORDS.filter(w =>
+    STATE.communitySubTab === 'mine' ? w.is_mine : !w.is_mine
+  );
+  const BG = ['bg-pink-100','bg-sky-100','bg-mint-100','bg-lavender-100','bg-yellow-100','bg-orange-100'];
+  grid.innerHTML = words.length
+    ? words.map((w, i) => `
+        <div class="rounded-[24px] ${BG[i % BG.length]} p-3 flex flex-col items-center gap-2 text-center shadow-sm border border-white">
+          <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm">${w.image_emoji || '📸'}</div>
+          <p class="font-black text-sm text-slate-700 leading-tight">${w.word_cantonese}</p>
+          <p class="text-[10px] font-bold text-slate-400">${w.jyutping}</p>
+        </div>
+      `).join('')
+    : '<p class="col-span-3 text-center font-bold text-slate-400 py-8">未有詞彙，去學習吧！</p>';
+}
+
+// ─── PROFILE TAB ─────────────────────────────────────────────────────────────
+function updateProfileStats() {
+  const el = document.getElementById('profile-words-count');
+  if (el) el.textContent = STATE.masteredCount || 0;
+}
+</script>
+</body>
+</html>
