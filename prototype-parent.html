@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>家長中心 — Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coral:   '#e8754a',
+            sky:     '#7ec8e3',
+            mint:    '#a8d5b5',
+            lavender:'#c3b1e1',
+            sunny:   '#f9e06b',
+            ocean:   '#5b8dd9',
+            peach:   '#ffd6b0',
+          },
+          borderRadius: {
+            '4xl': '2rem',
+            '5xl': '2.5rem',
+          },
+          fontFamily: {
+            sans: ['Nunito', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Nunito', sans-serif; }
+
+    /* Tab panels */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeSlide 0.3s ease; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tab button active state */
+    .tab-btn { transition: all 0.2s ease; }
+    .tab-btn.active { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    /* Progress bar fill animation */
+    .bar-fill { transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+    /* Modal/overlay */
+    .overlay { display: none; position: fixed; inset: 0; z-index: 50; align-items: flex-end; justify-content: center; }
+    .overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Scrollbar hide */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Toggle switch */
+    .toggle-track { width: 48px; height: 26px; border-radius: 13px; background: #e2e8f0; transition: background 0.2s; cursor: pointer; position: relative; display: inline-block; }
+    .toggle-track.on { background: #38BDF8; }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: left 0.2s; }
+    .toggle-track.on .toggle-thumb { left: 25px; }
+
+    /* Chart bars */
+    .chart-bar { transition: height 0.6s cubic-bezier(.4,0,.2,1); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 min-h-screen">
+
+<div class="max-w-[680px] mx-auto min-h-screen pb-10">
+
+  <!-- ═══ STICKY HEADER + TAB NAV ═══ -->
+  <div class="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-b-[32px] shadow-sm border border-white/50 overflow-hidden mx-0">
+    <!-- Header row -->
+    <div class="flex items-center justify-between px-5 py-4 gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-orange-100 p-2.5 rounded-full shadow-inner shrink-0">
+          <span class="text-2xl">👶</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-black text-slate-800 tracking-tight leading-tight">家長中心</h1>
+          <p class="text-slate-500 font-bold text-xs">跟進 <span class="text-sky-500" id="child-name-header">Emma</span> 的學習進度</p>
+        </div>
+      </div>
+      <button onclick="showToast('切換到兒童模式 🎮')"
+              class="flex items-center gap-2 bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white pl-3 pr-4 py-2 rounded-full font-black text-sm shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95">
+        <span class="w-6 h-6 bg-white/25 rounded-full flex items-center justify-center text-xs">👶</span>
+        兒童模式
+      </button>
+    </div>
+
+    <!-- Divider -->
+    <div class="h-px bg-slate-100 mx-4"></div>
+
+    <!-- Tab bar -->
+    <div class="overflow-x-auto scrollbar-hide px-2 py-2">
+      <div id="tab-bar" class="flex gap-1 min-w-max bg-slate-100 rounded-[20px] p-1 mx-auto w-fit"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CONTENT AREA ═══ -->
+  <div class="px-4 py-5 space-y-6">
+
+    <!-- ═══ OVERVIEW TAB ═══ -->
+    <div id="tab-overview" class="tab-panel space-y-5">
+
+      <!-- Quick stats grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-[#FFF8E1] rounded-[24px] p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm text-2xl shrink-0">🔥</div>
+          <div>
+            <p class="text-2xl font-black text-slate-800">7 <span class="text-sm font-bold text-slate-400">日</span></p>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-wide">連續打卡</p>
+          </div>
+        </div>
+        <div class="bg-[#E1F5FE] rounded-[24px] p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm text-2xl shrink-0">📖</div>
+          <div>
+            <p class="text-2xl font-black text-slate-800">15</p>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-wide">已學詞彙</p>
+          </div>
+        </div>
+        <div class="bg-[#FFF3E0] rounded-[24px] p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm text-2xl shrink-0">🏆</div>
+          <div>
+            <p class="text-2xl font-black text-slate-800">3</p>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-wide">目前等級</p>
+          </div>
+        </div>
+        <div class="bg-[#E8F5E9] rounded-[24px] p-4 flex items-center gap-3 shadow-sm">
+          <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm text-2xl shrink-0">🎯</div>
+          <div>
+            <p class="text-2xl font-black text-slate-800">7<span class="text-lg text-slate-400">/10</span></p>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-wide">今日目標</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress cards row -->
+      <div class="grid md:grid-cols-2 gap-4">
+        <!-- Daily goal progress -->
+        <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-black text-slate-700">今日目標進度</h3>
+            <span class="text-xs font-black text-sky-500 bg-sky-50 px-3 py-1 rounded-full">7/10 字</span>
+          </div>
+          <div class="bg-slate-100 rounded-full h-4 overflow-hidden">
+            <div class="bar-fill h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style="width:70%"></div>
+          </div>
+          <p class="text-xs font-bold text-slate-400 mt-2">還差 3 個字完成今日目標 💪</p>
+        </div>
+
+        <!-- Overall mastery -->
+        <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-black text-slate-700">整體掌握程度</h3>
+            <span class="text-xs font-black text-green-500 bg-green-50 px-3 py-1 rounded-full">36%</span>
+          </div>
+          <div class="bg-slate-100 rounded-full h-4 overflow-hidden">
+            <div class="bar-fill h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500" style="width:36%"></div>
+          </div>
+          <p class="text-xs font-bold text-slate-400 mt-2">已掌握 15 個，共 42 個詞彙</p>
+        </div>
+      </div>
+
+      <!-- Weekly activity chart -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-black text-slate-700">本週學習活躍度</h3>
+          <span class="text-xs font-bold text-slate-400">42 字</span>
+        </div>
+        <div class="flex items-end justify-around h-28 gap-2">
+          <!-- Mon=2, Tue=5, Wed=8, Thu=4, Fri=10, Sat=6, Sun=7 -->
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-200 rounded-t-lg" style="height:20%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週一</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-300 rounded-t-lg" style="height:50%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週二</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-400 rounded-t-lg" style="height:80%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週三</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-200 rounded-t-lg" style="height:40%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週四</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-indigo-400 rounded-t-lg" style="height:100%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週五</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-300 rounded-t-lg" style="height:60%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週六</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 flex-1">
+            <div class="chart-bar w-full bg-sky-400 rounded-t-lg" style="height:70%"></div>
+            <span class="text-[10px] font-bold text-slate-400">週日</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category breakdown -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-4">分類掌握情況</h3>
+        <div class="space-y-3" id="category-bars"></div>
+      </div>
+
+      <!-- Play stats row -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-pink-50 rounded-[24px] p-4 text-center shadow-sm">
+          <p class="text-2xl font-black text-pink-500">142</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">本週分鐘</p>
+        </div>
+        <div class="bg-purple-50 rounded-[24px] p-4 text-center shadow-sm">
+          <p class="text-2xl font-black text-purple-500">5</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">故事讀完</p>
+        </div>
+        <div class="bg-orange-50 rounded-[24px] p-4 text-center shadow-sm">
+          <p class="text-2xl font-black text-orange-500">18</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">遊戲完成</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ PROGRESS TAB ═══ -->
+    <div id="tab-progress" class="tab-panel space-y-5">
+
+      <!-- Stats summary row -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white rounded-[24px] p-4 text-center border-2 border-slate-100 shadow-sm">
+          <p class="text-2xl font-black text-slate-700">42</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">全部詞彙</p>
+        </div>
+        <div class="bg-green-50 rounded-[24px] p-4 text-center border-2 border-green-100 shadow-sm">
+          <p class="text-2xl font-black text-green-600">15</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">已掌握</p>
+        </div>
+        <div class="bg-sky-50 rounded-[24px] p-4 text-center border-2 border-sky-100 shadow-sm">
+          <p class="text-2xl font-black text-sky-600">27</p>
+          <p class="text-[11px] font-black text-slate-400 mt-1">學習中</p>
+        </div>
+      </div>
+
+      <!-- Search + filter -->
+      <div class="bg-white rounded-[28px] p-4 border-2 border-slate-100 shadow-sm space-y-3">
+        <div class="relative">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <input type="text" id="word-search" placeholder="搜尋詞彙..." oninput="filterWords()"
+                 class="w-full pl-10 pr-4 py-3 rounded-[16px] bg-slate-100 font-bold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-300" />
+        </div>
+        <div class="flex gap-2">
+          <button onclick="setWordFilter('all')"       id="filter-all"      class="flex-1 py-2 rounded-[12px] font-black text-sm bg-slate-800 text-white transition-colors">全部</button>
+          <button onclick="setWordFilter('mastered')"  id="filter-mastered" class="flex-1 py-2 rounded-[12px] font-black text-sm bg-slate-100 text-slate-500 transition-colors">已掌握</button>
+          <button onclick="setWordFilter('learning')"  id="filter-learning" class="flex-1 py-2 rounded-[12px] font-black text-sm bg-slate-100 text-slate-500 transition-colors">學習中</button>
+        </div>
+      </div>
+
+      <!-- Word list -->
+      <div id="word-list" class="space-y-3"></div>
+
+    </div>
+
+    <!-- ═══ CHARTS TAB ═══ -->
+    <div id="tab-charts" class="tab-panel space-y-5">
+
+      <!-- Donut-style mastery ring (pure CSS) -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm text-center">
+        <h3 class="font-black text-slate-700 mb-4">詞彙掌握分佈</h3>
+        <div class="flex items-center justify-center gap-8">
+          <!-- Fake donut using conic-gradient -->
+          <div class="w-32 h-32 rounded-full shadow-inner" style="background: conic-gradient(#4ade80 0% 36%, #38bdf8 36% 100%);">
+            <div class="w-20 h-20 rounded-full bg-white mx-auto mt-6 flex items-center justify-center font-black text-slate-700 text-xl shadow-sm">36%</div>
+          </div>
+          <div class="space-y-3 text-left">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-green-400 shrink-0"></div>
+              <div>
+                <p class="text-sm font-black text-slate-700">已掌握</p>
+                <p class="text-xs font-bold text-slate-400">15 個詞彙</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full bg-sky-400 shrink-0"></div>
+              <div>
+                <p class="text-sm font-black text-slate-700">學習中</p>
+                <p class="text-xs font-bold text-slate-400">27 個詞彙</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active vs passive vocabulary -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-4">主動 vs 被動詞彙</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm font-black text-indigo-600">🗣 主動詞彙（能說出）</span>
+              <span class="text-sm font-black text-slate-500">10 個</span>
+            </div>
+            <div class="bg-slate-100 rounded-full h-4 overflow-hidden">
+              <div class="bar-fill h-full rounded-full bg-indigo-400" style="width:24%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm font-black text-purple-600">👀 被動詞彙（能認識）</span>
+              <span class="text-sm font-black text-slate-500">32 個</span>
+            </div>
+            <div class="bg-slate-100 rounded-full h-4 overflow-hidden">
+              <div class="bar-fill h-full rounded-full bg-purple-400" style="width:76%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-sensory engagement -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-black text-slate-700">多感官參與度</h3>
+          <span class="text-2xl font-black text-orange-500">85%</span>
+        </div>
+        <div class="bg-slate-100 rounded-full h-5 overflow-hidden">
+          <div class="bar-fill h-full rounded-full bg-gradient-to-r from-orange-400 to-pink-400" style="width:85%"></div>
+        </div>
+        <p class="text-xs font-bold text-slate-400 mt-2">視覺、聽覺、語言三者並用，學習效果最佳！</p>
+      </div>
+
+      <!-- Avg exposures per word -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-4">每個詞平均接觸次數</h3>
+        <div class="flex items-center gap-5">
+          <div class="text-5xl font-black text-slate-700">3.5</div>
+          <div>
+            <p class="font-black text-slate-600 text-sm">研究建議：6-8 次才能有效記憶</p>
+            <p class="text-xs font-bold text-slate-400 mt-1">繼續鼓勵每天練習！</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ MISSIONS TAB ═══ -->
+    <div id="tab-missions" class="tab-panel space-y-5">
+
+      <!-- Progress card -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-black text-slate-700">🚩 今日線下任務</h3>
+          <span id="mission-count" class="text-sm font-black text-green-500">0/3 完成</span>
+        </div>
+        <p class="text-xs font-bold text-slate-400 mb-4">將學習融入日常生活，與小朋友一同完成任務！</p>
+        <div class="bg-slate-100 rounded-full h-4 overflow-hidden">
+          <div id="mission-progress-bar" class="bar-fill h-full rounded-full bg-green-400" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Mission list -->
+      <div id="mission-list" class="space-y-3"></div>
+
+      <!-- Suggested missions -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-4">💡 建議活動</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3 p-3 rounded-[16px] bg-orange-50">
+            <span class="text-xl">⏰</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">早晨習慣</p>
+              <p class="text-xs font-bold text-slate-400">刷牙洗面嗰陣練習生字</p>
+              <div class="flex gap-1 mt-1">
+                <span class="text-[10px] bg-orange-100 text-orange-600 font-black px-2 py-0.5 rounded-full">牙刷</span>
+                <span class="text-[10px] bg-orange-100 text-orange-600 font-black px-2 py-0.5 rounded-full">毛巾</span>
+                <span class="text-[10px] bg-orange-100 text-orange-600 font-black px-2 py-0.5 rounded-full">鏡</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-[16px] bg-green-50">
+            <span class="text-xl">📍</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">返學途中</p>
+              <p class="text-xs font-bold text-slate-400">說出沿途見到的事物</p>
+              <div class="flex gap-1 mt-1">
+                <span class="text-[10px] bg-green-100 text-green-600 font-black px-2 py-0.5 rounded-full">樹</span>
+                <span class="text-[10px] bg-green-100 text-green-600 font-black px-2 py-0.5 rounded-full">巴士</span>
+                <span class="text-[10px] bg-green-100 text-green-600 font-black px-2 py-0.5 rounded-full">雀仔</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-[16px] bg-red-50">
+            <span class="text-xl">🍽</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">食飯時間</p>
+              <p class="text-xs font-bold text-slate-400">認識餐具同食物名稱</p>
+              <div class="flex gap-1 mt-1">
+                <span class="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-full">匙羹</span>
+                <span class="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-full">碗</span>
+                <span class="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-full">菜</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 p-3 rounded-[16px] bg-indigo-50">
+            <span class="text-xl">🌙</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">睡前故事</p>
+              <p class="text-xs font-bold text-slate-400">一同閱讀，溫習新學的詞語</p>
+              <div class="flex gap-1 mt-1">
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 font-black px-2 py-0.5 rounded-full">月亮</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 font-black px-2 py-0.5 rounded-full">發夢</span>
+                <span class="text-[10px] bg-indigo-100 text-indigo-600 font-black px-2 py-0.5 rounded-full">訓覺</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ INSIGHTS TAB ═══ -->
+    <div id="tab-insights" class="tab-panel space-y-5">
+
+      <!-- AI summary banner -->
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-[28px] p-5 text-white shadow-lg">
+        <p class="font-black text-lg mb-1">🤖 AI 學習分析</p>
+        <p class="text-sm font-bold opacity-90">根據 Emma 嘅學習記錄，以下係今星期嘅洞察報告。</p>
+      </div>
+
+      <!-- Insight cards (rendered by JS) -->
+      <div id="insight-cards" class="space-y-4"></div>
+
+      <!-- Recommendation -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-3">📌 本週建議活動</h3>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3 rounded-[16px] bg-emerald-50 border border-emerald-100">
+            <span class="text-xl shrink-0">🌿</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">帶 Emma 去公園</p>
+              <p class="text-xs font-bold text-slate-400">練習大自然類別詞彙，提升 30% 的掌握率</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 rounded-[16px] bg-sky-50 border border-sky-100">
+            <span class="text-xl shrink-0">🎵</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">嘗試粵語童謠</p>
+              <p class="text-xs font-bold text-slate-400">音樂有助加強記憶，適合聽覺型學習者</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 rounded-[16px] bg-orange-50 border border-orange-100">
+            <span class="text-xl shrink-0">📸</span>
+            <div>
+              <p class="font-black text-sm text-slate-700">拍照學粵語</p>
+              <p class="text-xs font-bold text-slate-400">用相機拍下物件，配上粵語詞語，分享到社區</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Learning session history -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm">
+        <h3 class="font-black text-slate-700 mb-4">📅 最近學習記錄</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div>
+              <p class="font-black text-sm text-slate-700">今日</p>
+              <p class="text-xs font-bold text-slate-400">故事、問答遊戲</p>
+            </div>
+            <div class="text-right">
+              <p class="font-black text-sm text-sky-500">15 分鐘</p>
+              <p class="text-xs font-bold text-slate-400">高度投入 🌟</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div>
+              <p class="font-black text-sm text-slate-700">昨天</p>
+              <p class="text-xs font-bold text-slate-400">單字練習、發音遊戲</p>
+            </div>
+            <div class="text-right">
+              <p class="font-black text-sm text-sky-500">22 分鐘</p>
+              <p class="text-xs font-bold text-slate-400">中度投入</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <div>
+              <p class="font-black text-sm text-slate-700">前天</p>
+              <p class="text-xs font-bold text-slate-400">圖卡配對</p>
+            </div>
+            <div class="text-right">
+              <p class="font-black text-sm text-sky-500">10 分鐘</p>
+              <p class="text-xs font-bold text-slate-400">高度投入 🌟</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ SETTINGS TAB ═══ -->
+    <div id="tab-settings" class="tab-panel space-y-5">
+
+      <!-- Child profile card -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm space-y-4">
+        <h3 class="font-black text-slate-700 flex items-center gap-2">👤 小朋友資料</h3>
+
+        <div>
+          <label class="text-xs font-black text-slate-500 uppercase tracking-wide block mb-1">名字</label>
+          <input type="text" id="setting-name" value="Emma（阿妹）"
+                 class="w-full px-4 py-3 rounded-[16px] bg-slate-100 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-300" />
+        </div>
+
+        <div>
+          <label class="text-xs font-black text-slate-500 uppercase tracking-wide block mb-1">年齡</label>
+          <input type="number" value="5" min="2" max="10"
+                 class="w-full px-4 py-3 rounded-[16px] bg-slate-100 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-300" />
+        </div>
+
+        <div>
+          <label class="text-xs font-black text-slate-500 uppercase tracking-wide block mb-2">興趣（點選選取）</label>
+          <div class="flex flex-wrap gap-2" id="interest-chips"></div>
+        </div>
+      </div>
+
+      <!-- Daily goal -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm space-y-3">
+        <h3 class="font-black text-slate-700 flex items-center gap-2">🎯 每日目標</h3>
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-slate-600">每日學習單字數</span>
+          <span id="goal-display" class="font-black text-xl text-sky-500">10 個字</span>
+        </div>
+        <input type="range" min="5" max="30" step="5" value="10" id="daily-goal-slider"
+               oninput="updateGoalDisplay(this.value)"
+               class="w-full accent-sky-400" />
+        <div class="flex justify-between text-xs font-bold text-slate-400">
+          <span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm space-y-4">
+        <h3 class="font-black text-slate-700">🔔 提醒設定</h3>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-black text-slate-700 text-sm">每日提醒</p>
+            <p class="text-xs font-bold text-slate-400">提醒小朋友每天學習</p>
+          </div>
+          <div id="toggle-notifications" class="toggle-track on" onclick="toggleSetting('notifications', this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-black text-slate-700 text-sm">提醒時間</p>
+          </div>
+          <input type="time" value="09:00" class="font-black text-slate-700 bg-slate-100 px-3 py-2 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-sky-300" />
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-black text-slate-700 text-sm">社區分享</p>
+            <p class="text-xs font-bold text-slate-400">允許分享照片詞彙</p>
+          </div>
+          <div id="toggle-community" class="toggle-track on" onclick="toggleSetting('community', this)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen time -->
+      <div class="bg-white rounded-[28px] p-5 border-2 border-slate-100 shadow-sm space-y-3">
+        <h3 class="font-black text-slate-700 flex items-center gap-2">⏱ 屏幕時間限制</h3>
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-slate-600">每日最長使用時間</span>
+          <span id="screen-time-display" class="font-black text-xl text-orange-500">30 分鐘</span>
+        </div>
+        <input type="range" min="10" max="120" step="10" value="30" id="screen-time-slider"
+               oninput="updateScreenTimeDisplay(this.value)"
+               class="w-full accent-orange-400" />
+      </div>
+
+      <!-- Save button -->
+      <button onclick="saveSettings()"
+              class="w-full bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white font-black py-4 rounded-[20px] text-lg shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
+        💾 儲存設定
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-slate-800 text-white font-black text-sm px-5 py-3 rounded-full shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none whitespace-nowrap"></div>
+
+<script>
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+const CHILD = {
+  id: 'child-001',
+  name: 'Emma（阿妹）',
+  age: 5,
+  avatar: '👧',
+  level: 3,
+  xp: 340,
+  xpToNext: 500,
+  currentStreak: 7,
+  dailyGoal: 10,
+  todayProgress: 7,
+  wordsLearned: 42,
+  interests: ['Animals', 'Space'],
+  languagePreference: 'cantonese',
+  attentionSpan: 15,
+};
+
+const STATS = {
+  totalWords: 42,
+  masteredWords: 15,
+  learningWords: 27,
+  streakDays: 7,
+  weeklyProgress: [2, 5, 8, 4, 10, 6, 7],  // Mon-Sun
+  categoryProgress: [
+    { category: '動物', progress: 80 },
+    { category: '食物', progress: 55 },
+    { category: '顏色', progress: 90 },
+    { category: '大自然', progress: 30 },
+    { category: '交通工具', progress: 45 },
+    { category: '家庭', progress: 70 },
+  ],
+  averageExposuresPerWord: 3.5,
+  activeVocabulary: 10,
+  passiveVocabulary: 32,
+  multiSensoryEngagement: 85,
+  totalPlayTime: 142,       // minutes this week
+  storiesRead: 5,
+  gamesPlayed: 18,
+};
+
+const WORDS = [
+  { id: 1, word_cantonese: '貓', jyutping: 'maau1', definition_cantonese: '一種常見的寵物', category: '動物', mastered: true,  exposure_count: 12, read_count: 5 },
+  { id: 2, word_cantonese: '狗', jyutping: 'gau2',  definition_cantonese: '人類最好的朋友', category: '動物', mastered: true,  exposure_count: 10, read_count: 4 },
+  { id: 3, word_cantonese: '蘋果', jyutping: 'ping4 gwo2', definition_cantonese: '紅色或綠色的水果', category: '食物', mastered: false, exposure_count: 6,  read_count: 2 },
+  { id: 4, word_cantonese: '香蕉', jyutping: 'hoeng1 ziu1', definition_cantonese: '黃色彎彎的水果', category: '食物', mastered: false, exposure_count: 4,  read_count: 1 },
+  { id: 5, word_cantonese: '紅色', jyutping: 'hung4 sik1', definition_cantonese: '鮮艷的暖色', category: '顏色', mastered: true,  exposure_count: 15, read_count: 6 },
+  { id: 6, word_cantonese: '藍色', jyutping: 'laam4 sik1', definition_cantonese: '天空的顏色', category: '顏色', mastered: true,  exposure_count: 13, read_count: 5 },
+  { id: 7, word_cantonese: '蝴蝶', jyutping: 'wu4 dip6', definition_cantonese: '漂亮的飛行昆蟲', category: '大自然', mastered: false, exposure_count: 3,  read_count: 1 },
+  { id: 8, word_cantonese: '巴士', jyutping: 'baa1 si2', definition_cantonese: '大型公共交通工具', category: '交通工具', mastered: false, exposure_count: 7,  read_count: 3 },
+];
+
+const MISSIONS = [
+  { id: '1', title: '超市大冒險', description: '帶小朋友到超市認識詞語', targetWord: '蘋果', context: '請小朋友幫忙找蘋果', completed: false },
+  { id: '2', title: '顏色偵探', description: '找出家中藍色的物件', targetWord: '藍色', context: '指著藍色物件大聲朗讀', completed: true },
+  { id: '3', title: '睡前故事', description: '一同閱讀，溫習新學的詞語', targetWord: '月亮', context: '睡前讀故事', completed: false },
+];
+
+const INSIGHTS = [
+  { icon:'🧠', title:'學習風格',    text:'Emma 最鍾意透過視覺學習，建議多用圖卡同故事配合新詞語。' },
+  { icon:'⏰', title:'最佳學習時間', text:'下午 3-5 時佢嘅專注力最高，建議安排練習喺呢個時段。' },
+  { icon:'🎯', title:'弱項詞語',    text:'大自然類別得 30% 完成度，可以帶佢去公園認識花草樹木。' },
+  { icon:'🌟', title:'成就亮點',    text:'顏色詞彙達 90% 掌握！呢個禮拜連勝 7 天，表現非常出色！' },
+];
+
+const STATE = {
+  activeTab: 'overview',
+  wordFilter: 'all',
+  wordSearch: '',
+  missionStates: Object.fromEntries(MISSIONS.map(m => [m.id, m.completed])),
+  settings: {
+    name: CHILD.name,
+    dailyGoal: CHILD.dailyGoal,
+    notifications: true,
+    reminderTime: '09:00',
+    screenTimeLimit: 30,
+    communitySharing: true,
+    interests: [...CHILD.interests],
+  },
+};
+
+// ─── NAV TABS ─────────────────────────────────────────────────────────────────
+const NAV_TABS = [
+  { id: 'overview',  icon: '📊', label: '概覽'  },
+  { id: 'progress',  icon: '📈', label: '進度'  },
+  { id: 'charts',    icon: '🥧', label: '圖表'  },
+  { id: 'missions',  icon: '🎯', label: '任務'  },
+  { id: 'insights',  icon: '🔍', label: '分析'  },
+  { id: 'settings',  icon: '⚙️', label: '設定'  },
+];
+
+function renderNav() {
+  const bar = document.getElementById('tab-bar');
+  bar.innerHTML = NAV_TABS.map(t => `
+    <button id="nav-${t.id}" onclick="switchTab('${t.id}')"
+            class="tab-btn flex items-center gap-1.5 px-3 py-2 rounded-[16px] font-black text-sm text-slate-500 hover:text-slate-700 whitespace-nowrap transition-all">
+      <span>${t.icon}</span><span>${t.label}</span>
+    </button>
+  `).join('');
+}
+
+function switchTab(id) {
+  STATE.activeTab = id;
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'text-slate-800'));
+  const panel = document.getElementById('tab-' + id);
+  if (panel) panel.classList.add('active');
+  const btn = document.getElementById('nav-' + id);
+  if (btn) { btn.classList.add('active', 'text-slate-800'); }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 2500);
+}
+
+// ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
+function renderCategoryBars() {
+  const container = document.getElementById('category-bars');
+  if (!container) return;
+  const COLORS = ['bg-orange-400','bg-sky-400','bg-purple-400','bg-green-400','bg-pink-400','bg-indigo-400'];
+  container.innerHTML = STATS.categoryProgress.map((cp, i) => `
+    <div>
+      <div class="flex justify-between mb-1">
+        <span class="text-sm font-black text-slate-600">${cp.category}</span>
+        <span class="text-sm font-black text-slate-400">${cp.progress}%</span>
+      </div>
+      <div class="bg-slate-100 rounded-full h-3 overflow-hidden">
+        <div class="bar-fill h-full rounded-full ${COLORS[i % COLORS.length]}" style="width:${cp.progress}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── PROGRESS TAB ─────────────────────────────────────────────────────────────
+function renderWordList() {
+  const container = document.getElementById('word-list');
+  if (!container) return;
+  const q = STATE.wordSearch.toLowerCase();
+  let words = WORDS.filter(w => {
+    const matchSearch = !q || w.word_cantonese.includes(q) || w.jyutping.toLowerCase().includes(q) || w.definition_cantonese.includes(q);
+    const matchFilter = STATE.wordFilter === 'all' || (STATE.wordFilter === 'mastered' && w.mastered) || (STATE.wordFilter === 'learning' && !w.mastered);
+    return matchSearch && matchFilter;
+  });
+  if (!words.length) {
+    container.innerHTML = '<p class="text-center font-bold text-slate-400 py-8">找不到詞彙</p>';
+    return;
+  }
+  container.innerHTML = words.map(w => `
+    <div class="bg-white rounded-[24px] p-4 border-2 ${w.mastered ? 'border-green-100' : 'border-slate-100'} shadow-sm flex items-center gap-4">
+      <div class="w-12 h-12 rounded-[16px] ${w.mastered ? 'bg-green-100' : 'bg-sky-100'} flex items-center justify-center font-black text-xl shrink-0">${w.word_cantonese}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="font-black text-slate-700 text-base">${w.word_cantonese}</span>
+          <span class="text-xs font-bold text-slate-400">${w.jyutping}</span>
+          ${w.mastered ? '<span class="text-xs font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-full">已掌握 ✓</span>' : '<span class="text-xs font-black text-sky-500 bg-sky-50 px-2 py-0.5 rounded-full">學習中</span>'}
+        </div>
+        <p class="text-xs font-bold text-slate-400 mt-0.5 truncate">${w.definition_cantonese}</p>
+        <div class="flex gap-3 mt-1">
+          <span class="text-[11px] font-bold text-slate-300">👁 ${w.exposure_count} 次</span>
+          <span class="text-[11px] font-bold text-slate-300">📖 ${w.read_count} 次</span>
+          <span class="text-[11px] font-bold text-slate-300">📂 ${w.category}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setWordFilter(f) {
+  STATE.wordFilter = f;
+  ['all','mastered','learning'].forEach(id => {
+    const btn = document.getElementById('filter-' + id);
+    if (!btn) return;
+    if (id === f) {
+      btn.className = 'flex-1 py-2 rounded-[12px] font-black text-sm bg-slate-800 text-white transition-colors';
+    } else {
+      btn.className = 'flex-1 py-2 rounded-[12px] font-black text-sm bg-slate-100 text-slate-500 transition-colors';
+    }
+  });
+  renderWordList();
+}
+
+function filterWords() {
+  STATE.wordSearch = document.getElementById('word-search').value;
+  renderWordList();
+}
+
+// ─── MISSIONS TAB ─────────────────────────────────────────────────────────────
+function renderMissions() {
+  const list = document.getElementById('mission-list');
+  const bar = document.getElementById('mission-progress-bar');
+  const count = document.getElementById('mission-count');
+  if (!list) return;
+  const missions = MISSIONS;
+  const total = missions.length;
+  const done = missions.filter(m => STATE.missionStates[m.id]).length;
+  if (bar) bar.style.width = (done/total*100) + '%';
+  if (count) count.textContent = done + '/' + total + ' 完成';
+  list.innerHTML = missions.map(m => {
+    const completed = STATE.missionStates[m.id];
+    return `
+    <div onclick="toggleMission('${m.id}')" id="mission-card-${m.id}"
+         class="bg-white rounded-[24px] p-5 border-2 ${completed ? 'border-green-200 bg-green-50' : 'border-slate-100'} shadow-sm flex items-center gap-4 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+      <div class="w-10 h-10 rounded-full border-4 ${completed ? 'border-green-400 bg-green-400' : 'border-slate-200 bg-white'} flex items-center justify-center shrink-0 transition-all duration-300">
+        ${completed ? '<span class="text-white font-black text-sm">✓</span>' : ''}
+      </div>
+      <div class="flex-1">
+        <p class="font-black text-slate-700 ${completed ? 'line-through text-slate-400' : ''}">${m.title}</p>
+        <p class="text-xs font-bold text-slate-400">${m.description}</p>
+        <span class="text-[11px] bg-sky-100 text-sky-600 font-black px-2 py-0.5 rounded-full mt-1 inline-block">目標詞語：${m.targetWord}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMission(id) {
+  STATE.missionStates[id] = !STATE.missionStates[id];
+  const done = Object.values(STATE.missionStates).filter(Boolean).length;
+  showToast(STATE.missionStates[id] ? '任務完成！🎉 +10 XP' : '任務重置');
+  renderMissions();
+}
+
+// ─── INSIGHTS TAB ─────────────────────────────────────────────────────────────
+function renderInsights() {
+  const container = document.getElementById('insight-cards');
+  if (!container) return;
+  const BG = ['bg-blue-50 border-blue-100','bg-yellow-50 border-yellow-100','bg-red-50 border-red-100','bg-green-50 border-green-100'];
+  container.innerHTML = INSIGHTS.map((ins, i) => `
+    <div class="bg-white rounded-[24px] p-5 border-2 ${BG[i % BG.length]} shadow-sm flex items-start gap-4">
+      <div class="w-12 h-12 rounded-[16px] bg-white flex items-center justify-center text-2xl shadow-sm shrink-0">${ins.icon}</div>
+      <div>
+        <p class="font-black text-slate-700 mb-1">${ins.title}</p>
+        <p class="text-sm font-bold text-slate-500 leading-relaxed">${ins.text}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── SETTINGS TAB ─────────────────────────────────────────────────────────────
+const ALL_INTERESTS = [
+  { id:'Animals', label:'動物', icon:'🦁' },
+  { id:'Food',    label:'食物', icon:'🍎' },
+  { id:'Colors',  label:'顏色', icon:'🎨' },
+  { id:'Nature',  label:'大自然', icon:'🌳' },
+  { id:'Vehicles',label:'交通工具', icon:'🚗' },
+  { id:'Family',  label:'家庭', icon:'👨‍👩‍👧' },
+  { id:'Space',   label:'太空', icon:'🚀' },
+  { id:'Music',   label:'音樂', icon:'🎵' },
+];
+
+function renderInterestChips() {
+  const container = document.getElementById('interest-chips');
+  if (!container) return;
+  container.innerHTML = ALL_INTERESTS.map(i => {
+    const selected = STATE.settings.interests.includes(i.id);
+    return `<button onclick="toggleInterest('${i.id}')" id="chip-${i.id}"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-full font-black text-sm border-2 transition-all ${selected ? 'bg-sky-100 border-sky-400 text-sky-700' : 'bg-slate-100 border-slate-200 text-slate-500'} hover:scale-105 active:scale-95">
+              ${i.icon} ${i.label}
+            </button>`;
+  }).join('');
+}
+
+function toggleInterest(id) {
+  const idx = STATE.settings.interests.indexOf(id);
+  if (idx > -1) STATE.settings.interests.splice(idx, 1);
+  else STATE.settings.interests.push(id);
+  renderInterestChips();
+}
+
+function toggleSetting(key, el) {
+  el.classList.toggle('on');
+  const isOn = el.classList.contains('on');
+  STATE.settings[key] = isOn;
+  showToast(isOn ? '已開啟' : '已關閉');
+}
+
+function updateGoalDisplay(val) {
+  const el = document.getElementById('goal-display');
+  if (el) el.textContent = val + ' 個字';
+  STATE.settings.dailyGoal = parseInt(val);
+}
+
+function updateScreenTimeDisplay(val) {
+  const el = document.getElementById('screen-time-display');
+  if (el) el.textContent = val + ' 分鐘';
+  STATE.settings.screenTimeLimit = parseInt(val);
+}
+
+function saveSettings() {
+  STATE.settings.name = document.getElementById('setting-name')?.value || STATE.settings.name;
+  const nameEl = document.getElementById('child-name-header');
+  if (nameEl) nameEl.textContent = STATE.settings.name;
+  showToast('✅ 設定儲存成功！');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderNav();
+  renderCategoryBars();
+  renderWordList();
+  renderMissions();
+  renderInsights();
+  renderInterestChips();
+  switchTab('overview');
+});
+</script>
+</body>
+</html>
