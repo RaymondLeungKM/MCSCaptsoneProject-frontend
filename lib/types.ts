@@ -56,37 +56,6 @@ export interface ChildProfile {
   preferredTimeOfDay: "morning" | "afternoon" | "evening";
 }
 
-export interface DialogicPrompt {
-  id: string;
-  type: "open-ended" | "recall" | "prediction" | "connection";
-  question: string;
-  targetWords: string[];
-  acceptableResponses?: string[];
-}
-
-export interface StoryPage {
-  id: string;
-  text: string;
-  highlightedWords: string[];
-  emoji: string;
-  // New fields for dialogic reading
-  dialogicPrompts?: DialogicPrompt[];
-  physicalAction?: string; // Optional gesture to perform
-}
-
-export interface Story {
-  id: string;
-  title: string;
-  cover: string;
-  words: Word[];
-  pages: StoryPage[];
-  duration: string;
-  completed: boolean;
-  // New fields
-  comprehensionQuestions?: DialogicPrompt[];
-  repeatCount: number; // Track how many times read
-}
-
 export interface Game {
   id: string;
   name: string;

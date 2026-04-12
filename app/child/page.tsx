@@ -59,7 +59,7 @@ import type {
   GeneratedStory,
   LearningControlStatus,
 } from "@/lib/types";
-import type { Story as StoryCardStory } from "@/components/child/story-card";
+import type { StoryCardData } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
 
 // --- STATIC DATA ---
@@ -437,7 +437,7 @@ export default function ChildDashboard() {
     }
   };
 
-  const toStoryCard = (story: GeneratedStory): StoryCardStory => ({
+  const toStoryCard = (story: GeneratedStory): StoryCardData => ({
     id: story.id,
     title: story.title,
     duration: `${story.reading_time_minutes || 5} min`,
