@@ -120,9 +120,11 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
   // Filter Logic
   const filteredWords = realWords.filter((word) => {
-    const matchesSearch = word.word
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (word.word_cantonese ?? "").includes(q) ||
+      word.word.toLowerCase().includes(q);
     const matchesFilter =
       filter === "all" ||
       (filter === "mastered" && word.mastered) ||
@@ -271,17 +273,17 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                     {/* Word Info */}
                     <div>
                       <h4 className="text-lg font-black text-gray-700 flex items-center gap-2">
-                        {word.word}
+                        {word.word_cantonese || word.word}
                         <button
-                          onClick={() => playWord(word.word)}
+                          onClick={() => playWord(word.word_cantonese || word.word)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-gray-100 text-[#29B6F6]"
-                          aria-label={`Listen to ${word.word}`}
+                          aria-label={`Listen to ${word.word_cantonese || word.word}`}
                         >
                           <Volume2 className="w-5 h-5" />
                         </button>
                       </h4>
-                      <p className="text-xs font-bold text-gray-400 uppercase">
-                        {word.categoryName || "一般"}
+                      <p className="text-xs font-bold text-gray-400">
+                        {word.word} · {word.categoryName || "一般"}
                       </p>
                     </div>
                   </div>

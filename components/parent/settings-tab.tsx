@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   User,
+  Users,
   Target,
   Bell,
   Shield,
@@ -34,7 +35,6 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ParentalControlsSettings } from "./parental-controls";
-import { updateChild } from "@/lib/api/children";
 import { cn } from "@/lib/utils";
 
 interface SettingsTabProps {
@@ -133,7 +133,6 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       }
     }
   };
-  const [parentalControls, setParentalControls] = useState(false);
   const [interestOptions, setInterestOptions] = useState<InterestOption[]>(
     mergeInterestOptions(FALLBACK_INTEREST_OPTIONS, profile.interests),
   );

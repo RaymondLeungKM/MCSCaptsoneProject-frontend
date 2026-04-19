@@ -95,6 +95,9 @@ function ModerationPanel() {
       setLoading(true);
       try {
         setPosts(await getPendingPosts());
+      } catch (err) {
+        console.warn("[Moderation] Failed to load pending posts:", err);
+        setPosts([]);
       } finally {
         setLoading(false);
       }
@@ -530,6 +533,8 @@ function FriendsPanel() {
       const map: Record<string, FriendProgress> = {};
       for (const p of progressList) map[p.friend_id] = p;
       setProgressMap(map);
+    } catch (err) {
+      console.warn("[Social] Failed to load friends:", err);
     } finally {
       setLoading(false);
     }
@@ -994,6 +999,9 @@ function ChallengesPanel() {
           }
         }
         setLeaderboards(merged);
+      } catch (err) {
+        console.warn("[Challenges] Failed to load:", err);
+        setChallenges([]);
       } finally {
         setLoading(false);
       }

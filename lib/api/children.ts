@@ -14,6 +14,7 @@ export interface ChildCreateRequest {
   preferred_time_of_day?: "morning" | "afternoon" | "evening";
   interests?: string[];
   language_preference?: LanguagePreference;
+  community_sharing_enabled?: boolean;
 }
 
 export interface ChildResponse {

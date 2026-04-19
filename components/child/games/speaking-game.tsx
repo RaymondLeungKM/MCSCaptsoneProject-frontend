@@ -600,7 +600,7 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
             className={`rounded-full px-6 py-2 text-center shadow-md animate-pop-in ${
               result === "correct"
                 ? "bg-green-100 border-2 border-green-200"
-                : result === "partial" || result === "wrong"
+                : result === "partial" || result === "incorrect"
                   ? "bg-amber-50 border-2 border-amber-200"
                   : "bg-white/80 border-2 border-orange-100"
             }`}

@@ -29,16 +29,12 @@ import { SettingsTab } from "@/components/parent/settings-tab";
 import { SocialTab } from "@/components/parent/social-tab";
 import { AnalyticsDashboard } from "@/components/parent/analytics-dashboard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-<<<<<<< HEAD
 import { PrivacyConsentModal } from "@/components/modals/privacy-consent-modal";
 import { useAuth } from "@/lib/auth-context";
-// import { getChildren, toChildProfile } from "@/lib/api"; // Commented out to prevent errors
-=======
 import { getChildren, toChildProfile } from "@/lib/api/children";
 import { getProgressStats } from "@/lib/api/progress";
 import { getDailyMissions } from "@/lib/api/missions";
 import { getAuthToken } from "@/lib/api/client";
->>>>>>> ff6b61650ea17596c8961297f520cd0dce48d11c
 import type {
   ChildProfile,
   DailyMission,
@@ -75,7 +71,6 @@ function ParentDashboardContent() {
     preferredTimeOfDay: "afternoon",
   };
 
-  const fallbackStats: ProgressStats = {
   const [stats, setStats] = useState<ProgressStats>({
     totalWords: 42,
     masteredWords: 15,
@@ -88,8 +83,6 @@ function ParentDashboardContent() {
     multiSensoryEngagement: 85,
   });
   const [missions, setMissions] = useState<DailyMission[]>([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [profileError, setProfileError] = useState<string | null>(null);
 
   const fallbackWords: Word[] = [];
 

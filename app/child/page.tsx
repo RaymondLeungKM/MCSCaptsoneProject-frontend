@@ -1145,13 +1145,6 @@ export default function ChildDashboard() {
             </div>
           )}
 
-          {(activeTab === "rewards" || activeTab === "profile") && (
-            <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-12 text-center border border-white/50 shadow-sm">
-              <div className="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                <Construction className="w-10 h-10 text-yellow-600" />
-              </div>
-              <h2 className="text-2xl font-black text-slate-700 mb-2">即將推出！</h2>
-              <p className="text-slate-500 font-bold">此功能正在開發中，敬請期待！</p>
           {activeTab === "ai" && profile && (
             <section>
               <Phase8View profile={profile} onPlayAudio={handlePlayAudio} />

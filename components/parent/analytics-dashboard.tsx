@@ -317,7 +317,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [childId]);
 
   const loadData = async () => {

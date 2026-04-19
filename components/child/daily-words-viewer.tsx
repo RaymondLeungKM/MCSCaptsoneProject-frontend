@@ -55,7 +55,6 @@ export function DailyWordsViewer({
 }: DailyWordsViewerProps) {
   const { playWord, isLoading, isPlaying } = useWordAudio();
   const [words, setWords] = useState<DailyWordSummary[]>([]);
-  const [cameraWords, setCameraWords] = useState<DailyWordSummary[]>(capturedWords);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -114,7 +113,7 @@ export function DailyWordsViewer({
     setCameraLoading(true);
     try {
       let dailyWords: DailyWordSummary[] = [];
-      let cameraWordsData: DailyWordSummary[] = capturedWords;
+      let cameraWordsData: DailyWordSummary[] = [];
 
       if (childId && childId !== "1") {
         try {
@@ -279,12 +278,10 @@ export function DailyWordsViewer({
       }
 
       setWords(dailyWords);
-      setCameraWords(cameraWordsData);
     } catch (err) {
       console.error("Error loading daily words:", err);
       setError("載入每日詞語失敗，請稍後再試。");
       setWords([]);
-      setCameraWords(capturedWords);
     } finally {
       setLoading(false);
     }
