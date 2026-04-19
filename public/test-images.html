@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Generation Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; padding: 16px; color: #333; }
+    h1 { text-align: center; margin-bottom: 4px; font-size: 24px; }
+    .subtitle { text-align: center; color: #888; margin-bottom: 16px; font-size: 13px; }
+
+    .panel { background: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .panel h2 { font-size: 15px; margin-bottom: 10px; color: #4f46e5; display: flex; align-items: center; gap: 6px; }
+    .panel h2 .badge { background: #eef2ff; color: #4f46e5; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .row label { font-weight: 600; font-size: 13px; min-width: 80px; color: #555; }
+    .row select, .row input[type=text], .row input[type=number] {
+      padding: 7px 10px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 13px; background: #fafafa;
+    }
+    .row select { min-width: 200px; }
+    .row input[type=number] { width: 80px; }
+    .hint { font-size: 11px; color: #aaa; margin-left: 4px; }
+
+    textarea {
+      width: 100%; min-height: 56px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-family: 'SF Mono', Menlo, monospace; font-size: 12px; resize: vertical; background: #fafafa; line-height: 1.5;
+    }
+    textarea:focus, select:focus, input:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 2px rgba(129,140,248,0.2); }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button {
+      padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-warning:hover { background: #d97706; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .preset-chip {
+      padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
+      border: 1px solid #e5e7eb; background: #f9fafb; color: #555; transition: all 0.15s;
+    }
+    .preset-chip:hover { border-color: #818cf8; background: #eef2ff; color: #4f46e5; }
+    .preset-chip.active { border-color: #4f46e5; background: #4f46e5; color: white; }
+
+    .status-bar {
+      text-align: center; padding: 8px; font-size: 13px; color: #555;
+      background: white; border-radius: 8px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat { display: inline-block; margin: 0 12px; }
+
+    .grid {
+      display: grid; gap: 14px; max-width: 1400px; margin: 0 auto;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .grid.compare-mode { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: white; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.15s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .card img {
+      width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #f8f8f8;
+    }
+    .card img.loading { opacity: 0.3; animation: pulse 1.5s ease-in-out infinite; }
+    .card img.error { opacity: 0.4; filter: grayscale(1); }
+    .card .info { padding: 10px 12px; }
+    .card .word-line { font-size: 16px; font-weight: 700; }
+    .card .word-line .en { font-size: 12px; color: #999; font-weight: 400; }
+    .card .meta { font-size: 10px; color: #aaa; margin-top: 4px; line-height: 1.6; }
+    .tag {
+      display: inline-block; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px;
+    }
+    .tag-ai { background: #dcfce7; color: #16a34a; }
+    .tag-cache { background: #dbeafe; color: #2563eb; }
+    .tag-emoji { background: #fef3c7; color: #d97706; }
+    .tag-model { background: #f3e8ff; color: #7c3aed; }
+    .tag-time { background: #f0f9ff; color: #0369a1; }
+
+    .prompt-preview { font-size: 10px; color: #bbb; margin-top: 3px; word-break: break-all; max-height: 32px; overflow: hidden; }
+
+    @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .grid.compare-mode { grid-template-columns: repeat(2, 1fr); }
+      .row { flex-direction: column; gap: 4px; }
+      .row label { min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Image Generation Tester</h1>
+  <p class="subtitle">Test different Cloudflare Workers AI models &amp; prompts · <code>testMode=1</code> bypasses disk cache</p>
+
+  <!-- ── Model & Params ── -->
+  <div class="panel">
+    <h2>⚙️ Model &amp; Parameters <span class="badge">Cloudflare Workers AI · Free</span></h2>
+    <div class="row">
+      <label>Model:</label>
+      <select id="modelSelect">
+        <option value="@cf/bytedance/stable-diffusion-xl-lightning">SDXL-Lightning · fast, 4 steps</option>
+        <option value="@cf/stabilityai/stable-diffusion-xl-base-1.0">SDXL Base 1.0 · high quality, 20 steps</option>
+        <option value="@cf/lykon/dreamshaper-8-lcm">DreamShaper 8 LCM · creative, 8 steps</option>
+        <option value="@cf/black-forest-labs/flux-1-schnell">FLUX.1 Schnell · newest, 4 steps</option>
+        <option value="@cf/black-forest-labs/flux-2-dev">FLUX.2 Dev · high quality, 20 steps</option>
+        <option value="@cf/black-forest-labs/flux-2-klein-9b">FLUX.2 Klein 9B · ultra-fast, 4 steps</option>
+        <option value="@cf/black-forest-labs/flux-2-klein-4b">FLUX.2 Klein 4B · ultra-fast, 4 steps</option>
+        <option value="@cf/leonardo/lucid-origin">Leonardo Lucid Origin · versatile, 8 steps</option>
+        <option value="@cf/leonardo/phoenix-1.0">Leonardo Phoenix 1.0 · prompt-adherent, 8 steps</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Guidance:</label>
+      <input type="number" id="guidanceInput" value="7.5" min="1" max="20" step="0.5" />
+      <span class="hint">1–20, higher = stricter</span>
+      <label style="margin-left:16px">Steps:</label>
+      <input type="number" id="stepsInput" value="4" min="1" max="30" step="1" />
+      <span class="hint">More = better quality, more neurons</span>
+    </div>
+  </div>
+
+  <!-- ── Prompt ── -->
+  <div class="panel">
+    <h2>✏️ Prompt Template <span class="badge">{word} = translated English word</span></h2>
+    <div class="presets" id="presetChips"></div>
+    <label style="font-size:12px;color:#666;display:block;margin-bottom:4px">Prompt:</label>
+    <textarea id="promptInput" rows="3"></textarea>
+    <label style="font-size:12px;color:#666;display:block;margin:8px 0 4px">Negative Prompt:</label>
+    <textarea id="negPromptInput" rows="2"></textarea>
+  </div>
+
+  <!-- ── Word Selection ── -->
+  <div class="panel">
+    <h2>🔤 Words to Test</h2>
+    <div class="row">
+      <label>Category:</label>
+      <select id="categorySelect">
+        <option value="all">All (159 words)</option>
+        <option value="sample5">Random 5</option>
+        <option value="sample10">Random 10</option>
+      </select>
+      <label style="margin-left:10px">Single:</label>
+      <input type="text" id="singleWord" placeholder="貓 or cat" style="width:120px" />
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="generateCategory()">🚀 Generate Category</button>
+      <button class="btn-success" onclick="testSingle()">🔍 Test Single Word</button>
+      <button class="btn-warning" onclick="compareModels()">🔀 Compare 4 Models</button>
+      <button class="btn-secondary" onclick="comparePresets()">🎨 Compare Presets</button>
+      <button class="btn-danger" onclick="clearGrid()">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <!-- ── Status ── -->
+  <div class="status-bar" id="statusBar" style="display:none">
+    <span class="stat" id="statPending" style="color:#f59e0b">⏳ 0</span>
+    <span class="stat" id="statDone" style="color:#10b981">✅ 0</span>
+    <span class="stat" id="statFail" style="color:#ef4444">❌ 0</span>
+    <span class="stat" id="statTime" style="color:#555"></span>
+  </div>
+
+  <!-- ── Results ── -->
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    /* ── Prompt presets ── */
+    const PRESETS = {
+      'Realistic Product Photo': {
+        prompt: 'a single {word}, realistic, high quality product photo, centered on a pure white background, soft studio lighting, clean and bright, children educational flashcard, clear and recognizable, no text, no label',
+        negPrompt: 'cartoon, emoji, vector, flat, illustration, drawing, sketch, anime, manga, 3D render, text, letters, words, watermark, blurry, noisy, multiple objects, busy background, human, person, fingers, hands, face on object, anthropomorphic, dark, moody, scary',
+      },
+      'Kawaii Cartoon': {
+        prompt: 'a cute kawaii {word}, chibi style, adorable round shape, pastel colors, simple clean illustration, white background, children sticker design, no text',
+        negPrompt: 'realistic, photograph, dark, scary, complex background, text, letters, watermark, human, person',
+      },
+      'Duolingo Style': {
+        prompt: 'a {word}, cute simple illustration, bold outlines, flat bright colors, friendly cartoon style like Duolingo, white background, educational flashcard, no text, no label',
+        negPrompt: 'realistic, photograph, 3D, dark, scary, complex shading, text, letters, watermark, human face',
+      },
+      'Flat Icon': {
+        prompt: 'a {word} flat design icon, minimal vector style, solid colors, centered on white background, clean simple shapes, app icon style, no text',
+        negPrompt: 'realistic, photograph, 3D, shadow, gradient, complex, detailed, text, letters, busy background',
+      },
+      'Watercolor': {
+        prompt: 'a beautiful watercolor painting of a {word}, soft delicate brushstrokes, gentle pastel colors, white paper background, children book illustration style, artistic, no text',
+        negPrompt: 'photograph, digital, harsh colors, dark, scary, text, letters, watermark, multiple objects',
+      },
+      '3D Clay / Pixar': {
+        prompt: 'a {word}, cute 3D rendered object, soft lighting, clay material, rounded shapes, centered on light gray background, Pixar style, children friendly, no text',
+        negPrompt: 'flat, 2D, sketch, photograph, dark, scary, text, letters, watermark, realistic texture',
+      },
+      'Pixel Art': {
+        prompt: 'a {word} in pixel art style, 16-bit retro game sprite, clean pixels, bright colors, white background, centered, cute, no text',
+        negPrompt: 'realistic, photograph, blurry, smooth, gradient, text, letters, 3D, dark',
+      },
+      'Line Art': {
+        prompt: 'a {word}, minimal line art drawing, single continuous line, black ink on white background, simple elegant, centered, no text',
+        negPrompt: 'color, realistic, photograph, complex, detailed shading, text, letters, multiple objects, busy',
+      },
+    };
+
+    /* ── Word dictionary ── */
+    const WORDS = {
+      'Animals': [
+        {cn:'貓',en:'cat'},{cn:'狗',en:'dog'},{cn:'大象',en:'elephant'},{cn:'獅子',en:'lion'},
+        {cn:'蝴蝶',en:'butterfly'},{cn:'魚',en:'fish'},{cn:'雀仔',en:'bird'},{cn:'兔仔',en:'rabbit'},
+        {cn:'猴子',en:'monkey'},{cn:'龜',en:'turtle'},{cn:'熊貓',en:'panda'},{cn:'牛',en:'cow'},
+        {cn:'鯊魚',en:'shark'},{cn:'企鵝',en:'penguin'},{cn:'鹿',en:'deer'},{cn:'馬',en:'horse'},
+        {cn:'豬',en:'pig'},{cn:'羊',en:'sheep'},
+      ],
+      'Food': [
+        {cn:'蘋果',en:'apple'},{cn:'香蕉',en:'banana'},{cn:'飯',en:'rice bowl'},{cn:'麵',en:'noodles'},
+        {cn:'雞蛋',en:'egg'},{cn:'奶',en:'milk'},{cn:'麵包',en:'bread'},{cn:'水',en:'water bottle'},
+        {cn:'橙',en:'orange'},{cn:'紅蘿蔔',en:'carrot'},{cn:'薄餅',en:'pizza'},{cn:'雪糕',en:'ice cream'},
+        {cn:'蛋糕',en:'cake'},{cn:'西瓜',en:'watermelon'},{cn:'多士',en:'toast'},{cn:'曲奇',en:'cookie'},
+        {cn:'糖',en:'candy'},{cn:'朱古力',en:'chocolate'},{cn:'薯條',en:'french fries'},{cn:'壽司',en:'sushi'},
+      ],
+      'Fruits & Vegetables': [
+        {cn:'提子',en:'grapes'},{cn:'芒果',en:'mango'},{cn:'菠蘿',en:'pineapple'},
+        {cn:'士多啤梨',en:'strawberry'},{cn:'粟米',en:'corn'},{cn:'番茄',en:'tomato'},
+        {cn:'薯仔',en:'potato'},{cn:'青瓜',en:'cucumber'},{cn:'蘑菇',en:'mushroom'},
+        {cn:'洋蔥',en:'onion'},{cn:'檸檬',en:'lemon'},{cn:'荔枝',en:'lychee'},
+      ],
+      'Toys': [
+        {cn:'波',en:'ball'},{cn:'公仔',en:'doll'},{cn:'熊仔',en:'teddy bear'},
+        {cn:'積木',en:'building blocks'},{cn:'機械人',en:'toy robot'},{cn:'風箏',en:'kite'},
+        {cn:'氣球',en:'balloon'},{cn:'鼓',en:'drum'},{cn:'拼圖',en:'jigsaw puzzle'},
+        {cn:'跳繩',en:'jump rope'},{cn:'滑板車',en:'scooter'},{cn:'陀螺',en:'spinning top'},
+      ],
+      'Nature': [
+        {cn:'樹',en:'tree'},{cn:'花',en:'flower'},{cn:'太陽',en:'sun'},{cn:'雨',en:'rain'},
+        {cn:'月亮',en:'moon'},{cn:'星星',en:'star'},{cn:'雲',en:'cloud'},{cn:'風',en:'wind'},
+        {cn:'草',en:'grass'},{cn:'山',en:'mountain'},
+      ],
+      'Stationery': [
+        {cn:'鉛筆',en:'pencil'},{cn:'蠟筆',en:'crayon'},{cn:'剪刀',en:'scissors'},
+        {cn:'間尺',en:'ruler'},{cn:'擦膠',en:'eraser'},{cn:'紙',en:'paper'},
+        {cn:'膠水',en:'glue stick'},{cn:'筆',en:'pen'},{cn:'釘書機',en:'stapler'},
+        {cn:'膠紙',en:'tape roll'},{cn:'萬字夾',en:'paper clip'},{cn:'顏色筆',en:'marker pen'},
+      ],
+      'Transportation': [
+        {cn:'車',en:'car'},{cn:'巴士',en:'bus'},{cn:'飛機',en:'airplane'},{cn:'火車',en:'train'},
+        {cn:'單車',en:'bicycle'},{cn:'船',en:'sailboat'},{cn:'直升機',en:'helicopter'},
+        {cn:'的士',en:'taxi'},{cn:'地鐵',en:'subway train'},{cn:'救護車',en:'ambulance'},
+      ],
+      'Places': [
+        {cn:'屋企',en:'house'},{cn:'學校',en:'school'},{cn:'公園',en:'park'},
+        {cn:'舖頭',en:'store'},{cn:'沙灘',en:'beach'},{cn:'圖書館',en:'library'},
+        {cn:'醫院',en:'hospital'},{cn:'餐廳',en:'restaurant'},{cn:'超市',en:'supermarket'},
+        {cn:'機場',en:'airport'},{cn:'動物園',en:'zoo'},{cn:'游泳池',en:'swimming pool'},
+      ],
+      'Household': [
+        {cn:'杯',en:'cup'},{cn:'匙羹',en:'spoon'},{cn:'書',en:'book'},
+        {cn:'凳',en:'chair'},{cn:'枱',en:'table'},{cn:'書包',en:'backpack'},
+        {cn:'遮',en:'umbrella'},{cn:'鐘',en:'clock'},{cn:'鎖匙',en:'key'},
+        {cn:'牙刷',en:'toothbrush'},{cn:'枕頭',en:'pillow'},{cn:'被',en:'blanket'},
+        {cn:'花瓶',en:'vase'},{cn:'蠟燭',en:'candle'},{cn:'掃把',en:'broom'},
+      ],
+      'Kitchen': [
+        {cn:'碟',en:'plate'},{cn:'碗',en:'bowl'},{cn:'叉',en:'fork'},{cn:'刀',en:'knife'},
+        {cn:'煲',en:'pot'},{cn:'鑊',en:'wok'},{cn:'砧板',en:'cutting board'},
+        {cn:'微波爐',en:'microwave'},{cn:'雪櫃',en:'fridge'},{cn:'焗爐',en:'oven'},
+      ],
+      'Bathroom': [
+        {cn:'毛巾',en:'towel'},{cn:'梘液',en:'soap dispenser'},
+        {cn:'洗頭水',en:'shampoo bottle'},{cn:'廁紙',en:'toilet paper roll'},
+        {cn:'鏡',en:'mirror'},{cn:'浴缸',en:'bathtub'},
+        {cn:'花灑',en:'shower head'},{cn:'棉花棒',en:'cotton swab'},
+      ],
+      'Electronics': [
+        {cn:'電話',en:'smartphone'},{cn:'電腦',en:'laptop'},{cn:'相機',en:'camera'},
+        {cn:'電視',en:'television'},{cn:'耳機',en:'headphones'},
+        {cn:'遙控器',en:'remote control'},{cn:'手錶',en:'wristwatch'},{cn:'電燈',en:'desk lamp'},
+      ],
+      'Clothing': [
+        {cn:'衫',en:'shirt'},{cn:'褲',en:'pants'},{cn:'鞋',en:'sneakers'},
+        {cn:'帽',en:'hat'},{cn:'襪',en:'socks'},{cn:'裙',en:'dress'},
+        {cn:'褸',en:'jacket'},{cn:'眼鏡',en:'glasses'},{cn:'手套',en:'gloves'},
+        {cn:'圍巾',en:'scarf'},{cn:'拖鞋',en:'slippers'},{cn:'泳衣',en:'swimsuit'},
+      ],
+    };
+
+    const ALL_MODELS = [
+      { id: '@cf/bytedance/stable-diffusion-xl-lightning', short: 'SDXL-Lightning', steps: 4, guidance: 7.5 },
+      { id: '@cf/stabilityai/stable-diffusion-xl-base-1.0', short: 'SDXL Base', steps: 20, guidance: 7.5 },
+      { id: '@cf/lykon/dreamshaper-8-lcm', short: 'DreamShaper 8', steps: 8, guidance: 7.5 },
+      { id: '@cf/black-forest-labs/flux-1-schnell', short: 'FLUX.1 Schnell', steps: 4, guidance: 7.5 },
+      { id: '@cf/black-forest-labs/flux-2-dev', short: 'FLUX.2 Dev', steps: 20, guidance: 7.5 },
+      { id: '@cf/black-forest-labs/flux-2-klein-9b', short: 'FLUX.2 Klein 9B', steps: 4, guidance: 7.5 },
+      { id: '@cf/black-forest-labs/flux-2-klein-4b', short: 'FLUX.2 Klein 4B', steps: 4, guidance: 7.5 },
+      { id: '@cf/leonardo/lucid-origin', short: 'Lucid Origin', steps: 8, guidance: 7.5 },
+      { id: '@cf/leonardo/phoenix-1.0', short: 'Phoenix 1.0', steps: 8, guidance: 7.5 },
+    ];
+
+    /* ── Init ── */
+    const grid = document.getElementById('grid');
+    const statusBar = document.getElementById('statusBar');
+    const catSel = document.getElementById('categorySelect');
+    let pending = 0, completed = 0, failed = 0, globalStart = 0;
+
+    // Category dropdown
+    for (const cat of Object.keys(WORDS)) {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = `${cat} (${WORDS[cat].length})`;
+      catSel.appendChild(opt);
+    }
+
+    // Preset chips
+    const presetContainer = document.getElementById('presetChips');
+    let activePreset = 'Realistic Product Photo';
+    for (const name of Object.keys(PRESETS)) {
+      const chip = document.createElement('span');
+      chip.className = 'preset-chip' + (name === activePreset ? ' active' : '');
+      chip.textContent = name;
+      chip.onclick = () => applyPreset(name);
+      presetContainer.appendChild(chip);
+    }
+    applyPreset(activePreset);
+
+    // Auto-adjust steps when model changes
+    document.getElementById('modelSelect').addEventListener('change', function () {
+      const m = ALL_MODELS.find(x => x.id === this.value);
+      if (m) {
+        document.getElementById('stepsInput').value = m.steps;
+        document.getElementById('guidanceInput').value = m.guidance;
+      }
+    });
+
+    // Enter key
+    document.getElementById('singleWord').addEventListener('keydown', e => { if (e.key === 'Enter') testSingle(); });
+
+    /* ── Helpers ── */
+
+    function applyPreset(name) {
+      const p = PRESETS[name]; if (!p) return;
+      activePreset = name;
+      document.getElementById('promptInput').value = p.prompt;
+      document.getElementById('negPromptInput').value = p.negPrompt;
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.toggle('active', c.textContent === name));
+    }
+
+    function getConfig() {
+      return {
+        model: document.getElementById('modelSelect').value,
+        prompt: document.getElementById('promptInput').value.trim(),
+        negPrompt: document.getElementById('negPromptInput').value.trim(),
+        guidance: parseFloat(document.getElementById('guidanceInput').value) || 7.5,
+        steps: parseInt(document.getElementById('stepsInput').value) || 4,
+      };
+    }
+
+    function buildUrl(word, cfg) {
+      const params = new URLSearchParams({
+        word: word.en,
+        wordCantonese: word.cn,
+        category: 'test',
+        testMode: '1',
+        model: cfg.model,
+        promptOverride: cfg.prompt,
+        negPromptOverride: cfg.negPrompt,
+        guidance: String(cfg.guidance),
+        numSteps: String(cfg.steps),
+      });
+      return `${BASE}/api/generate-image?${params}`;
+    }
+
+    function updateStatus() {
+      if (pending === 0 && completed === 0 && failed === 0) { statusBar.style.display = 'none'; return; }
+      statusBar.style.display = 'block';
+      document.getElementById('statPending').textContent = `⏳ Pending: ${pending}`;
+      document.getElementById('statDone').textContent = `✅ Done: ${completed}`;
+      document.getElementById('statFail').textContent = `❌ Failed: ${failed}`;
+      document.getElementById('statTime').textContent = `⏱️ ${((Date.now() - globalStart) / 1000).toFixed(1)}s`;
+    }
+
+    function clearGrid() {
+      grid.innerHTML = ''; grid.className = 'grid';
+      pending = 0; completed = 0; failed = 0; globalStart = 0;
+      updateStatus();
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      return a;
+    }
+
+    function getSelectedWords() {
+      const v = catSel.value;
+      if (v === 'all') return Object.values(WORDS).flat();
+      if (v === 'sample5') return shuffle(Object.values(WORDS).flat()).slice(0, 5);
+      if (v === 'sample10') return shuffle(Object.values(WORDS).flat()).slice(0, 10);
+      return WORDS[v] || [];
+    }
+
+    function getSingleWord() {
+      const input = document.getElementById('singleWord').value.trim();
+      if (!input) return null;
+      const isChinese = /[\u4e00-\u9fff]/.test(input);
+      return isChinese ? { cn: input, en: input } : { cn: '', en: input };
+    }
+
+    const placeholderSvg = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="%23f0f0f0"/><text x="256" y="256" text-anchor="middle" font-size="40" fill="%23ccc">⏳</text></svg>`;
+
+    /* ── Core: add a card and fetch its image ── */
+
+    function addCard(word, cfg) {
+      const uid = Math.random().toString(36).slice(2, 8);
+      const modelShort = cfg.model.split('/').pop();
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img class="loading" alt="${word.cn || word.en}" src="${placeholderSvg}" />
+        <div class="info">
+          <div class="word-line">${word.cn || '—'} <span class="en">${word.en}</span></div>
+          <div class="meta">
+            <span class="tag tag-model">${modelShort}</span>
+            <span class="tag" id="tag-${uid}">generating…</span>
+          </div>
+          <div class="prompt-preview" id="pp-${uid}"></div>
+        </div>
+      `;
+      grid.appendChild(card);
+
+      const img = card.querySelector('img');
+      const url = buildUrl(word, cfg);
+      const t0 = Date.now();
+      pending++;
+      if (!globalStart) globalStart = Date.now();
+      updateStatus();
+
+      fetch(url).then(res => {
+        const source = res.headers.get('X-Image-Source') || 'unknown';
+        const promptUsed = res.headers.get('X-Prompt') || '';
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+
+        const tagEl = document.getElementById(`tag-${uid}`);
+        if (tagEl) {
+          tagEl.textContent = `${source} · ${elapsed}s`;
+          tagEl.className = 'tag ' + (source.includes('cache') ? 'tag-cache' : source.includes('cloud') || source.includes('sdxl') || source.includes('flux') || source.includes('dream') ? 'tag-ai' : 'tag-emoji');
+        }
+        const ppEl = document.getElementById(`pp-${uid}`);
+        if (ppEl && promptUsed) ppEl.textContent = promptUsed;
+
+        return res.blob();
+      }).then(blob => {
+        img.src = URL.createObjectURL(blob);
+        img.className = '';
+        pending--; completed++;
+        updateStatus();
+      }).catch(() => {
+        img.className = 'error';
+        const tagEl = document.getElementById(`tag-${uid}`);
+        if (tagEl) { tagEl.textContent = 'error'; tagEl.className = 'tag tag-emoji'; }
+        pending--; failed++;
+        updateStatus();
+      });
+    }
+
+    /* ── Actions ── */
+
+    function generateCategory() {
+      clearGrid(); globalStart = Date.now();
+      const words = getSelectedWords();
+      const cfg = getConfig();
+      words.forEach((w, i) => setTimeout(() => addCard(w, cfg), i * 400));
+    }
+
+    function testSingle() {
+      const word = getSingleWord();
+      if (!word) { alert('Enter a word to test'); return; }
+      clearGrid(); globalStart = Date.now();
+      addCard(word, getConfig());
+    }
+
+    function compareModels() {
+      const word = getSingleWord();
+      if (!word) { alert('Enter a word in the "Single" field first'); return; }
+      clearGrid(); globalStart = Date.now();
+      grid.className = 'grid compare-mode';
+      const baseCfg = getConfig();
+      ALL_MODELS.forEach((m, i) => {
+        const cfg = { ...baseCfg, model: m.id, steps: m.steps, guidance: m.guidance };
+        setTimeout(() => addCard(word, cfg), i * 600);
+      });
+    }
+
+    function comparePresets() {
+      const word = getSingleWord();
+      if (!word) { alert('Enter a word in the "Single" field first'); return; }
+      clearGrid(); globalStart = Date.now();
+      grid.className = 'grid compare-mode';
+      const baseCfg = getConfig();
+      const presetNames = Object.keys(PRESETS);
+      presetNames.forEach((name, i) => {
+        const p = PRESETS[name];
+        const cfg = { ...baseCfg, prompt: p.prompt, negPrompt: p.negPrompt };
+        setTimeout(() => addCard(word, cfg), i * 600);
+      });
+    }
+  </script>
+</body>
+</html>

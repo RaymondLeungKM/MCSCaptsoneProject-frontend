@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { User, Target, Bell, Shield, Palette, Save, Settings, Clock } from "lucide-react";
+import { User, Target, Bell, Shield, Palette, Save, Settings, Clock, Users } from "lucide-react";
 import type { ChildProfile } from "@/lib/types";
 import {
   Card,
@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ParentalControlsSettings } from "./parental-controls";
+import { updateChild } from "@/lib/api/children";
 import { cn } from "@/lib/utils";
 
 interface SettingsTabProps {
@@ -51,6 +52,19 @@ export function SettingsTab({ profile }: SettingsTabProps) {
   const [reminderTime, setReminderTime] = useState("09:00");
   const [screenTimeLimit, setScreenTimeLimit] = useState(30);
   const [parentalControls, setParentalControls] = useState(true);
+  const [communitySharing, setCommunitySharing] = useState(profile.communityEnabled ?? false);
+
+  const handleCommunitySharingChange = async (enabled: boolean) => {
+    setCommunitySharing(enabled);
+    if (!isMockData) {
+      try {
+        await updateChild(profile.id, { community_sharing_enabled: enabled });
+      } catch {
+        // Revert on failure
+        setCommunitySharing(!enabled);
+      }
+    }
+  };
 
   const toggleInterest = (interestId: string) => {
     setInterests((prev) =>
@@ -312,7 +326,35 @@ export function SettingsTab({ profile }: SettingsTabProps) {
         </Card>
       </div>
 
-      {/* Save Button */}
+      {/* Community Sharing */}
+      <Card className="border-none shadow-sm bg-white rounded-[28px]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+            <div className="p-2 bg-teal-100 rounded-xl text-teal-600">
+              <Users className="w-5 h-5" />
+            </div>
+            社區詞彙分享
+          </CardTitle>
+          <CardDescription className="text-slate-400 text-xs pl-12">
+            Community Vocabulary Sharing
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl">
+            <div>
+              <p className="font-bold text-slate-700">分享至社區</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                將小朋友拍攝嘅詞彙圖片分享到社區（不會顯示個人資料）
+              </p>
+            </div>
+            <Switch
+              checked={communitySharing}
+              onCheckedChange={handleCommunitySharingChange}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="sticky bottom-4 z-10 pt-4">
         <Button
             onClick={handleSave}

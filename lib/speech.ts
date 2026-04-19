@@ -60,13 +60,22 @@ class SpeechService {
         null
       );
     } else if (hasChinese) {
-      // Auto-detect Chinese - prefer Cantonese (yue/zh-HK), then Mandarin
+      // Auto-detect Chinese — strongly prefer Cantonese voices.
+      // NEVER fall back to zh-TW or zh-CN because those give Mandarin
+      // pronunciation (書面語), not Cantonese 口語.
       return (
         this.voices.find((v) => v.lang.includes("yue")) ||
         this.voices.find((v) => v.lang === "zh-HK") ||
-        this.voices.find((v) => v.lang === "zh-TW") ||
-        this.voices.find((v) => v.lang === "zh-CN") ||
-        this.voices.find((v) => v.lang.startsWith("zh")) ||
+        this.voices.find(
+          (v) => v.lang.startsWith("zh") && v.name.toLowerCase().includes("hong kong"),
+        ) ||
+        this.voices.find(
+          (v) => v.lang.startsWith("zh") && (v.name.includes("Sin-ji") || v.name.includes("Sinji")),
+        ) ||
+        // Last resort: any zh voice that's NOT explicitly TW or CN
+        this.voices.find(
+          (v) => v.lang.startsWith("zh") && !v.lang.includes("TW") && !v.lang.includes("CN"),
+        ) ||
         null
       );
     } else {
@@ -155,7 +164,8 @@ class SpeechService {
       } else {
         // Detect language from text
         const hasChinese = /[\u4e00-\u9fa5]/.test(text);
-        utterance.lang = hasChinese ? "zh-HK" : "en-US";
+        // Use zh-HK (Cantonese) for Chinese text, never zh-CN/zh-TW
+        utterance.lang = hasChinese ? "yue-Hant-HK" : "en-US";
         console.log(
           "[Speech] No voice found, using default lang:",
           utterance.lang,

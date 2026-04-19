@@ -16,6 +16,10 @@ import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
 
 import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
+import { CommunityTab } from "@/components/child/community-tab";
+import { QuizGame } from "@/components/child/games/quiz-game";
+import { WordBuilderGame } from "@/components/child/games/word-builder-game";
+import { SpeakingGame } from "@/components/child/games/speaking-game";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,11 +50,11 @@ const GAMES_DATA: Game[] = [
     parentParticipation: false,
   },
   {
-    id: "matching",
-    name: "配對遊戲",
-    description: "找出相關聯的卡片。",
-    icon: "🧩",
-    color: "blue",
+    id: "word-builder",
+    name: "粵語拼字",
+    description: "學識廣東話點寫！",
+    icon: "🔤",
+    color: "green",
     type: "matching",
     physicalActivity: false,
     multiSensory: true,
@@ -87,6 +91,7 @@ export default function ChildDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -96,7 +101,7 @@ export default function ChildDashboard() {
       }
       void loadDashboardData();
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user]);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -130,7 +135,7 @@ export default function ChildDashboard() {
 
       await loadStories(selectedChild.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "載入資料失敗，請稍後再試。");
+      setError(err instanceof Error ? err.message : "載入失敗，請稍後再試。");
     } finally {
       setLoading(false);
     }
@@ -252,7 +257,7 @@ export default function ChildDashboard() {
 
   if (authLoading || loading) {
     return (
-      <CozyPageWrapper type="dashboard">
+      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
         <div className="w-full px-4 py-8 space-y-6">
           <Skeleton className="h-44 w-full rounded-4xl" />
           <Skeleton className="h-72 w-full rounded-[40px]" />
@@ -263,7 +268,7 @@ export default function ChildDashboard() {
 
   if (!profile) {
     return (
-      <CozyPageWrapper type="dashboard">
+      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
         <div className="w-full px-4 py-8">
           <Alert variant="destructive" className="rounded-2xl">
             <AlertDescription>{error || "目前沒有可用的小朋友資料。"}</AlertDescription>
@@ -278,7 +283,7 @@ export default function ChildDashboard() {
   }
 
   return (
-    <CozyPageWrapper type="dashboard">
+    <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
       <div className="w-full min-h-screen pb-32 px-4">
         {/* --- HEADER --- */}
         <header className="flex flex-row items-center justify-between gap-2 py-4">
@@ -325,7 +330,7 @@ export default function ChildDashboard() {
             <section>
               <GamesList
                 games={GAMES_DATA}
-                onPlayGame={(game) => console.log("Playing:", game.name)}
+                onPlayGame={(game) => setActiveGame(game.id)}
               />
             </section>
           )}
@@ -384,6 +389,15 @@ export default function ChildDashboard() {
             </div>
           )}
 
+          {activeTab === "community" && (
+            <div className="min-h-[60vh]">
+              <CommunityTab
+                childId={profile.id}
+                languagePreference={profile.languagePreference || "cantonese"}
+              />
+            </div>
+          )}
+
           {(activeTab === "rewards" || activeTab === "profile") && (
             <section className="bg-white/80 backdrop-blur-md rounded-[40px] p-12 text-center border border-white/50 shadow-sm">
               <div className="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
@@ -411,6 +425,16 @@ export default function ChildDashboard() {
               if (profile) void loadStories(profile.id);
             }}
           />
+        )}
+        {/* Game overlays */}
+        {activeGame === "quiz" && (
+          <QuizGame childId={profile.id} onClose={() => setActiveGame(null)} />
+        )}
+        {activeGame === "word-builder" && (
+          <WordBuilderGame childId={profile.id} onClose={() => setActiveGame(null)} />
+        )}
+        {activeGame === "speaking" && (
+          <SpeakingGame childId={profile.id} onClose={() => setActiveGame(null)} />
         )}
       </div>
     </CozyPageWrapper>

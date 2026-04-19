@@ -19,6 +19,7 @@ interface User {
   email: string;
   full_name: string;
   role: string;
+  consent_given: boolean;
 }
 
 interface AuthContextType {

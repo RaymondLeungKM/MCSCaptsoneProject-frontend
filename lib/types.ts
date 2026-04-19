@@ -54,6 +54,7 @@ export interface ChildProfile {
   languagePreference?: LanguagePreference;
   attentionSpan: number; // in minutes
   preferredTimeOfDay: "morning" | "afternoon" | "evening";
+  communityEnabled?: boolean;
 }
 
 export interface DialogicPrompt {

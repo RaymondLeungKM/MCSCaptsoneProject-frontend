@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { AISentences } from "@/components/child/ai-sentences";
-import { getWords, getWordsWithProgress } from "@/lib/api";
+import { getWords, getWordsWithProgress, getCapturedWords } from "@/lib/api";
 import type { LanguagePreference, Word } from "@/lib/types";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
@@ -80,6 +80,7 @@ export function DailyWordsViewer({
 }: DailyWordsViewerProps) {
   const { playWord, isLoading, isPlaying } = useWordAudio();
   const [words, setWords] = useState<DailyWordSummary[]>([]);
+  const [cameraWords, setCameraWords] = useState<DailyWordSummary[]>(capturedWords);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -115,7 +116,7 @@ export function DailyWordsViewer({
   }, [childId]);
 
   // Handle auto-selecting the first word when switching tabs
-  const currentWords = activeTab === "default" ? words : capturedWords;
+  const currentWords = activeTab === "default" ? words : cameraWords;
   
   useEffect(() => {
     if (currentWords.length > 0) {
@@ -131,6 +132,33 @@ export function DailyWordsViewer({
 
     try {
       let dailyWords: DailyWordSummary[] = [];
+      let cameraWordsData: DailyWordSummary[] = capturedWords;
+
+      if (childId && childId !== "1") {
+        try {
+          const captured = await getCapturedWords(childId, {
+            limit: 30,
+            includeMongodb: true,
+          });
+
+          cameraWordsData = captured.map((item) => ({
+            word_id: item.id,
+            word: item.word,
+            word_cantonese: item.word_cantonese,
+            jyutping: item.jyutping,
+            definition_cantonese: item.definition_cantonese || item.definition,
+            image_url: item.image_url,
+            exposure_count: item.total_exposures || 0,
+            used_actively: (item.success_rate || 0) >= 0.7,
+            story_priority: Math.max(
+              1,
+              Math.min(10, Math.round((item.success_rate || 0) * 10 || 5)),
+            ),
+          }));
+        } catch (captureErr) {
+          console.warn("Failed to load camera-captured words, using fallback data", captureErr);
+        }
+      }
 
       if (childId && childId !== "1") {
         const wordsWithProgress = await getWordsWithProgress(childId);
@@ -158,7 +186,12 @@ export function DailyWordsViewer({
       }
 
       if (!dailyWords.length) {
-        const fallbackWords = await getWords({ limit: 8 });
+        const fallbackWords = await getWords({
+          childId,
+          includeExternal: true,
+          includeMongodb: true,
+          limit: 12,
+        });
         dailyWords = fallbackWords.map((item) => ({
           word_id: item.id,
           word: item.word,
@@ -173,10 +206,12 @@ export function DailyWordsViewer({
       }
 
       setWords(dailyWords);
+      setCameraWords(cameraWordsData);
     } catch (err) {
       console.error("Error loading daily words:", err);
       setError("載入每日詞語失敗，請稍後再試。");
       setWords([]);
+      setCameraWords(capturedWords);
     } finally {
       setLoading(false);
     }

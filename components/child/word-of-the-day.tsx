@@ -61,9 +61,6 @@ export function WordOfTheDay({
           <h2 className="text-2xl font-black text-slate-700 tracking-tight">
              今日單字
           </h2>
-          <p className="text-sm font-bold text-slate-400">
-             Word of the Day
-          </p>
         </div>
       </div>
 

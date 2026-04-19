@@ -27,6 +27,8 @@ import { InsightsTab } from "@/components/parent/insights-tab";
 import { SettingsTab } from "@/components/parent/settings-tab";
 import { AnalyticsDashboard } from "@/components/parent/analytics-dashboard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PrivacyConsentModal } from "@/components/modals/privacy-consent-modal";
+import { useAuth } from "@/lib/auth-context";
 // import { getChildren, toChildProfile } from "@/lib/api"; // Commented out to prevent errors
 import type {
   ChildProfile,
@@ -39,6 +41,7 @@ import type {
 function ParentDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -50,9 +53,17 @@ function ParentDashboardContent() {
     name: "Emma",
     age: 5,
     avatar: "👧",
+    level: 1,
+    xp: 0,
+    wordsLearned: 0,
+    currentStreak: 0,
     learningStyle: "mixed",
     languagePreference: "cantonese",
     interests: ["Animals", "Space"],
+    dailyGoal: 10,
+    todayProgress: 5,
+    attentionSpan: 15,
+    preferredTimeOfDay: "afternoon",
   };
 
   const fallbackStats: ProgressStats = {
@@ -108,6 +119,17 @@ function ParentDashboardContent() {
           </div>
         </div>
       </CozyPageWrapper>
+    );
+  }
+
+  // Show privacy consent modal if parent hasn't consented yet
+  if (user && !user.consent_given) {
+    return (
+      <PrivacyConsentModal
+        onConsented={async () => {
+          await refreshUser();
+        }}
+      />
     );
   }
 

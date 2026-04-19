@@ -140,3 +140,15 @@ export function getSpeechText(
       return word.word;
   }
 }
+
+/**
+ * Validate that a jyutping string is genuine Cantonese romanisation.
+ * Real Jyutping always contains tone digits 1-6 (e.g. maau1, faai3 zi2).
+ * Mandarin Pinyin uses diacritics (ā á ǎ à etc.) and no tone digits — reject those.
+ */
+export function isValidJyutping(jyutping?: string): boolean {
+  if (!jyutping || jyutping.trim() === "") return false;
+  const hasToneDigit = /[1-6]/.test(jyutping);
+  const hasPinyinDiacritic = /[\u0101\u00e1\u01ce\u00e0\u014d\u00f3\u01d2\u016b\u00fa\u01d4\u00f9\u012b\u00ed\u01d0\u00ec\u0113\u00e9\u011b\u00e8\u01d6\u01d8\u01da\u01dc]/i.test(jyutping);
+  return hasToneDigit && !hasPinyinDiacritic;
+}

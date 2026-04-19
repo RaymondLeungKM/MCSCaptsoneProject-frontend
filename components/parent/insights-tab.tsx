@@ -101,6 +101,10 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
             interests: c.interests || [],
             learningStyle: c.learning_style || "mixed",
             languagePreference: c.language_preference || "bilingual",
+            dailyGoal: c.daily_goal || 10,
+            todayProgress: 0,
+            attentionSpan: 15,
+            preferredTimeOfDay: "afternoon",
           });
         }
 

@@ -35,6 +35,7 @@ export interface ChildResponse {
   last_active?: string;
   interests: string[];
   language_preference?: LanguagePreference;
+  community_sharing_enabled?: boolean;
 }
 
 /**
@@ -105,5 +106,6 @@ export function toChildProfile(response: ChildResponse): ChildProfile {
     attentionSpan: response.attention_span,
     preferredTimeOfDay: response.preferred_time_of_day,
     languagePreference: response.language_preference || "cantonese",
+    communityEnabled: response.community_sharing_enabled ?? false,
   };
 }

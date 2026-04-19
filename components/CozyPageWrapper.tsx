@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface WrapperProps {
   children: React.ReactNode;
   type?: "center" | "dashboard";
+  hideThemeToggle?: boolean;
 }
 
 // --- SVG COMPONENTS ---
@@ -117,7 +118,7 @@ const FLOWER_BED = [
   { type: 1, left: '97%', bottom: '20px', scale: 0.8, delay: '-0.2s' },
 ];
 
-export default function CozyPageWrapper({ children, type = "center" }: WrapperProps) {
+export default function CozyPageWrapper({ children, type = "center", hideThemeToggle = false }: WrapperProps) {
   const [isNight, setIsNight] = useState(false);
 
   useEffect(() => {
@@ -176,16 +177,18 @@ export default function CozyPageWrapper({ children, type = "center" }: WrapperPr
       )}>
         
         {/* Toggle Button (Fixed Z-Index & Pointer) */}
-        <button 
-          onClick={toggleTheme}
-          className="fixed top-4 right-4 z-50 bg-white/20 backdrop-blur-md p-3 rounded-full border-2 border-white/50 hover:bg-white/40 hover:scale-110 transition-all shadow-lg group md:top-6 md:right-6 cursor-pointer"
-        >
-          {isNight ? (
-            <Sun className="w-6 h-6 text-yellow-300 fill-yellow-300 animate-spin-slow" />
-          ) : (
-            <Moon className="w-6 h-6 text-indigo-100 fill-indigo-100" />
-          )}
-        </button>
+        {!hideThemeToggle && (
+          <button 
+            onClick={toggleTheme}
+            className="fixed top-3 right-3 z-30 bg-white/20 backdrop-blur-md p-2.5 rounded-full border-2 border-white/50 hover:bg-white/40 hover:scale-110 transition-all shadow-lg group md:top-5 md:right-5 cursor-pointer"
+          >
+            {isNight ? (
+              <Sun className="w-6 h-6 text-yellow-300 fill-yellow-300 animate-spin-slow" />
+            ) : (
+              <Moon className="w-6 h-6 text-indigo-100 fill-indigo-100" />
+            )}
+          </button>
+        )}
 
         <div className="fixed inset-0 pointer-events-none">
             

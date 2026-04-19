@@ -13,7 +13,7 @@ export default function ChildLayout({
   return (
     // We just pass through the children because the Page wrapper 
     // handles the background and styling.
-    <div className="w-full min-h-screen">
+    <div className="w-full min-h-screen" suppressHydrationWarning>
       {children}
     </div>
   );

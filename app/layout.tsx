@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Zen_Maru_Gothic } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -33,7 +34,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${font.className} antialiased min-h-screen bg-slate-50`}>
+      <head />
+      <body suppressHydrationWarning className={`${font.className} antialiased min-h-screen bg-slate-50`}>
+        {/* Figma capture script — loaded after hydration to avoid DOM injection conflicts */}
+        <Script
+          src="https://mcp.figma.com/mcp/html-to-design/capture.js"
+          strategy="afterInteractive"
+        />
         
         {/* 👇 2. WRAP EVERYTHING INSIDE AUTHPROVIDER */}
         <AuthProvider>

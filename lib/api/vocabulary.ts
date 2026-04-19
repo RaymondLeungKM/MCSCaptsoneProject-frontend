@@ -29,6 +29,12 @@ export interface WordResponse {
   success_rate: number;
   is_active: boolean;
   created_at: string;
+  created_by_child_id?: string;
+}
+
+export interface CapturedWordsParams {
+  limit?: number;
+  includeMongodb?: boolean;
 }
 
 export interface WordProgressResponse {
@@ -89,17 +95,54 @@ export async function getCategories(): Promise<CategoryResponse[]> {
 export async function getWords(params?: {
   category?: string;
   difficulty?: string;
+  childId?: string;
+  includeExternal?: boolean;
+  includeMongodb?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<WordResponse[]> {
   const queryParams = new URLSearchParams();
   if (params?.category) queryParams.append("category", params.category);
   if (params?.difficulty) queryParams.append("difficulty", params.difficulty);
+  if (params?.childId) queryParams.append("child_id", params.childId);
+  if (typeof params?.includeExternal === "boolean") {
+    queryParams.append("include_external", params.includeExternal ? "true" : "false");
+  }
+  if (params?.includeMongodb) queryParams.append("include_mongodb", "true");
   if (params?.limit) queryParams.append("limit", params.limit.toString());
   if (params?.offset) queryParams.append("offset", params.offset.toString());
 
   const query = queryParams.toString();
   return apiRequest<WordResponse[]>(`/vocabulary/${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get external/camera-captured words for a child.
+ * Includes PostgreSQL uploaded words and optional MongoDB captures.
+ */
+export async function getCapturedWords(
+  childId: string,
+  params?: CapturedWordsParams,
+): Promise<WordResponse[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append("limit", params.limit.toString());
+  if (params?.includeMongodb) queryParams.append("include_mongodb", "true");
+
+  const query = queryParams.toString();
+  return apiRequest<WordResponse[]>(
+    `/vocabulary/external/captured/${childId}${query ? `?${query}` : ""}`,
+  );
+}
+
+/**
+ * Get community words — anonymised captures shared by children
+ * whose parents enabled community sharing.
+ */
+export async function getCommunityWords(
+  limit?: number,
+): Promise<WordResponse[]> {
+  const query = limit ? `?limit=${limit}` : "";
+  return apiRequest<WordResponse[]>(`/vocabulary/community${query}`);
 }
 
 /**

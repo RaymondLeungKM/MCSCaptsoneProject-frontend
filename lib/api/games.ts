@@ -33,9 +33,32 @@ export interface GameResponse {
 
 export interface GameSessionRequest {
   child_id: string;
-  words_used: string[];
-  duration_minutes: number;
-  score?: number;
+  /** Correct answers / pairs found */
+  score: number;
+  /** Total rounds / total pairs */
+  max_score: number;
+  /** Elapsed wall-clock seconds */
+  duration_seconds: number;
+  /** Word IDs that were shown to the child */
+  words_seen: string[];
+  /** Word IDs the child answered correctly */
+  words_correct: string[];
+  /** 1–3 stars earned */
+  stars: number;
+}
+
+export interface GameSessionResponse {
+  id: number;
+  child_id: string;
+  game_id: string;
+  score: number;
+  max_score: number;
+  duration_seconds: number;
+  words_seen: string[];
+  words_correct: string[];
+  stars: number;
+  xp_earned: number;
+  created_at: string;
 }
 
 // ─── Public helper ───────────────────────────────────────────────────────────
@@ -74,19 +97,20 @@ export async function getGame(gameId: string): Promise<GameResponse> {
 }
 
 /**
- * Record a game play session for a child.
+ * Record a completed mini-game session.
+ * Returns the saved session including XP awarded to the child.
+ * Silently ignores errors so a network failure never blocks the game-over screen.
  */
 export async function recordGameSession(
   gameId: string,
   data: GameSessionRequest,
-): Promise<{
-  message: string;
-  game_id: string;
-  words_used: number;
-  duration: number;
-}> {
-  return apiRequest(`/games/${gameId}/play`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+): Promise<GameSessionResponse | null> {
+  try {
+    return await apiRequest<GameSessionResponse>(`/games/${gameId}/play`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    return null;
+  }
 }

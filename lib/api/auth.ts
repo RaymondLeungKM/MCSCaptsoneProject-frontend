@@ -33,6 +33,8 @@ export interface UserResponse {
   role: string;
   is_active: boolean;
   created_at: string;
+  consent_given: boolean;
+  consent_given_at?: string;
 }
 
 /**
