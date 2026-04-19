@@ -2,7 +2,6 @@ import type {
   Word,
   Category,
   ChildProfile,
-  Story,
   Game,
   DailyMission,
   ProgressStats,
@@ -36,8 +35,7 @@ export const words: Word[] = [
     difficulty: "easy",
     mastered: false,
     exposureCount: 3,
-    physicalAction:
-      "把手臂變成長長的象鼻，前後擺動！",
+    physicalAction: "把手臂變成長長的象鼻，前後擺動！",
     contexts: ["動物園", "森林故事", "動物圖書"],
     relatedWords: ["大", "鼻子", "灰色", "動物園"],
   },
@@ -137,179 +135,6 @@ export const childProfile: ChildProfile = {
   preferredTimeOfDay: "morning",
 };
 
-export const stories: Story[] = [
-  {
-    id: "1",
-    title: "飢餓的毛毛蟲",
-    cover: "/images/caterpillar-story.jpg",
-    words: words.filter(
-      (w) => w.category === "動物" || w.category === "食物",
-    ),
-    duration: "5 分鐘",
-    completed: false,
-    repeatCount: 0,
-    pages: [
-      {
-        id: "1-1",
-        text: "很久很久以前，有一條小毛毛蟲。牠非常、非常肚餓！",
-        highlightedWords: ["毛毛蟲", "肚餓"],
-        emoji: "🐛",
-        dialogicPrompts: [
-          {
-            id: "p1-1",
-            type: "prediction",
-            question: "你覺得毛毛蟲想做什麼？",
-            targetWords: ["吃", "肚餓"],
-          },
-        ],
-        physicalAction: "像毛毛蟲一樣扭動身體！",
-      },
-      {
-        id: "1-2",
-        text: "星期一，牠吃了一個紅色的蘋果。咔嚓、咔嚓！真好味。",
-        highlightedWords: ["蘋果", "紅色"],
-        emoji: "🍎",
-        dialogicPrompts: [
-          {
-            id: "p1-2",
-            type: "open-ended",
-            question: "蘋果是什麼味道的？是甜的還是酸的？",
-            targetWords: ["蘋果", "甜", "爽脆"],
-          },
-        ],
-        physicalAction: "假裝大口咬下去，發出清脆的聲音！",
-      },
-      {
-        id: "1-3",
-        text: "星期二，牠吃了兩顆甜甜的士多啤梨。這是牠的最愛！",
-        highlightedWords: ["士多啤梨", "甜"],
-        emoji: "🍓",
-        dialogicPrompts: [
-          {
-            id: "p1-3",
-            type: "connection",
-            question: "你吃過士多啤梨嗎？你喜歡嗎？",
-            targetWords: ["士多啤梨", "最愛"],
-          },
-        ],
-      },
-      {
-        id: "1-4",
-        text: "吃飽之後，牠覺得很睏。牠造了一個舒適的繭，然後去睡覺了。",
-        highlightedWords: ["睏", "繭"],
-        emoji: "🛏️",
-        physicalAction: "像繭一樣把身體蜷縮成一團！",
-      },
-      {
-        id: "1-5",
-        text: "當牠醒來時，牠變成了一隻美麗的蝴蝶！牠可以在天空中高高飛翔。",
-        highlightedWords: ["蝴蝶", "飛"],
-        emoji: "🦋",
-        dialogicPrompts: [
-          {
-            id: "p1-5",
-            type: "recall",
-            question: "毛毛蟲最先吃了什麼？你還記得嗎？",
-            targetWords: ["蘋果"],
-          },
-        ],
-        physicalAction: "張開雙臂，像蝴蝶一樣飛舞！",
-      },
-    ],
-    comprehensionQuestions: [
-      {
-        id: "c1",
-        type: "recall",
-        question: "毛毛蟲變成了什麼？",
-        targetWords: ["蝴蝶"],
-      },
-      {
-        id: "c2",
-        type: "open-ended",
-        question: "故事裡你最喜歡哪一部分？",
-        targetWords: [],
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "身邊的顏色",
-    cover: "/images/colors-story.jpg",
-    words: words.filter(
-      (w) => w.category === "顏色" || w.category === "大自然",
-    ),
-    duration: "4 分鐘",
-    completed: true,
-    repeatCount: 2,
-    pages: [
-      {
-        id: "2-1",
-        text: "看看外面！天空是藍色的。大大的白雲飄過。",
-        highlightedWords: ["藍色", "天空", "雲"],
-        emoji: "☁️",
-      },
-      {
-        id: "2-2",
-        text: "草地是綠色的。小花在花園裡生長。",
-        highlightedWords: ["綠色", "草", "花"],
-        emoji: "🌱",
-      },
-      {
-        id: "2-3",
-        text: "太陽是黃色的，很明亮。它讓一切都變得溫暖快樂。",
-        highlightedWords: ["黃色", "太陽", "明亮"],
-        emoji: "☀️",
-      },
-      {
-        id: "2-4",
-        text: "雨後抬頭看！天空中出現了一道美麗的彩虹！",
-        highlightedWords: ["彩虹", "雨", "美麗"],
-        emoji: "🌈",
-      },
-    ],
-  },
-  {
-    id: "3",
-    title: "動物好朋友",
-    cover: "/images/animals-story.jpg",
-    words: words.filter((w) => w.category === "動物"),
-    duration: "6 分鐘",
-    completed: false,
-    pages: [
-      {
-        id: "3-1",
-        text: "森林裡住著一隻大象。牠有一個很長的鼻子！",
-        highlightedWords: ["大象", "森林", "鼻子"],
-        emoji: "🐘",
-      },
-      {
-        id: "3-2",
-        text: "牠的朋友是一隻高高的長頸鹿。她可以吃到最高樹上的葉子。",
-        highlightedWords: ["長頸鹿", "高", "葉子"],
-        emoji: "🦒",
-      },
-      {
-        id: "3-3",
-        text: "一隻頑皮的猴子在樹與樹之間盪來盪去。牠最愛吃香蕉！",
-        highlightedWords: ["猴子", "香蕉", "頑皮"],
-        emoji: "🐒",
-      },
-      {
-        id: "3-4",
-        text: "一隻色彩繽紛的鸚鵡唱著快樂的歌。所有動物都一起跳舞！",
-        highlightedWords: ["鸚鵡", "唱", "跳舞"],
-        emoji: "🦜",
-      },
-      {
-        id: "3-5",
-        text: "這些動物是最好的朋友。牠們每天都在一起玩。完！",
-        highlightedWords: ["朋友", "玩", "一起"],
-        emoji: "❤️",
-      },
-    ],
-  },
-];
-
 export const games: Game[] = [
   {
     id: "1",
@@ -386,8 +211,7 @@ export const dailyMissions: DailyMission[] = [
     description: "早餐時使用這些詞彙",
     targetWord: "蘋果",
     completed: true,
-    context:
-      '問問小朋友：「蘋果是什麼顏色的？」和「它是爽脆的還是軟綿綿的？」',
+    context: "問問小朋友：「蘋果是什麼顏色的？」和「它是爽脆的還是軟綿綿的？」",
   },
   {
     id: "2",
@@ -395,8 +219,7 @@ export const dailyMissions: DailyMission[] = [
     description: "在戶外尋找這些東西",
     targetWord: "蝴蝶",
     completed: false,
-    context:
-      "尋找蝴蝶，並談論牠們的顏色和飛行方式。",
+    context: "尋找蝴蝶，並談論牠們的顏色和飛行方式。",
   },
   {
     id: "3",

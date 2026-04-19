@@ -14,6 +14,7 @@ export interface AdaptiveLearningRecommendation {
 export interface WordOfTheDayResponse {
   word_id: string;
   word: string;
+  word_cantonese?: string | null;
   reason: string;
   priority_score: number;
 }

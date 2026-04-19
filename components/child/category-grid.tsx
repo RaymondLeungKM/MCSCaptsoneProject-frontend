@@ -67,9 +67,11 @@ export function CategoryGrid({
     setWordsError(null);
     setCategoryWords([]);
 
+    // For "My Collection" category, only fetch words uploaded by this specific child
+    const isMyCollection = selectedCategory.name === "My Collection";
     const fetchFn = childId
-      ? getWordsWithProgress(childId, selectedCategory.id).then((responses) =>
-          responses.map((r) => toWord(r, r.progress)),
+      ? getWordsWithProgress(childId, selectedCategory.id, isMyCollection).then(
+          (responses) => responses.map((r) => toWord(r, r.progress)),
         )
       : getWords({ category: selectedCategory.id, limit: 50 }).then(
           (responses) => responses.map((r) => toWord(r)),

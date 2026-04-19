@@ -71,11 +71,13 @@ export function ProfileHeader({ childId, refreshKey }: ProfileHeaderProps) {
         {/* Avatar Section */}
         <div className="relative shrink-0">
           <Avatar className="w-20 h-20 border-4 border-white shadow-md">
-            {profile.avatar && (
+            {profile.avatar && profile.avatar.startsWith("http") && (
               <AvatarImage src={profile.avatar} alt={profile.name} />
             )}
             <AvatarFallback className="bg-orange-100 text-orange-500 text-3xl font-black">
-              {profile.name?.[0] || "C"}
+              {profile.avatar && !profile.avatar.startsWith("http")
+                ? profile.avatar
+                : profile.name?.[0] || "C"}
             </AvatarFallback>
           </Avatar>
           <div className="absolute -bottom-2 -right-1 bg-[#38BDF8] text-white text-xs font-black px-2.5 py-1 rounded-full border-2 border-white shadow-sm">

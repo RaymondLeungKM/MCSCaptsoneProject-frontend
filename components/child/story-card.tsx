@@ -1,11 +1,11 @@
 "use client";
 
-import { Clock, CheckCircle, Play, BookOpen, Star } from "lucide-react";
+import { Clock, CheckCircle, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- TYPES ---
-// Defining locally to ensure it works immediately
-export interface Story {
+// Compact display data for bedtime story cards.
+export interface StoryCardData {
   id: string;
   title: string;
   duration: string;
@@ -15,9 +15,9 @@ export interface Story {
 }
 
 interface StoryCardProps {
-  story: Story;
-  onRead: (story: Story) => void;
-  onPlayAudio?: (story: Story) => void;
+  story: StoryCardData;
+  onRead: (story: StoryCardData) => void;
+  onPlayAudio?: (story: StoryCardData) => void;
   isAudioPlaying?: boolean;
   isAudioLoading?: boolean;
 }

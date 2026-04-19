@@ -57,37 +57,6 @@ export interface ChildProfile {
   communityEnabled?: boolean;
 }
 
-export interface DialogicPrompt {
-  id: string;
-  type: "open-ended" | "recall" | "prediction" | "connection";
-  question: string;
-  targetWords: string[];
-  acceptableResponses?: string[];
-}
-
-export interface StoryPage {
-  id: string;
-  text: string;
-  highlightedWords: string[];
-  emoji: string;
-  // New fields for dialogic reading
-  dialogicPrompts?: DialogicPrompt[];
-  physicalAction?: string; // Optional gesture to perform
-}
-
-export interface Story {
-  id: string;
-  title: string;
-  cover: string;
-  words: Word[];
-  pages: StoryPage[];
-  duration: string;
-  completed: boolean;
-  // New fields
-  comprehensionQuestions?: DialogicPrompt[];
-  repeatCount: number; // Track how many times read
-}
-
 export interface Game {
   id: string;
   name: string;
@@ -209,6 +178,8 @@ export interface GeneratedStory {
   ai_model?: string;
   created_at: string;
   updated_at?: string;
+  /** AI-generated illustration URLs for each of the 4 story parts */
+  part_images?: string[];
 }
 
 export interface StoryGenerationRequest {
@@ -298,7 +269,7 @@ export interface ParentalControl {
   disabled_categories: string[];
   max_difficulty: "easy" | "medium" | "hard";
   min_difficulty: "easy" | "medium" | "hard";
-  daily_screen_time_limit?: number;
+  daily_screen_time_limit?: number | null;
   screen_time_warning_threshold: number;
   tts_voice: string;
   tts_speech_rate: number;
@@ -313,6 +284,23 @@ export interface ParentalControl {
   bedtime_story_reminder: boolean;
   weekly_report_enabled: boolean;
   achievement_notifications: boolean;
+}
+
+export interface LearningControlStatus {
+  childId: string;
+  localDate: string;
+  todayMinutes: number;
+  activeSessionMinutes: number;
+  sessionCount: number;
+  hasActivityToday: boolean;
+  dailyScreenTimeLimit?: number | null;
+  screenTimeWarningThreshold: number;
+  enableTimeLimits: boolean;
+  remainingMinutes?: number | null;
+  warningReached: boolean;
+  limitReached: boolean;
+  dailyReminderEnabled: boolean;
+  dailyReminderTime: string;
 }
 
 export interface CategoryProgress {
@@ -358,4 +346,113 @@ export interface AnalyticsCharts {
   learning_style_distribution: Record<string, number>;
   best_time_of_day: string;
   average_session_length: number;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8 – Advanced AI & Personalization
+// ---------------------------------------------------------------------------
+
+export type RelationshipType =
+  | "semantic"
+  | "category"
+  | "phonetic"
+  | "contextual"
+  | "opposite";
+
+// Epic 8.1 – Knowledge Graph
+
+export interface WordNode {
+  word_id: string;
+  word: string;
+  word_cantonese?: string;
+  jyutping?: string;
+  category: string;
+  difficulty: "easy" | "medium" | "hard";
+  mastered: boolean;
+  exposure_count: number;
+}
+
+export interface WordEdge {
+  source_id: string;
+  target_id: string;
+  relationship_type: RelationshipType;
+  strength: number;
+}
+
+export interface WordGraph {
+  centre_word_id: string;
+  nodes: WordNode[];
+  edges: WordEdge[];
+}
+
+export interface GraphRecommendation {
+  recommended_words: WordNode[];
+  reason: string;
+  bridge_concepts: string[];
+}
+
+// Epic 8.2 – Spaced Repetition (SM-2)
+
+export interface SpacedRepetitionCard {
+  id: number;
+  child_id: string;
+  word_id: string;
+  easiness_factor: number;
+  interval: number; // days
+  repetitions: number;
+  last_quality?: number; // 0-5
+  next_review: string; // ISO datetime
+  last_reviewed?: string;
+  is_new: boolean;
+  is_graduated: boolean;
+  // enriched word fields
+  word?: string;
+  word_cantonese?: string;
+  jyutping?: string;
+  image_url?: string;
+  audio_url?: string;
+  definition_cantonese?: string;
+}
+
+export interface ReviewQueue {
+  cards: SpacedRepetitionCard[];
+  total_due: number;
+  new_cards_today: number;
+}
+
+export interface ReviewResult {
+  word_id: string;
+  new_interval: number;
+  easiness_factor: number;
+  next_review: string;
+  is_graduated: boolean;
+  message: string;
+}
+
+export interface LearningSpeedProfile {
+  avg_easiness_factor: number;
+  avg_interval: number;
+  graduation_rate: number;
+  total_cards: number;
+  assessment: string;
+}
+
+export interface LearningStyleResponse {
+  child_id: string;
+  learning_style: "visual" | "auditory" | "kinesthetic" | "mixed";
+  confidence: number;
+  explanation: string;
+}
+
+// Epic 8.2.4 – AI Tutor Chat
+
+export interface TutorChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface TutorChatResponse {
+  answer: string;
+  referenced_words: string[];
+  safe_mode: boolean;
 }
