@@ -47,11 +47,11 @@ const navItems = [
     activeBg: "bg-purple-400",
     activeText: "text-purple-600",
   },
-  { 
-    id: "community", 
-    icon: Users, 
-    label: "社區", 
-    activeBg: "bg-teal-400", 
+  {
+    id: "community",
+    icon: Users,
+    label: "社區",
+    activeBg: "bg-teal-400",
     activeText: "text-teal-600",
   },
   {

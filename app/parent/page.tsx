@@ -7,7 +7,6 @@ import {
   LayoutGrid,
   TrendingUp,
   Target,
-  WifiOff,
   BarChart3,
   Settings,
   PieChart,
@@ -22,7 +21,6 @@ import CozyPageWrapper from "@/components/CozyPageWrapper";
 // --- COMPONENT IMPORTS ---
 import { OverviewTab } from "@/components/parent/overview-tab";
 import { ProgressTab } from "@/components/parent/progress-tab";
-import { MissionsTab } from "@/components/parent/missions-tab";
 import { OfflineMissionsTab } from "@/components/parent/offline-missions-tab";
 import { InsightsTab } from "@/components/parent/insights-tab";
 import { SettingsTab } from "@/components/parent/settings-tab";
@@ -33,14 +31,8 @@ import { PrivacyConsentModal } from "@/components/modals/privacy-consent-modal";
 import { useAuth } from "@/lib/auth-context";
 import { getChildren, toChildProfile } from "@/lib/api/children";
 import { getProgressStats } from "@/lib/api/progress";
-import { getDailyMissions } from "@/lib/api/missions";
 import { getAuthToken } from "@/lib/api/client";
-import type {
-  ChildProfile,
-  DailyMission,
-  ProgressStats,
-  Word,
-} from "@/lib/types";
+import type { ChildProfile, ProgressStats, Word } from "@/lib/types";
 
 // --- INTERNAL CONTENT COMPONENT ---
 function ParentDashboardContent() {
@@ -82,7 +74,6 @@ function ParentDashboardContent() {
     passiveVocabulary: 32,
     multiSensoryEngagement: 85,
   });
-  const [missions, setMissions] = useState<DailyMission[]>([]);
 
   const fallbackWords: Word[] = [];
 
@@ -135,42 +126,22 @@ function ParentDashboardContent() {
       const childProfile = toChildProfile(children[0]);
       setProfile(childProfile);
 
-      // Fetch stats and missions in parallel with graceful fallbacks
-      const [statsResult, missionsResult] = await Promise.allSettled([
-        getProgressStats(childProfile.id),
-        getDailyMissions(childProfile.id),
-      ]);
+      const statsResult = await getProgressStats(childProfile.id);
 
-      if (statsResult.status === "fulfilled") {
-        const s = statsResult.value;
-        setStats({
-          totalWords: s.total_words,
-          masteredWords: s.mastered_words,
-          weeklyProgress: s.weekly_progress,
-          streakDays: s.streak_days,
-          categoryProgress: s.category_progress.map((cp) => ({
-            category: cp.category,
-            progress: cp.progress,
-          })),
-          averageExposuresPerWord: s.average_exposures_per_word,
-          activeVocabulary: s.active_vocabulary,
-          passiveVocabulary: s.passive_vocabulary,
-          multiSensoryEngagement: s.multi_sensory_engagement,
-        });
-      }
-
-      if (missionsResult.status === "fulfilled") {
-        setMissions(
-          missionsResult.value.map((m) => ({
-            id: m.id,
-            title: m.title,
-            description: m.description,
-            targetWord: m.target_words[0] ?? "",
-            completed: false,
-            context: m.context,
-          })),
-        );
-      }
+      setStats({
+        totalWords: statsResult.total_words,
+        masteredWords: statsResult.mastered_words,
+        weeklyProgress: statsResult.weekly_progress,
+        streakDays: statsResult.streak_days,
+        categoryProgress: statsResult.category_progress.map((cp) => ({
+          category: cp.category,
+          progress: cp.progress,
+        })),
+        averageExposuresPerWord: statsResult.average_exposures_per_word,
+        activeVocabulary: statsResult.active_vocabulary,
+        passiveVocabulary: statsResult.passive_vocabulary,
+        multiSensoryEngagement: statsResult.multi_sensory_engagement,
+      });
     } catch (error) {
       console.error("Failed to load parent dashboard:", error);
       setProfileError("載入家長中心失敗，請稍後再試。");
@@ -286,11 +257,6 @@ function ParentDashboardContent() {
                   label="任務"
                 />
                 <TabItem
-                  value="offline"
-                  icon={<WifiOff className="w-4 h-4" />}
-                  label="離線"
-                />
-                <TabItem
                   value="insights"
                   icon={<BarChart3 className="w-4 h-4" />}
                   label="分析"
@@ -340,13 +306,6 @@ function ParentDashboardContent() {
 
             <TabsContent
               value="missions"
-              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
-            >
-              <MissionsTab missions={missions} />
-            </TabsContent>
-
-            <TabsContent
-              value="offline"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
               {profile && <OfflineMissionsTab childId={profile.id} />}
