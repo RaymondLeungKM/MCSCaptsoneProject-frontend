@@ -78,8 +78,16 @@ export function OfflineMissionsTab({ childId }: OfflineMissionsTabProps = {}) {
           const mapped = missionsData.value.map((m) =>
             toOfflineMission(m, progressMap.get(m.id)),
           );
-          setMissions(mapped);
-          console.log(`[Missions] Loaded ${mapped.length} offline missions`);
+          if (mapped.length > 0) {
+            setMissions(mapped);
+            console.log(`[Missions] Loaded ${mapped.length} offline missions`);
+          } else {
+            setMissions(mockOfflineMissions);
+            setError("暫時未有可用的生活任務，顯示示例任務。");
+            console.warn(
+              "[Missions] No offline missions returned, using mock fallback",
+            );
+          }
         } else {
           console.warn("[Missions] Failed to load, using mock fallback");
         }
