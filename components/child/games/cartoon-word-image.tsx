@@ -98,9 +98,8 @@ export function CartoonWordImage({
         {gaveUp ? (
           <span className={`${emojiSize} drop-shadow-sm`}>{emoji}</span>
         ) : (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center justify-center">
             <div className="w-8 h-8 border-3 border-purple-300 border-t-purple-500 rounded-full animate-spin" />
-            <span className="text-xs text-purple-400 font-medium">Loading...</span>
           </div>
         )}
       </div>

@@ -41,6 +41,8 @@ export function useWordAudio() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Cache generated audio URLs so auto-play and replay always use the same file
+  const generatedCacheRef = useRef<Map<string, string>>(new Map());
 
   const stop = useCallback(() => {
     stopSpeech();
@@ -106,11 +108,18 @@ export function useWordAudio() {
         }
 
         if (generateIfMissing) {
+          const cacheKey = `${word.id}:${language}`;
+          const cachedUrl = generatedCacheRef.current.get(cacheKey);
+          if (cachedUrl) {
+            await playAudioUrl(cachedUrl);
+            return;
+          }
           const generated = await generateWordAudio({
             text: getSpeechText(word, languagePreference),
             language,
             speech_rate: speechRate,
           });
+          generatedCacheRef.current.set(cacheKey, generated.audio_url);
           await playAudioUrl(generated.audio_url);
           return;
         }

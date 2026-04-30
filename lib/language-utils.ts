@@ -104,7 +104,10 @@ export function getPronunciation(
 }
 
 /**
- * Get the audio URL based on language preference
+ * Get the audio URL based on language preference.
+ * For Cantonese, only returns the Cantonese audio_url — never falls back to the
+ * English URL, since that would play English speech when Cantonese is expected.
+ * Returning undefined lets the caller generate proper Cantonese TTS instead.
  */
 export function getAudioUrl(
   word: Word,
@@ -113,10 +116,10 @@ export function getAudioUrl(
   switch (language) {
     case "cantonese":
     case "bilingual":
-      return word.audio_url || word.audio_url_english;
+      return word.audio_url || undefined;
     case "english":
     default:
-      return word.audio_url_english || word.audio_url;
+      return word.audio_url_english || undefined;
   }
 }
 

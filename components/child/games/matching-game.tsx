@@ -7,6 +7,7 @@ import { recordGameSession } from "@/lib/api/games";
 import { Confetti } from "./confetti";
 import { CartoonWordImage } from "./cartoon-word-image";
 import { preloadGameImages } from "@/lib/cartoon-image";
+import { isValidJyutping } from "@/lib/language-utils";
 import type { WordResponse } from "@/lib/api/vocabulary";
 
 interface MatchingGameProps {
@@ -82,7 +83,14 @@ export function MatchingGame({ childId, onClose }: MatchingGameProps) {
       includeMongodb: true,
       limit: 200,
     });
-    const filtered = data.filter((w) => w.image_url);
+    const filtered = data.filter(
+      (w) =>
+        w.image_url &&
+        w.word_cantonese &&
+        w.word_cantonese.trim() !== "" &&
+        w.word_cantonese !== w.word &&
+        isValidJyutping(w.jyutping),
+    );
     const selected = shuffle(filtered).slice(0, PAIR_COUNT);
 
     // Pre-load images
