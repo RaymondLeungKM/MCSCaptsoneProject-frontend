@@ -22,7 +22,6 @@ import { ProfileHeader } from "@/components/child/profile-header";
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { CategoryGrid } from "@/components/child/category-grid";
 import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
-import { CommunityFeed } from "@/components/child/community-feed";
 import { GamesList } from "@/components/child/game-card";
 import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
@@ -31,6 +30,7 @@ import { RewardsView } from "@/components/views/rewards-view";
 
 import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
 import { CommunityTab } from "@/components/child/community-tab";
+import { ParentPinModal, getStoredParentPin } from "@/components/modals/parent-pin-modal";
 import { QuizGame } from "@/components/child/games/quiz-game";
 import { WordBuilderGame } from "@/components/child/games/word-builder-game";
 import { SpeakingGame } from "@/components/child/games/speaking-game";
@@ -271,6 +271,7 @@ export default function ChildDashboard() {
     reason: string;
   } | null>(null);
   const wordAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -787,9 +788,19 @@ export default function ChildDashboard() {
     setActiveTab(tab);
   };
 
-  const handleOpenParentDashboard = async () => {
+  const proceedToParentDashboard = async () => {
+    setShowPinModal(false);
     await endActiveSession(new Date());
     router.push("/parent");
+  };
+
+  const handleOpenParentDashboard = () => {
+    const pin = getStoredParentPin();
+    if (pin) {
+      setShowPinModal(true);
+    } else {
+      void proceedToParentDashboard();
+    }
   };
 
   const refreshChildProfile = async (
@@ -825,7 +836,9 @@ export default function ChildDashboard() {
   };
 
   const showDashboardHeader = activeTab === "home";
-  const recommendedWordLabel = wordOfDay?.word_cantonese || wordOfDay?.word;
+  const _lang = profile?.languagePreference || "cantonese";
+  const recommendedWordLabel =
+    _lang === "english" ? wordOfDay?.word : wordOfDay?.word_cantonese;
   const localizedWordReason = localizeAdaptiveReason(wordOfDay?.reason);
   const localizedNextStepReason = localizeAdaptiveReason(
     nextActivityRec?.reason,
@@ -882,7 +895,7 @@ export default function ChildDashboard() {
 
             <button
               type="button"
-              onClick={() => void handleOpenParentDashboard()}
+              onClick={() => handleOpenParentDashboard()}
               className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
             >
               <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
@@ -955,7 +968,7 @@ export default function ChildDashboard() {
                   </div>
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {wordOfDay && (
+                    {wordOfDay && recommendedWordLabel && (
                       <div className="rounded-[28px] border border-white/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-500">
@@ -1044,10 +1057,6 @@ export default function ChildDashboard() {
                 childName={profile.name}
                 languagePreference={profile.languagePreference || "cantonese"}
                 onWordLearned={handleLearningProgressUpdated}
-              />
-              <CommunityFeed
-                childId={profile.id}
-                languagePreference={profile.languagePreference || "cantonese"}
               />
             </section>
           )}
@@ -1155,9 +1164,7 @@ export default function ChildDashboard() {
             <ProfileView
               profile={profile}
               onProfileUpdated={handleProfileUpdated}
-              onOpenParentDashboard={() => {
-                void handleOpenParentDashboard();
-              }}
+              onOpenParentDashboard={() => handleOpenParentDashboard()}
               onOpenTab={handleTabChange}
             />
           )}
@@ -1172,6 +1179,13 @@ export default function ChildDashboard() {
         </main>
 
         <ChildNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+
+        {showPinModal && (
+          <ParentPinModal
+            onSuccess={() => void proceedToParentDashboard()}
+            onCancel={() => setShowPinModal(false)}
+          />
+        )}
 
         {limitReached && (
           <div className="fixed inset-0 z-60 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-6">
@@ -1198,7 +1212,7 @@ export default function ChildDashboard() {
               <div className="flex flex-col gap-3">
                 <Button
                   className="rounded-full font-black"
-                  onClick={() => void handleOpenParentDashboard()}
+                  onClick={() => handleOpenParentDashboard()}
                 >
                   前往家長中心
                 </Button>

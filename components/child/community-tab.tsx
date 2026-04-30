@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Camera, Users, RefreshCw, ImageOff, Volume2, Sparkles } from "lucide-react";
+import { Camera, Users, RefreshCw, ImageOff, Volume2, Sparkles, Star } from "lucide-react";
 import type { Word, LanguagePreference } from "@/lib/types";
 import type { WordResponse } from "@/lib/api/vocabulary";
 import { getCapturedWords, getCommunityWords } from "@/lib/api/vocabulary";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
+import { CommunityFeed } from "@/components/child/community-feed";
 import { cn } from "@/lib/utils";
 
 interface CommunityTabProps {
@@ -14,7 +15,7 @@ interface CommunityTabProps {
   languagePreference?: LanguagePreference;
 }
 
-type SubTab = "mine" | "community";
+type SubTab = "mine" | "community" | "feed";
 
 const isImageUrl = (v?: string) => !!v && (v.startsWith("http") || v.startsWith("/"));
 
@@ -117,6 +118,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
             icon={<Camera className="w-4 h-4" />}
             count={myWords.length}
             label="我的相片"
+            description="自己拍的詞彙"
             activeColor="bg-teal-500"
           />
           <SubTabButton
@@ -125,14 +127,29 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
             icon={<Users className="w-4 h-4" />}
             count={communityWords.length}
             label="社區詞彙"
+            description="大家分享的詞彙"
             activeColor="bg-emerald-500"
+          />
+          <SubTabButton
+            active={subTab === "feed"}
+            onClick={() => setSubTab("feed")}
+            icon={<Star className="w-4 h-4" />}
+            count={0}
+            label="探索發現"
+            description="社區貼文分享"
+            activeColor="bg-pink-500"
           />
         </div>
       </div>
 
       {/* ── Content ── */}
       <div className="flex-1 px-4 pt-3">
-        {loading && (
+        {/* Feed sub-tab renders CommunityFeed directly */}
+        {subTab === "feed" && (
+          <CommunityFeed childId={childId} languagePreference={languagePreference} />
+        )}
+
+        {subTab !== "feed" && loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-teal-400">
             <div className="w-16 h-16 bg-teal-50 rounded-3xl flex items-center justify-center">
               <RefreshCw className="w-8 h-8 animate-spin" />
@@ -141,7 +158,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
           </div>
         )}
 
-        {!loading && error && (
+        {subTab !== "feed" && !loading && error && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center">
               <ImageOff className="w-8 h-8 text-rose-400" />
@@ -150,9 +167,9 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
           </div>
         )}
 
-        {!loading && !error && words.length === 0 && <EmptyState subTab={subTab} />}
+        {subTab !== "feed" && !loading && !error && words.length === 0 && <EmptyState subTab={subTab} />}
 
-        {!loading && !error && words.length > 0 && (
+        {subTab !== "feed" && !loading && !error && words.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             {words.map((word) => (
               <WordTile
@@ -190,6 +207,7 @@ function SubTabButton({
   icon,
   count,
   label,
+  description,
   activeColor,
 }: {
   active: boolean;
@@ -197,6 +215,7 @@ function SubTabButton({
   icon: React.ReactNode;
   count: number;
   label: string;
+  description?: string;
   activeColor: string;
 }) {
   return (
@@ -214,6 +233,11 @@ function SubTabButton({
           <p className={cn("text-sm font-bold leading-tight", active ? "text-white" : "text-gray-700")}>
             {label}
           </p>
+          {description && (
+            <p className={cn("text-xs leading-tight mt-0.5", active ? "text-white/80" : "text-gray-400")}>
+              {description}
+            </p>
+          )}
         </div>
       </div>
       {count > 0 && (

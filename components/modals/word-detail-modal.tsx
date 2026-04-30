@@ -84,6 +84,40 @@ const DIFFICULTY_CONFIG = {
   },
 };
 
+const CONTEXT_TRANSLATION: Record<string, string> = {
+  sky: "天空",
+  nature: "大自然",
+  trees: "樹木",
+  forest: "森林",
+  ocean: "海洋",
+  beach: "沙灘",
+  water: "水",
+  home: "家",
+  kitchen: "廚房",
+  bedroom: "睡房",
+  school: "學校",
+  park: "公園",
+  garden: "花園",
+  playground: "遊樂場",
+  supermarket: "超市",
+  store: "商店",
+  city: "城市",
+  street: "街道",
+  farm: "農場",
+  zoo: "動物園",
+  outdoors: "戶外",
+  indoors: "室內",
+  animals: "動物",
+  food: "食物",
+  sports: "運動",
+  music: "音樂",
+  meal_time: "用膳時間",
+  bedtime: "睡前",
+  bath_time: "洗澡時間",
+  morning: "早上",
+  evening: "晚上",
+};
+
 export function WordDetailModal({
   word,
   onClose,
@@ -170,7 +204,7 @@ export function WordDetailModal({
 
   const showCantonese = languagePreference !== "english" && word.word_cantonese;
   const showEnglishSub =
-    languagePreference === "cantonese" && word.word_cantonese;
+    languagePreference === "bilingual" && word.word_cantonese;
 
   const modal = (
     <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
@@ -263,9 +297,9 @@ export function WordDetailModal({
 
           {/* Badges Row */}
           <div className="flex items-center gap-2 flex-wrap justify-center">
-            {word.categoryName && (
+            {(word.category_name_cantonese || word.categoryName) && (
               <span className="px-3 py-1 bg-white/70 rounded-full text-xs font-bold text-slate-500 border border-white/50">
-                {word.categoryName}
+                {word.category_name_cantonese || word.categoryName}
               </span>
             )}
             <span
@@ -398,13 +432,11 @@ export function WordDetailModal({
             </p>
           </Section>
 
-          {/* Physical Action */}
-          {word.physicalAction && (
+          {/* Physical Action — English DB field, only show in English mode */}
+          {word.physicalAction && languagePreference === "english" && (
             <Section
               icon={<Zap className="w-4 h-4" />}
-              title={
-                languagePreference === "english" ? "Try This!" : "動一動！"
-              }
+              title="Try This!"
               color="orange"
             >
               <p className="text-base font-bold text-slate-700 leading-relaxed">
@@ -461,15 +493,21 @@ export function WordDetailModal({
               color="green"
             >
               <ul className="space-y-1">
-                {word.contexts.map((ctx) => (
-                  <li
-                    key={ctx}
-                    className="flex items-center gap-2 text-sm font-bold text-slate-600"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                    {ctx}
-                  </li>
-                ))}
+                {word.contexts.map((ctx) => {
+                  const label =
+                    languagePreference !== "english"
+                      ? (CONTEXT_TRANSLATION[ctx] ?? ctx)
+                      : ctx;
+                  return (
+                    <li
+                      key={ctx}
+                      className="flex items-center gap-2 text-sm font-bold text-slate-600"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                      {label}
+                    </li>
+                  );
+                })}
               </ul>
             </Section>
           )}
