@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Camera, Users, RefreshCw, ImageOff, Volume2, Sparkles, Star } from "lucide-react";
+import { Camera, RefreshCw, ImageOff, Volume2, Sparkles, Star } from "lucide-react";
 import type { Word, LanguagePreference } from "@/lib/types";
 import type { WordResponse } from "@/lib/api/vocabulary";
-import { getCapturedWords, getCommunityWords } from "@/lib/api/vocabulary";
+import { getCapturedWords } from "@/lib/api/vocabulary";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { CommunityFeed } from "@/components/child/community-feed";
@@ -15,14 +15,13 @@ interface CommunityTabProps {
   languagePreference?: LanguagePreference;
 }
 
-type SubTab = "mine" | "community" | "feed";
+type SubTab = "mine" | "feed";
 
 const isImageUrl = (v?: string) => !!v && (v.startsWith("http") || v.startsWith("/"));
 
 export function CommunityTab({ childId, languagePreference = "cantonese" }: CommunityTabProps) {
   const [subTab, setSubTab] = useState<SubTab>("mine");
   const [myWords, setMyWords] = useState<WordResponse[]>([]);
-  const [communityWords, setCommunityWords] = useState<WordResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<WordResponse | null>(null);
@@ -43,28 +42,13 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
     }
   }, [childId]);
 
-  const loadCommunityWords = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const words = await getCommunityWords(50);
-      setCommunityWords(words);
-    } catch {
-      setError("無法載入社區詞彙，請再試。");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (subTab === "mine") {
       loadMyWords();
-    } else {
-      loadCommunityWords();
     }
-  }, [subTab, loadMyWords, loadCommunityWords]);
+  }, [subTab, loadMyWords]);
 
-  const words = subTab === "mine" ? myWords : communityWords;
+  const words = myWords;
 
   // Convert WordResponse → Word shape for WordDetailModal
   const toWord = (w: WordResponse): Word => ({
@@ -122,21 +106,12 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
             activeColor="bg-teal-500"
           />
           <SubTabButton
-            active={subTab === "community"}
-            onClick={() => setSubTab("community")}
-            icon={<Users className="w-4 h-4" />}
-            count={communityWords.length}
-            label="社區詞彙"
-            description="大家分享的詞彙"
-            activeColor="bg-emerald-500"
-          />
-          <SubTabButton
             active={subTab === "feed"}
             onClick={() => setSubTab("feed")}
             icon={<Star className="w-4 h-4" />}
             count={0}
             label="探索發現"
-            description="社區貼文分享"
+            description="大家的發現分享"
             activeColor="bg-pink-500"
           />
         </div>
@@ -149,7 +124,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
           <CommunityFeed childId={childId} languagePreference={languagePreference} />
         )}
 
-        {subTab !== "feed" && loading && (
+        {subTab === "mine" && loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-teal-400">
             <div className="w-16 h-16 bg-teal-50 rounded-3xl flex items-center justify-center">
               <RefreshCw className="w-8 h-8 animate-spin" />
@@ -158,7 +133,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
           </div>
         )}
 
-        {subTab !== "feed" && !loading && error && (
+        {subTab === "mine" && !loading && error && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center">
               <ImageOff className="w-8 h-8 text-rose-400" />
@@ -167,9 +142,9 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
           </div>
         )}
 
-        {subTab !== "feed" && !loading && !error && words.length === 0 && <EmptyState subTab={subTab} />}
+        {subTab === "mine" && !loading && !error && words.length === 0 && <EmptyState />}
 
-        {subTab !== "feed" && !loading && !error && words.length > 0 && (
+        {subTab === "mine" && !loading && !error && words.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
             {words.map((word) => (
               <WordTile
@@ -358,39 +333,19 @@ function WordTile({
    Empty state
 ────────────────────────────────────────────────────────── */
 
-function EmptyState({ subTab }: { subTab: SubTab }) {
-  if (subTab === "mine") {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-5 text-center px-6">
-        <div className="w-24 h-24 bg-teal-500 rounded-[32px] flex items-center justify-center shadow-md">
-          <Camera className="w-12 h-12 text-white" />
-        </div>
-        <div className="max-w-xs">
-          <p className="font-black text-white text-2xl drop-shadow-md">未有相片詞彙</p>
-          <div className="bg-white/95 rounded-2xl p-5 mt-4 shadow-xl border-2 border-teal-400">
-            <p className="text-teal-950 font-black text-lg leading-relaxed">
-              用相機拍攝身邊嘅物件
-              <br />
-              就可以學習廣東話詞彙！
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-5 text-center px-6">
-      <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center shadow-md">
-        <Users className="w-12 h-12 text-white" />
+      <div className="w-24 h-24 bg-teal-500 rounded-[32px] flex items-center justify-center shadow-md">
+        <Camera className="w-12 h-12 text-white" />
       </div>
       <div className="max-w-xs">
-        <p className="font-black text-white text-2xl drop-shadow-md">社區詞彙庫</p>
-        <div className="bg-white/95 rounded-2xl p-5 mt-4 shadow-xl border-2 border-emerald-400">
-          <p className="text-emerald-950 font-black text-lg leading-relaxed">
-            其他小朋友分享嘅詞彙
+        <p className="font-black text-white text-2xl drop-shadow-md">未有相片詞彙</p>
+        <div className="bg-white/95 rounded-2xl p-5 mt-4 shadow-xl border-2 border-teal-400">
+          <p className="text-teal-950 font-black text-lg leading-relaxed">
+            用相機拍攝身邊嘅物件
             <br />
-            將會在這裡出現！
+            就可以學習廣東話詞彙！
           </p>
         </div>
       </div>
