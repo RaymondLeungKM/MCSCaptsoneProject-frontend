@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, CheckCircle, Play } from "lucide-react";
+import { Clock, CheckCircle, Play, BookOpen, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- TYPES ---
@@ -135,8 +135,8 @@ export function StoryCard({
 // --- LIST COMPONENT ---
 
 interface StoriesListProps {
-  stories: Story[];
-  onReadStory: (story: Story) => void;
+  stories: StoryCardData[];
+  onReadStory: (story: StoryCardData) => void;
 }
 
 export function StoriesList({ stories, onReadStory }: StoriesListProps) {

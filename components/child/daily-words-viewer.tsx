@@ -25,6 +25,7 @@ import { getGraphRecommendations } from "@/lib/api/phase8";
 import type { LanguagePreference, Word } from "@/lib/types";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
+import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 
 // --- TYPES ---
 export interface DailyWordSummary {
@@ -45,6 +46,23 @@ interface DailyWordsViewerProps {
   childName?: string;
   languagePreference?: LanguagePreference;
   onWordLearned?: () => void;
+}
+
+function applyProgressUpdate(
+  items: DailyWordSummary[],
+  wordId: string,
+  mastered: boolean,
+  exposureCount: number,
+) {
+  return items.map((item) =>
+    item.word_id === wordId
+      ? {
+          ...item,
+          used_actively: mastered || item.used_actively,
+          exposure_count: exposureCount,
+        }
+      : item,
+  );
 }
 
 export function DailyWordsViewer({
@@ -99,7 +117,6 @@ export function DailyWordsViewer({
 
   // Handle auto-selecting the first word when switching tabs
   const currentWords = activeTab === "default" ? words : cameraWords;
-  
 
   useEffect(() => {
     if (currentWords.length > 0) {
@@ -137,7 +154,10 @@ export function DailyWordsViewer({
             ),
           }));
         } catch (captureErr) {
-          console.warn("Failed to load camera-captured words, using fallback data", captureErr);
+          console.warn(
+            "Failed to load camera-captured words, using fallback data",
+            captureErr,
+          );
         }
       }
 
@@ -157,7 +177,7 @@ export function DailyWordsViewer({
                 item.definition_cantonese || item.definition,
               image_url: item.image_url,
               exposure_count: exposureCount,
-              used_actively: exposureCount >= 6 || successRate >= 0.7,
+              used_actively: progress?.mastered ?? false,
               story_priority: Math.max(
                 1,
                 Math.min(10, Math.round(10 - Math.min(exposureCount, 9))),
@@ -215,7 +235,7 @@ export function DailyWordsViewer({
             definition_cantonese: item.definition_cantonese || item.definition,
             image_url: item.image_url,
             exposure_count: exposureCount,
-            used_actively: exposureCount >= 6 || successRate >= 0.7,
+            used_actively: progress?.mastered ?? false,
             story_priority: Math.max(
               1,
               Math.min(10, Math.round(10 - Math.min(exposureCount, 9))),
@@ -344,15 +364,10 @@ export function DailyWordsViewer({
         childId={childId !== "1" ? childId : undefined}
         onProgressUpdate={(wordId, mastered, exposureCount) => {
           setWords((prev) =>
-            prev.map((w) =>
-              w.word_id === wordId
-                ? {
-                    ...w,
-                    used_actively: mastered || w.used_actively,
-                    exposure_count: exposureCount,
-                  }
-                : w,
-            ),
+            applyProgressUpdate(prev, wordId, mastered, exposureCount),
+          );
+          setCameraWords((prev) =>
+            applyProgressUpdate(prev, wordId, mastered, exposureCount),
           );
           onWordLearned?.();
         }}
@@ -416,6 +431,10 @@ export function DailyWordsViewer({
                 : "這些是你用相機發現的新鮮事物！"}
             </p>
 
+            <p className="-mt-3 mb-6 text-center text-xs font-bold text-emerald-600">
+              點開詞語後按「請家長確認」，再由家長到家長中心批准，主動詞彙才會增加。
+            </p>
+
             {/* Word List */}
             {(activeTab === "camera" && cameraLoading) ||
             (activeTab === "default" && loading) ? (
@@ -474,6 +493,11 @@ export function DailyWordsViewer({
                       <p className="text-sm font-medium text-slate-400 line-clamp-1">
                         {word.definition_cantonese}
                       </p>
+                      <MemoryStarsProgress
+                        exposureCount={word.exposure_count}
+                        languagePreference={languagePreference}
+                        className="mt-3"
+                      />
                     </div>
 
                     <div className="flex gap-2">
@@ -559,7 +583,7 @@ export function DailyWordsViewer({
               />
               <StatBox
                 icon={<Trophy className="w-5 h-5 text-orange-500" />}
-                label="已掌握"
+                label="主動詞彙"
                 value={currentWords.filter((w) => w.used_actively).length}
                 color="bg-orange-50 text-orange-700 border border-orange-100"
               />

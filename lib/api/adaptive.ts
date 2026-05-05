@@ -9,6 +9,9 @@ export interface AdaptiveLearningRecommendation {
   difficulty: string;
   reason: string;
   estimated_duration: number;
+  learning_style?: string;
+  style_explanation?: string;
+  suggested_activities?: string[];
 }
 
 export interface WordOfTheDayResponse {

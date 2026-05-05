@@ -7,22 +7,85 @@ import type { OfflineMission } from "../types";
 
 // ─── Backend response shapes ────────────────────────────────────────────────
 
+export type MissionContext =
+  | "mealtime"
+  | "bedtime"
+  | "playtime"
+  | "outdoor"
+  | "shopping"
+  | "general";
+
+export type MissionStatus = "draft" | "published" | "archived";
+
+export type MissionSurface = "child" | "parent" | "both";
+
+export interface MissionAssignmentResponse {
+  id: string;
+  child_id: string;
+  mission_id: string;
+  assignment_date: string;
+  source: "system" | "admin" | "parent" | "seed";
+  status: "assigned" | "in_progress" | "completed" | "skipped" | "expired";
+  surface: MissionSurface;
+  priority: number;
+  selection_reason: string | null;
+  selection_metadata: Record<string, unknown> | null;
+  available_from: string | null;
+  expires_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  skipped_at: string | null;
+  completion_notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 export interface MissionResponse {
   id: string;
+  slug: string;
   title: string;
   description: string;
-  context:
-    | "mealtime"
-    | "bedtime"
-    | "playtime"
-    | "outdoor"
-    | "shopping"
-    | "general";
+  context: MissionContext;
   is_offline: boolean;
+  status?: MissionStatus;
+  locale?: string;
+  age_min?: number | null;
+  age_max?: number | null;
+  difficulty?: string | null;
+  surface?: MissionSurface;
+  sort_order?: number;
+  selection_tags?: string[];
+  catalog_metadata?: Record<string, unknown> | null;
+  published_at?: string | null;
+  archived_at?: string | null;
   is_active: boolean;
   target_words: string[];
   conversation_prompts: string[];
   created_at: string;
+  updated_at?: string | null;
+  assignment?: MissionAssignmentResponse;
+}
+
+export interface MissionMutationRequest {
+  slug: string;
+  title: string;
+  description: string;
+  context: MissionContext;
+  is_offline: boolean;
+  status: MissionStatus;
+  locale: string;
+  age_min?: number | null;
+  age_max?: number | null;
+  difficulty?: string | null;
+  surface: MissionSurface;
+  sort_order: number;
+  selection_tags: string[];
+  catalog_metadata?: Record<string, unknown> | null;
+  published_at?: string | null;
+  archived_at?: string | null;
+  target_words: string[];
+  conversation_prompts: string[];
+  is_active?: boolean;
 }
 
 export interface MissionProgressResponse {
@@ -101,4 +164,40 @@ export async function completeMission(
       body: JSON.stringify({ completed, parent_notes: parentNotes ?? null }),
     },
   );
+}
+
+/**
+ * Get the full mission catalog for admin management.
+ */
+export async function listAdminMissions(
+  includeInactive: boolean = true,
+): Promise<MissionResponse[]> {
+  return apiRequest<MissionResponse[]>(
+    `/missions/admin/catalog?include_inactive=${String(includeInactive)}`,
+  );
+}
+
+/**
+ * Create a mission catalog entry as an admin.
+ */
+export async function createAdminMission(
+  data: MissionMutationRequest,
+): Promise<MissionResponse> {
+  return apiRequest<MissionResponse>("/missions/admin/catalog", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Update a mission catalog entry as an admin.
+ */
+export async function updateAdminMission(
+  missionId: string,
+  data: Partial<MissionMutationRequest>,
+): Promise<MissionResponse> {
+  return apiRequest<MissionResponse>(`/missions/admin/catalog/${missionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }

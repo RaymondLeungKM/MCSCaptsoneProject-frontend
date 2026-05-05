@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Flame,
   BookOpen,
@@ -11,14 +12,27 @@ import {
   Sparkles,
   Clock3,
   Activity,
+  CheckCircle2,
+  Shield,
+  XCircle,
 } from "lucide-react";
-import type { ChildProfile, ProgressStats } from "@/lib/types";
+import type { ChildProfile, LearningInsight, ProgressStats } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { getAuthToken } from "@/lib/api/client";
+import {
+  approveActiveVocabRequest,
+  getPendingActiveVocabRequests,
+  rejectActiveVocabRequest,
+  type ActiveVocabularyApprovalRequest,
+} from "@/lib/api/vocabulary";
 
 interface OverviewTabProps {
   profile: ChildProfile;
   stats: ProgressStats;
+  insights?: LearningInsight[];
+  onActiveVocabularyApproved?: () => void | Promise<void>;
 }
 
 // --- 1. DEFINE TRANSLATIONS HERE (Outside the function) ---
@@ -34,7 +48,82 @@ const categoryTranslations: Record<string, string> = {
   Actions: "動作",
 };
 
-export function OverviewTab({ profile, stats }: OverviewTabProps) {
+const insightPriorityOrder = {
+  high: 0,
+  medium: 1,
+  low: 2,
+} as const;
+
+function getTranslatedCategory(category: string) {
+  return categoryTranslations[category] || category;
+}
+
+function getCategorySuggestion(category: string) {
+  switch (category) {
+    case "Animals":
+    case "動物":
+      return "可用玩偶、動物圖卡或故事書做命名和角色扮演。";
+    case "Food":
+    case "食物":
+      return "可在用餐時做指認、描述味道和顏色的小遊戲。";
+    case "Colors":
+    case "顏色":
+      return "可在家中做顏色尋寶和物件配對，加強分類記憶。";
+    case "Nature":
+    case "大自然":
+      return "可到公園觀察實物，邊看邊說名稱和特徵。";
+    case "Vehicles":
+    case "交通工具":
+      return "可用玩具車和街景圖片做分類與情境命名練習。";
+    case "Family":
+    case "家庭":
+      return "可用家庭照片做人物稱呼和關係配對練習。";
+    case "Numbers":
+    case "數字":
+      return "可把數字詞彙放進收拾玩具或點心分配的情境中練習。";
+    case "Body":
+    case "身體部位":
+      return "可用唱遊和跟做指令活動，把詞彙和動作連起來。";
+    case "Actions":
+    case "動作":
+      return "可讓孩子邊做邊說，把動詞和身體動作一起記。";
+    default:
+      return "可用圖片、實物或動作配對，幫助孩子把詞彙放進生活情境。";
+  }
+}
+
+function getFocusLabel(progress: number) {
+  if (progress < 40) {
+    return "需加強";
+  }
+
+  if (progress < 80) {
+    return "持續複習";
+  }
+
+  return "表現穩定";
+}
+
+function getInsightEyebrow(insight: LearningInsight) {
+  switch (insight.insight_type) {
+    case "milestone":
+      return "學習里程碑";
+    case "strength":
+      return "目前優勢";
+    case "weakness":
+      return "留意重點";
+    case "recommendation":
+    default:
+      return "家長建議";
+  }
+}
+
+export function OverviewTab({
+  profile,
+  stats,
+  insights = [],
+  onActiveVocabularyApproved,
+}: OverviewTabProps) {
   const dailyProgress =
     profile.dailyGoal > 0
       ? Math.min((profile.todayProgress / profile.dailyGoal) * 100, 100)
@@ -59,22 +148,87 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
   const categoryRanking = [...stats.categoryProgress].sort(
     (left, right) => right.progress - left.progress,
   );
-  const strongestCategory = categoryRanking[0];
-  const focusCategory = [...stats.categoryProgress].sort(
-    (left, right) => left.progress - right.progress,
-  )[0];
+  const categoryFocusList = [...stats.categoryProgress]
+    .filter(
+      (category) =>
+        category.progress > 0 ||
+        (category.total ?? 0) > 0 ||
+        (category.mastered ?? 0) > 0,
+    )
+    .sort((left, right) => {
+      const leftGap = Math.max((left.total ?? 0) - (left.mastered ?? 0), 0);
+      const rightGap = Math.max((right.total ?? 0) - (right.mastered ?? 0), 0);
 
-  const parentTips = [
-    dailyProgress >= 100
-      ? "今日目標已完成，可以用 5 分鐘輕鬆複習鞏固記憶。"
-      : `距離今日目標還差 ${remaining} 個詞彙，建議在${timeOfDayLabel[profile.preferredTimeOfDay]}安排一段短練習。`,
-    stats.multiSensoryEngagement >= 80
-      ? "多感官參與度表現不錯，可以加入更多口說輸出任務。"
-      : "建議多用動作、圖片或實物配對，提升多感官參與度。",
-    focusCategory
-      ? `本週可優先複習「${categoryTranslations[focusCategory.category] || focusCategory.category}」，加快整體掌握度。`
-      : "繼續保持每日小步前進，掌握度會更穩定。",
-  ];
+      if (left.progress !== right.progress) {
+        return left.progress - right.progress;
+      }
+
+      if (leftGap !== rightGap) {
+        return rightGap - leftGap;
+      }
+
+      return (right.total ?? 0) - (left.total ?? 0);
+    })
+    .slice(0, 3);
+  const strongestCategory = categoryRanking[0];
+  const focusCategory = categoryFocusList[0];
+
+  const parentTips =
+    insights.length > 0
+      ? [...insights]
+          .sort((left, right) => {
+            const priorityDiff =
+              insightPriorityOrder[left.priority] -
+              insightPriorityOrder[right.priority];
+
+            if (priorityDiff !== 0) {
+              return priorityDiff;
+            }
+
+            return (
+              Date.parse(right.generated_at) - Date.parse(left.generated_at)
+            );
+          })
+          .slice(0, 3)
+          .map((insight) => ({
+            id: insight.id,
+            eyebrow: getInsightEyebrow(insight),
+            title: insight.title,
+            detail: insight.action_items[0] || insight.description,
+          }))
+      : [
+          {
+            id: "goal",
+            eyebrow: "今日節奏",
+            title: dailyProgress >= 100 ? "今日目標已完成" : "今日尚有練習空間",
+            detail:
+              dailyProgress >= 100
+                ? "可以用 5 分鐘輕鬆複習鞏固記憶。"
+                : `距離今日目標還差 ${remaining} 個詞彙，建議在${timeOfDayLabel[profile.preferredTimeOfDay]}安排一段短練習。`,
+          },
+          {
+            id: "engagement",
+            eyebrow: "參與模式",
+            title:
+              stats.multiSensoryEngagement >= 80
+                ? "多感官參與表現穩定"
+                : "可再增加多感官提示",
+            detail:
+              stats.multiSensoryEngagement >= 80
+                ? "可加入更多口說輸出任務，幫助孩子把已認得的詞彙說出來。"
+                : "建議多用動作、圖片或實物配對，提升多感官參與度。",
+          },
+          {
+            id: "focus",
+            eyebrow: "複習主題",
+            title: focusCategory
+              ? `本週可優先複習「${getTranslatedCategory(focusCategory.category)}」`
+              : "繼續保持每日小步前進",
+            detail: focusCategory
+              ? getCategorySuggestion(focusCategory.category)
+              : "掌握度會隨著穩定練習逐步建立。",
+          },
+        ];
 
   return (
     <div className="space-y-6 font-zen">
@@ -94,7 +248,7 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
                   已完成 {profile.todayProgress} / {profile.dailyGoal}{" "}
                   個今日目標， 本週累積學習 {weeklyTotal} 個詞彙，
                   {strongestCategory
-                    ? `目前掌握最好的是「${categoryTranslations[strongestCategory.category] || strongestCategory.category}」。`
+                    ? `目前掌握最好的是「${getTranslatedCategory(strongestCategory.category)}」。`
                     : "目前正在建立穩定的學習節奏。"}
                 </p>
               </div>
@@ -216,15 +370,28 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
           <CardContent className="space-y-3">
             {parentTips.map((tip, index) => (
               <div
-                key={index}
-                className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium leading-6 text-slate-600"
+                key={tip.id || index}
+                className="rounded-2xl bg-slate-50 px-4 py-3"
               >
-                {tip}
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-500">
+                  {tip.eyebrow}
+                </p>
+                <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+                  {tip.title}
+                </p>
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+                  {tip.detail}
+                </p>
               </div>
             ))}
           </CardContent>
         </Card>
       </div>
+
+      <PendingActiveVocabularyCard
+        childId={profile.id}
+        onApproved={onActiveVocabularyApproved}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
@@ -295,36 +462,211 @@ export function OverviewTab({ profile, stats }: OverviewTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {categoryRanking.slice(0, 5).map((category) => {
-              const translatedName =
-                categoryTranslations[category.category] || category.category;
-              return (
-                <div
-                  key={category.category}
-                  className="rounded-3xl bg-slate-50 px-4 py-3"
-                >
-                  <div className="mb-2 flex items-center justify-between gap-3 text-sm font-bold">
-                    <span className="text-slate-700">{translatedName}</span>
-                    <span className="text-slate-400">{category.progress}%</span>
+            {categoryFocusList.length > 0 ? (
+              categoryFocusList.map((category) => {
+                const translatedName = getTranslatedCategory(category.category);
+                const remainingWords = Math.max(
+                  (category.total ?? 0) - (category.mastered ?? 0),
+                  0,
+                );
+
+                return (
+                  <div
+                    key={category.category}
+                    className="rounded-3xl bg-slate-50 px-4 py-4"
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-slate-700">
+                          {translatedName}
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-400">
+                          {getFocusLabel(category.progress)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-black text-slate-400">
+                        {Math.round(category.progress)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={category.progress}
+                      className="h-2.5 rounded-full bg-white"
+                      indicatorClassName={
+                        category.progress >= 80
+                          ? "bg-emerald-500"
+                          : category.progress >= 40
+                            ? "bg-sky-500"
+                            : "bg-orange-400"
+                      }
+                    />
+                    <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
+                      {category.total && category.mastered !== undefined
+                        ? `已掌握 ${category.mastered} / ${category.total} 個詞彙，尚有 ${remainingWords} 個可加強。`
+                        : "可優先安排這個主題的短練習，幫助掌握度更穩定。"}
+                    </p>
+                    <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+                      {getCategorySuggestion(category.category)}
+                    </p>
                   </div>
-                  <Progress
-                    value={category.progress}
-                    className="h-2.5 rounded-full bg-white"
-                    indicatorClassName={
-                      category.progress >= 80
-                        ? "bg-emerald-500"
-                        : category.progress >= 40
-                          ? "bg-sky-500"
-                          : "bg-orange-400"
-                    }
-                  />
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
+                <p className="text-sm font-black text-slate-700">
+                  暫時未有主題掌握資料
+                </p>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                  完成幾次學習後，這裡會顯示最需要加強的主題和對應的複習建議。
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+function PendingActiveVocabularyCard({
+  childId,
+  onApproved,
+}: {
+  childId: string;
+  onApproved?: () => void | Promise<void>;
+}) {
+  const [requests, setRequests] = useState<ActiveVocabularyApprovalRequest[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(true);
+  const [actingWordId, setActingWordId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) {
+      setLoading(false);
+      setRequests([]);
+      return;
+    }
+
+    void (async () => {
+      setLoading(true);
+      try {
+        setRequests(await getPendingActiveVocabRequests(childId));
+      } catch {
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [childId]);
+
+  const handleRequest = async (
+    wordId: string,
+    action: "approve" | "reject",
+  ) => {
+    setActingWordId(wordId);
+    try {
+      if (action === "approve") {
+        await approveActiveVocabRequest(wordId, childId);
+        await onApproved?.();
+      } else {
+        await rejectActiveVocabRequest(wordId, childId);
+      }
+
+      setRequests((prev) =>
+        prev.filter((request) => request.word_id !== wordId),
+      );
+    } finally {
+      setActingWordId(null);
+    }
+  };
+
+  if (!getAuthToken()) {
+    return null;
+  }
+
+  return (
+    <Card className="rounded-4xl border-2 border-amber-100 bg-amber-50/60 shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+          <Shield className="h-5 w-5 text-amber-500" />
+          待家長確認主動詞彙
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <p className="text-sm font-medium text-slate-500">
+            正在載入確認請求...
+          </p>
+        ) : requests.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-amber-200 bg-white/70 px-5 py-6">
+            <p className="text-sm font-black text-slate-700">
+              目前沒有待確認詞語
+            </p>
+            <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+              當孩子在兒童模式中按下「請家長確認」後，這裡就會出現批准或拒絕的清單。
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {requests.map((request) => (
+              <div
+                key={request.word_id}
+                className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-amber-100"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-black text-slate-700">
+                      {request.word_cantonese || request.word}
+                    </p>
+                    {request.word_cantonese && (
+                      <p className="mt-1 text-xs font-bold text-slate-400">
+                        {request.word}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs font-bold text-amber-600">
+                      請求時間：
+                      {new Date(request.requested_at).toLocaleString("zh-HK")}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      已累積 {request.exposure_count} 次接觸
+                      {request.last_practiced &&
+                        `，最近練習於 ${new Date(request.last_practiced).toLocaleDateString("zh-HK")}`}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        void handleRequest(request.word_id, "approve")
+                      }
+                      disabled={actingWordId === request.word_id}
+                      className="rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white"
+                    >
+                      <CheckCircle2 className="mr-1 h-4 w-4" />
+                      批准
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void handleRequest(request.word_id, "reject")
+                      }
+                      disabled={actingWordId === request.word_id}
+                      className="rounded-2xl border-rose-200 text-rose-500 hover:bg-rose-50"
+                    >
+                      <XCircle className="mr-1 h-4 w-4" />
+                      拒絕
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

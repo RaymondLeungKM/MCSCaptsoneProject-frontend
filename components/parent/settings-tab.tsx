@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  Brain,
   User,
   Users,
   Target,
@@ -36,6 +37,53 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ParentalControlsSettings } from "./parental-controls";
 import { cn } from "@/lib/utils";
+
+const MONTH_OPTIONS = [
+  { value: "1", label: "1 月" },
+  { value: "2", label: "2 月" },
+  { value: "3", label: "3 月" },
+  { value: "4", label: "4 月" },
+  { value: "5", label: "5 月" },
+  { value: "6", label: "6 月" },
+  { value: "7", label: "7 月" },
+  { value: "8", label: "8 月" },
+  { value: "9", label: "9 月" },
+  { value: "10", label: "10 月" },
+  { value: "11", label: "11 月" },
+  { value: "12", label: "12 月" },
+];
+
+const LEARNING_STYLE_OPTIONS: Array<{
+  value: ChildProfile["learningStyle"];
+  label: string;
+  emoji: string;
+  description: string;
+}> = [
+  {
+    value: "visual",
+    label: "視覺型",
+    emoji: "👀",
+    description: "偏好圖片、顏色提示和視覺配對。",
+  },
+  {
+    value: "auditory",
+    label: "聽覺型",
+    emoji: "👂",
+    description: "偏好聽故事、跟讀和聲音提示。",
+  },
+  {
+    value: "kinesthetic",
+    label: "動覺型",
+    emoji: "🤸",
+    description: "偏好動作、實物和互動遊戲。",
+  },
+  {
+    value: "mixed",
+    label: "混合型",
+    emoji: "🎨",
+    description: "交替使用多種學習方式最有效。",
+  },
+];
 
 interface SettingsTabProps {
   profile: ChildProfile;
@@ -114,13 +162,21 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
 
   const [name, setName] = useState(profile.name);
   const [age, setAge] = useState(profile.age);
+  const [birthMonth, setBirthMonth] = useState<number | null>(
+    profile.birthMonth ?? null,
+  );
   const [dailyGoal, setDailyGoal] = useState(profile.dailyGoal);
+  const [learningStyle, setLearningStyle] = useState<
+    ChildProfile["learningStyle"]
+  >(profile.learningStyle);
   const [interests, setInterests] = useState(profile.interests);
   const [notifications, setNotifications] = useState(true);
   const [reminderTime, setReminderTime] = useState("18:00");
   const [screenTimeLimit, setScreenTimeLimit] = useState(30);
   const [parentalControls, setParentalControls] = useState(true);
-  const [communitySharing, setCommunitySharing] = useState(profile.communityEnabled ?? false);
+  const [communitySharing, setCommunitySharing] = useState(
+    profile.communityEnabled ?? false,
+  );
 
   const handleCommunitySharingChange = async (enabled: boolean) => {
     setCommunitySharing(enabled);
@@ -142,7 +198,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   useEffect(() => {
     setName(profile.name);
     setAge(profile.age);
+    setBirthMonth(profile.birthMonth ?? null);
     setDailyGoal(profile.dailyGoal);
+    setLearningStyle(profile.learningStyle);
     setInterests(profile.interests);
     setInterestOptions((prev) => mergeInterestOptions(prev, profile.interests));
   }, [profile]);
@@ -222,6 +280,17 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
 
   const handleSave = async () => {
     if (isMockData) {
+      onProfileUpdated?.({
+        ...profile,
+        name: name.trim() || profile.name,
+        age,
+        birthMonth,
+        dailyGoal,
+        interests,
+        learningStyle,
+        communityEnabled: communitySharing,
+      });
+
       toast({
         title: "示範模式",
         description: "設定已暫存在此頁面，但未寫入後端。",
@@ -236,7 +305,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         updateChild(profile.id, {
           name: name.trim(),
           age,
+          birth_month: birthMonth,
           daily_goal: dailyGoal,
+          learning_style: learningStyle,
           interests,
         }),
         updateParentalControls(profile.id, {
@@ -251,7 +322,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
 
       setName(nextProfile.name);
       setAge(nextProfile.age);
+      setBirthMonth(nextProfile.birthMonth ?? null);
       setDailyGoal(nextProfile.dailyGoal);
+      setLearningStyle(nextProfile.learningStyle);
       setInterests(nextProfile.interests);
       setInterestOptions((prev) =>
         mergeInterestOptions(prev, nextProfile.interests),
@@ -262,7 +335,10 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       setParentalControls(updatedControls.enable_time_limits);
       setScreenTimeLimit(updatedControls.daily_screen_time_limit ?? 30);
 
-      onProfileUpdated?.(nextProfile);
+      onProfileUpdated?.({
+        ...nextProfile,
+        communityEnabled: communitySharing,
+      });
 
       toast({
         title: "設定已儲存",
@@ -338,6 +414,36 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                 className="rounded-xl border-slate-200 focus:ring-blue-200 h-11"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="birth-month" className="text-slate-600 font-bold">
+                出生月份（選填）
+              </Label>
+              <div className="relative">
+                <select
+                  id="birth-month"
+                  value={birthMonth?.toString() ?? ""}
+                  onChange={(event) =>
+                    setBirthMonth(
+                      event.target.value ? Number(event.target.value) : null,
+                    )
+                  }
+                  className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">未設定</option>
+                  {MONTH_OPTIONS.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
+                  ▼
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">
+                設定後，系統可更準確地隨時間更新年齡；留空則只會按出生年份推算。
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -369,6 +475,57 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
               <p className="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl leading-relaxed">
                 💡 建議幼兒每天學習 3-5 個新詞彙，以保持學習興趣並加深記憶。
               </p>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-violet-100 rounded-xl text-violet-600 shrink-0">
+                  <Brain className="w-5 h-5" />
+                </div>
+                <div>
+                  <Label className="text-slate-600 font-bold">學習風格</Label>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    選擇目前最貼近孩子的學習偏好，系統會依此調整推薦活動。
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {LEARNING_STYLE_OPTIONS.map((option) => {
+                  const isSelected = learningStyle === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setLearningStyle(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-violet-300 bg-violet-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-violet-200 hover:bg-violet-50/40",
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl leading-none">
+                          {option.emoji}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-800">
+                            {option.label}
+                          </p>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            {option.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>

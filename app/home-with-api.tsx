@@ -165,8 +165,8 @@ export default function HomePage() {
               {wordOfDay && (
                 <WordOfTheDay
                   word={wordOfDay}
-                  onStart={() => {
-                    /* Handle word learning */
+                  onLearnMore={() => {
+                    setActiveTab("learn");
                   }}
                 />
               )}
@@ -175,8 +175,7 @@ export default function HomePage() {
                 <h2 className="text-2xl font-bold mb-4">Explore Categories</h2>
                 <CategoryGrid
                   categories={categories}
-                  onCategoryClick={(category) => {
-                    // Navigate to category view
+                  onCategorySelect={() => {
                     setActiveTab("learn");
                   }}
                 />

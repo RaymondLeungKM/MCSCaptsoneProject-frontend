@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
 import { StoryCard } from "@/components/child/story-card"; // <-- Import from new location
+import type { StoryCardData } from "@/components/child/story-card";
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { getChildStories } from "@/lib/api/bedtime-stories";
 import type { GeneratedStory, LanguagePreference } from "@/lib/types";
@@ -61,6 +62,25 @@ export function StoriesView({
   const allStories = stories;
   const favoriteStories = stories.filter((s) => s.is_favorite);
 
+  const toStoryCardData = (story: GeneratedStory): StoryCardData => ({
+    id: story.id,
+    title: story.title,
+    duration:
+      languagePreference === "english"
+        ? `${story.reading_time_minutes || 5} min`
+        : `${story.reading_time_minutes || 5} 分鐘`,
+    completed: (story.read_count || 0) > 0,
+    emoji:
+      story.theme === "animals"
+        ? "🦊"
+        : story.theme === "nature"
+          ? "🌙"
+          : story.theme === "adventure"
+            ? "🚀"
+            : "📖",
+    color: story.is_favorite ? "purple" : "blue",
+  });
+
   const renderStoryList = (storiesToShow: GeneratedStory[]) => {
     if (storiesToShow.length === 0) {
       return (
@@ -89,9 +109,8 @@ export function StoriesView({
         {storiesToShow.map((story) => (
           <StoryCard
             key={story.id}
-            story={story}
-            languagePreference={languagePreference}
-            onRead={onReadStory}
+            story={toStoryCardData(story)}
+            onRead={() => onReadStory(story)}
           />
         ))}
       </div>

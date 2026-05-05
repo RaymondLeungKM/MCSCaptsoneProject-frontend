@@ -7,7 +7,6 @@ import {
   LayoutGrid,
   TrendingUp,
   Target,
-  WifiOff,
   BarChart3,
   Settings,
   PieChart,
@@ -22,8 +21,7 @@ import CozyPageWrapper from "@/components/CozyPageWrapper";
 // --- COMPONENT IMPORTS ---
 import { OverviewTab } from "@/components/parent/overview-tab";
 import { ProgressTab } from "@/components/parent/progress-tab";
-import { MissionsTab } from "@/components/parent/missions-tab";
-import { OfflineMissionsTab } from "@/components/parent/offline-missions-tab";
+import { ParentMissionsTab } from "@/components/parent/parent-missions-tab";
 import { InsightsTab } from "@/components/parent/insights-tab";
 import { SettingsTab } from "@/components/parent/settings-tab";
 import { SocialTab } from "@/components/parent/social-tab";
@@ -32,15 +30,103 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PrivacyConsentModal } from "@/components/modals/privacy-consent-modal";
 import { useAuth } from "@/lib/auth-context";
 import { getChildren, toChildProfile } from "@/lib/api/children";
+import { getLearningInsights } from "@/lib/api/parent-dashboard";
 import { getProgressStats } from "@/lib/api/progress";
-import { getDailyMissions } from "@/lib/api/missions";
 import { getAuthToken } from "@/lib/api/client";
 import type {
   ChildProfile,
-  DailyMission,
+  LearningInsight,
   ProgressStats,
   Word,
 } from "@/lib/types";
+
+const MOCK_PROFILE: ChildProfile = {
+  id: "mock-123",
+  name: "小明",
+  age: 5,
+  avatar: "👦",
+  level: 5,
+  xp: 350,
+  wordsLearned: 47,
+  currentStreak: 7,
+  learningStyle: "mixed",
+  languagePreference: "cantonese",
+  interests: ["Animals", "Space"],
+  dailyGoal: 5,
+  todayProgress: 3,
+  attentionSpan: 15,
+  preferredTimeOfDay: "morning",
+};
+
+const MOCK_STATS: ProgressStats = {
+  totalWords: 42,
+  masteredWords: 15,
+  weeklyProgress: [2, 5, 8, 4, 10, 6, 7],
+  streakDays: 7,
+  categoryProgress: [
+    { category: "Nature", progress: 33, mastered: 3, total: 9 },
+    { category: "Food", progress: 44, mastered: 4, total: 9 },
+    { category: "Vehicles", progress: 50, mastered: 3, total: 6 },
+    { category: "Animals", progress: 78, mastered: 7, total: 9 },
+    { category: "Colors", progress: 100, mastered: 9, total: 9 },
+  ],
+  averageExposuresPerWord: 3.5,
+  activeVocabulary: 10,
+  passiveVocabulary: 32,
+  multiSensoryEngagement: 74,
+};
+
+const MOCK_INSIGHTS: LearningInsight[] = [
+  {
+    id: "mock-tip-goal",
+    child_id: MOCK_PROFILE.id,
+    insight_type: "recommendation",
+    priority: "high",
+    category: "Nature",
+    title: "今日可先完成短練習再進行複習",
+    description:
+      "距離今日目標還差 2 個詞彙，現在最適合安排一段 10 分鐘短練習。",
+    action_items: [
+      "先複習「大自然」主題，再請孩子用口語說出剛看過的圖片或實物。",
+    ],
+    data: {},
+    is_read: false,
+    is_dismissed: false,
+    generated_at: "2026-05-01T08:00:00.000Z",
+  },
+  {
+    id: "mock-tip-engagement",
+    child_id: MOCK_PROFILE.id,
+    insight_type: "weakness",
+    priority: "medium",
+    category: "Food",
+    title: "多感官提示仍有提升空間",
+    description: "本週較多停留在圖片辨認，可以再加入動作、實物和口語輸出。",
+    action_items: [
+      "晚餐前可用真實食物做指認遊戲，並引導孩子描述顏色、味道和用途。",
+    ],
+    data: {},
+    is_read: false,
+    is_dismissed: false,
+    generated_at: "2026-05-01T07:30:00.000Z",
+  },
+  {
+    id: "mock-tip-strength",
+    child_id: MOCK_PROFILE.id,
+    insight_type: "strength",
+    priority: "low",
+    category: "Animals",
+    title: "動物主題掌握較穩定",
+    description: "孩子在動物詞彙上的辨認速度和準確度較高。",
+    action_items: [
+      "可把已掌握的動物詞彙加入故事或角色扮演，幫助從辨認轉向主動輸出。",
+    ],
+    data: {},
+    is_read: false,
+    is_dismissed: false,
+    generated_at: "2026-05-01T07:00:00.000Z",
+  },
+];
 
 // --- INTERNAL CONTENT COMPONENT ---
 function ParentDashboardContent() {
@@ -49,40 +135,11 @@ function ParentDashboardContent() {
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<ChildProfile | null>(null);
+  const [insights, setInsights] = useState<LearningInsight[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // --- MOCK DATA ---
-  const MOCK_PROFILE: ChildProfile = {
-    id: "mock-123",
-    name: "Emma",
-    age: 5,
-    avatar: "👧",
-    level: 1,
-    xp: 0,
-    wordsLearned: 0,
-    currentStreak: 0,
-    learningStyle: "mixed",
-    languagePreference: "cantonese",
-    interests: ["Animals", "Space"],
-    dailyGoal: 10,
-    todayProgress: 5,
-    attentionSpan: 15,
-    preferredTimeOfDay: "afternoon",
-  };
-
-  const [stats, setStats] = useState<ProgressStats>({
-    totalWords: 42,
-    masteredWords: 15,
-    weeklyProgress: [2, 5, 8, 4, 10, 6, 7],
-    streakDays: 3,
-    categoryProgress: [],
-    averageExposuresPerWord: 3.5,
-    activeVocabulary: 10,
-    passiveVocabulary: 32,
-    multiSensoryEngagement: 85,
-  });
-  const [missions, setMissions] = useState<DailyMission[]>([]);
+  const [stats, setStats] = useState<ProgressStats>(MOCK_STATS);
 
   const fallbackWords: Word[] = [];
 
@@ -103,23 +160,9 @@ function ParentDashboardContent() {
     const token = getAuthToken();
     if (!token) {
       // Not authenticated – use mock data for demo
-      setProfile({
-        id: "mock-123",
-        name: "小明",
-        age: 5,
-        avatar: "👦",
-        learningStyle: "mixed",
-        languagePreference: "cantonese",
-        interests: ["Animals", "Space"],
-        dailyGoal: 5,
-        todayProgress: 3,
-        level: 5,
-        xp: 350,
-        wordsLearned: 47,
-        currentStreak: 7,
-        attentionSpan: 15,
-        preferredTimeOfDay: "morning",
-      });
+      setProfile(MOCK_PROFILE);
+      setStats(MOCK_STATS);
+      setInsights(MOCK_INSIGHTS);
       setIsLoadingProfile(false);
       return;
     }
@@ -128,6 +171,7 @@ function ParentDashboardContent() {
       const children = await getChildren();
       if (children.length === 0) {
         setProfile(null);
+        setInsights([]);
         setIsLoadingProfile(false);
         return;
       }
@@ -135,41 +179,41 @@ function ParentDashboardContent() {
       const childProfile = toChildProfile(children[0]);
       setProfile(childProfile);
 
-      // Fetch stats and missions in parallel with graceful fallbacks
-      const [statsResult, missionsResult] = await Promise.allSettled([
+      const [statsResult, insightsResult] = await Promise.allSettled([
         getProgressStats(childProfile.id),
-        getDailyMissions(childProfile.id),
+        getLearningInsights(childProfile.id, {
+          includeRead: true,
+          includeDismissed: false,
+          limit: 3,
+        }),
       ]);
 
-      if (statsResult.status === "fulfilled") {
-        const s = statsResult.value;
-        setStats({
-          totalWords: s.total_words,
-          masteredWords: s.mastered_words,
-          weeklyProgress: s.weekly_progress,
-          streakDays: s.streak_days,
-          categoryProgress: s.category_progress.map((cp) => ({
-            category: cp.category,
-            progress: cp.progress,
-          })),
-          averageExposuresPerWord: s.average_exposures_per_word,
-          activeVocabulary: s.active_vocabulary,
-          passiveVocabulary: s.passive_vocabulary,
-          multiSensoryEngagement: s.multi_sensory_engagement,
-        });
+      if (statsResult.status === "rejected") {
+        throw statsResult.reason;
       }
 
-      if (missionsResult.status === "fulfilled") {
-        setMissions(
-          missionsResult.value.map((m) => ({
-            id: m.id,
-            title: m.title,
-            description: m.description,
-            targetWord: m.target_words[0] ?? "",
-            completed: false,
-            context: m.context,
-          })),
-        );
+      setStats({
+        totalWords: statsResult.value.total_words,
+        masteredWords: statsResult.value.mastered_words,
+        weeklyProgress: statsResult.value.weekly_progress,
+        streakDays: statsResult.value.streak_days,
+        categoryProgress: statsResult.value.category_progress.map((cp) => ({
+          category: cp.category,
+          progress: cp.progress,
+          mastered: cp.mastered,
+          total: cp.total,
+        })),
+        averageExposuresPerWord: statsResult.value.average_exposures_per_word,
+        activeVocabulary: statsResult.value.active_vocabulary,
+        passiveVocabulary: statsResult.value.passive_vocabulary,
+        multiSensoryEngagement: statsResult.value.multi_sensory_engagement,
+      });
+
+      if (insightsResult.status === "fulfilled") {
+        setInsights(insightsResult.value);
+      } else {
+        console.warn("Failed to load parent insights:", insightsResult.reason);
+        setInsights([]);
       }
     } catch (error) {
       console.error("Failed to load parent dashboard:", error);
@@ -286,11 +330,6 @@ function ParentDashboardContent() {
                   label="任務"
                 />
                 <TabItem
-                  value="offline"
-                  icon={<WifiOff className="w-4 h-4" />}
-                  label="離線"
-                />
-                <TabItem
                   value="insights"
                   icon={<BarChart3 className="w-4 h-4" />}
                   label="分析"
@@ -315,7 +354,14 @@ function ParentDashboardContent() {
               value="overview"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              {profile && <OverviewTab profile={profile} stats={stats} />}
+              {profile && (
+                <OverviewTab
+                  profile={profile}
+                  stats={stats}
+                  insights={insights}
+                  onActiveVocabularyApproved={loadParentDashboardProfile}
+                />
+              )}
             </TabsContent>
 
             <TabsContent
@@ -342,21 +388,14 @@ function ParentDashboardContent() {
               value="missions"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              <MissionsTab missions={missions} />
-            </TabsContent>
-
-            <TabsContent
-              value="offline"
-              className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
-            >
-              {profile && <OfflineMissionsTab childId={profile.id} />}
+              {profile && <ParentMissionsTab childId={profile.id} />}
             </TabsContent>
 
             <TabsContent
               value="insights"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              {profile && <InsightsTab childId={profile.id} />}
+              {profile && <InsightsTab childId={profile.id} stats={stats} />}
             </TabsContent>
 
             <TabsContent

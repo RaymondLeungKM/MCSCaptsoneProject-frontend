@@ -169,7 +169,17 @@ export async function apiRequest<T>(
         );
       }
 
-      const result = await response.json();
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        logDebug(`Response successful with empty body: ${endpoint}`);
+        return undefined as T;
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      const result = contentType.includes("application/json")
+        ? JSON.parse(responseText)
+        : responseText;
+
       logDebug(`Response successful: ${endpoint}`);
       return result as T;
     } catch (error) {
