@@ -22,6 +22,7 @@ interface WordBuilderGameProps {
 /* ── Constants ── */
 const TOTAL_ROUNDS = 8;
 const MAX_WRONG_BEFORE_HINT = 2;
+const HINT_MESSAGE_DURATION_MS = 1800;
 
 const FALLBACK_BG = [
   "from-pink-200 to-rose-100",
@@ -139,7 +140,8 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
   // Feedback state
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
-  const [glowFirstTile, setGlowFirstTile] = useState(false); // hint: first correct char glows
+  const [highlightedHintIndex, setHighlightedHintIndex] = useState<number | null>(null);
+  const [revealedHintIndexes, setRevealedHintIndexes] = useState<number[]>([]);
   const [shaking, setShaking] = useState(false);
   const [correctFlash, setCorrectFlash] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -155,6 +157,23 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
   const wordsSeen = useRef<string[]>([]);
   const wordsCorrect = useRef<string[]>([]);
   const firstTryRef = useRef(true); // no wrong attempts this round
+  const hintMessageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHintMessageTimeout = () => {
+    if (hintMessageTimeoutRef.current) {
+      clearTimeout(hintMessageTimeoutRef.current);
+      hintMessageTimeoutRef.current = null;
+    }
+  };
+
+  const triggerHintMessage = () => {
+    setShowHint(true);
+    clearHintMessageTimeout();
+    hintMessageTimeoutRef.current = setTimeout(() => {
+      setShowHint(false);
+      hintMessageTimeoutRef.current = null;
+    }, HINT_MESSAGE_DURATION_MS);
+  };
 
   /* ── Load words: captured first, then system backfill ── */
   useEffect(() => {
@@ -257,7 +276,9 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
       setSlots(new Array(chars.length).fill(null));
       setWrongAttempts(0);
       setShowHint(false);
-      setGlowFirstTile(false);
+      setHighlightedHintIndex(null);
+      setRevealedHintIndexes([]);
+      clearHintMessageTimeout();
       setShaking(false);
       setCorrectFlash(false);
       firstTryRef.current = true;
@@ -269,6 +290,8 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
   useEffect(() => {
     if (words.length > 0 && !isGameOver) setupRound(words, round);
   }, [words]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => () => clearHintMessageTimeout(), []);
 
   // Auto-play Cantonese audio when round changes
   useEffect(() => {
@@ -290,6 +313,20 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
 
     const nextSlot = slots.indexOf(null);
     if (nextSlot === -1) return; // all slots filled
+
+    const tappedChar = tiles[tileIndex].char;
+    const hintedChar =
+      highlightedHintIndex !== null ? targetChars[highlightedHintIndex] : null;
+
+    if (showHint) {
+      setShowHint(false);
+      clearHintMessageTimeout();
+    }
+
+    if (hintedChar && tappedChar === hintedChar && highlightedHintIndex === nextSlot) {
+      setHighlightedHintIndex(null);
+      setRevealedHintIndexes([]);
+    }
 
     // Mark tile as used
     setTiles((prev) =>
@@ -385,48 +422,66 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
     const newWrong = wrongAttempts + 1;
     setWrongAttempts(newWrong);
 
-    // Hint escalation
-    if (newWrong >= MAX_WRONG_BEFORE_HINT) setShowHint(true);
-    if (newWrong >= 3) setGlowFirstTile(true);
-
     // Also add to seen if first wrong
     if (currentWord && !wordsSeen.current.includes(currentWord.id)) {
       wordsSeen.current = [...wordsSeen.current, currentWord.id];
     }
 
-    // Shake animation then clear slots
+    // Shake animation then preserve correct slots and escalate hints.
     setShaking(true);
     setTimeout(() => {
       setShaking(false);
-      // Reset all tiles to unused, clear slots
-      setTiles((prev) => prev.map((t) => ({ ...t, used: false })));
-      setSlots(new Array(targetChars.length).fill(null));
+
+      const slotChars = slots.map((slotId) =>
+        slotId ? (tiles.find((tile) => tile.id === slotId)?.char ?? "") : "",
+      );
+
+      const nextSlots = [...slots];
+      const keptTileIds = new Set<string>();
+
+      slotChars.forEach((char, index) => {
+        const slotId = nextSlots[index];
+        if (slotId && char === targetChars[index]) {
+          keptTileIds.add(slotId);
+          return;
+        }
+        nextSlots[index] = null;
+      });
+
+      let nextTiles = tiles.map((tile) => ({
+        ...tile,
+        used: keptTileIds.has(tile.id),
+      }));
+
+      let nextHintIndex = nextSlots.findIndex((slotId, index) => {
+        if (!slotId) return true;
+        const char = nextTiles.find((tile) => tile.id === slotId)?.char ?? "";
+        return char !== targetChars[index];
+      });
+
+      if (nextHintIndex === -1) {
+        nextHintIndex = targetChars.findIndex((_, index) => !nextSlots[index]);
+      }
+
+      if (newWrong >= MAX_WRONG_BEFORE_HINT && nextHintIndex !== -1) {
+        triggerHintMessage();
+        setRevealedHintIndexes((prev) =>
+          prev.includes(nextHintIndex) ? prev : [...prev, nextHintIndex],
+        );
+      }
+
+      if (newWrong >= MAX_WRONG_BEFORE_HINT && nextHintIndex !== -1) {
+        setHighlightedHintIndex(nextHintIndex);
+      } else {
+        setHighlightedHintIndex(null);
+      }
+
+      setTiles(nextTiles);
+      setSlots(nextSlots);
 
       // Replay audio after reset so child hears the word again
       if (currentWord) {
         void playWord(wordResponseToWord(currentWord), { languagePreference: "cantonese" });
-      }
-
-      // Strike 4: auto-place first correct char to help child get unstuck
-      if (newWrong >= 4) {
-        setWrongAttempts(0);
-        setGlowFirstTile(false);
-        // Find the tile with targetChars[0] and auto-place it
-        setTiles((prevTiles) => {
-          const firstCharTile = prevTiles.find(
-            (t) => t.char === targetChars[0] && !t.used,
-          );
-          if (!firstCharTile) return prevTiles;
-          // Place it in slot 0
-          setSlots((prevSlots) => {
-            const newSlots = [...prevSlots];
-            newSlots[0] = firstCharTile.id;
-            return newSlots;
-          });
-          return prevTiles.map((t) =>
-            t.id === firstCharTile.id ? { ...t, used: true } : t,
-          );
-        });
       }
     }, 600);
   };
@@ -675,6 +730,8 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
                   className={`w-20 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-all duration-200 ${
                     correctFlash
                       ? "bg-green-400 text-white border-4 border-green-500 scale-110 shadow-[0_4px_0_#15803d]"
+                      : highlightedHintIndex === i && !filled
+                        ? "bg-green-50 text-transparent border-4 border-dashed border-green-400 shadow-[0_0_0_6px_rgba(74,222,128,0.16)] animate-pulse"
                       : filled
                         ? "bg-white text-slate-800 border-4 border-green-300 shadow-[0_6px_0_#86efac] active:scale-95 active:translate-y-1 active:shadow-none"
                         : "bg-white/50 text-transparent border-4 border-dashed border-green-300"
@@ -683,7 +740,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
                   {filled ? char : ""}
                 </button>
                 {/* Jyutping hint */}
-                {showHint && jyutpingSyllables[i] && (
+                {revealedHintIndexes.includes(i) && jyutpingSyllables[i] && (
                   <span className="text-sm font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full animate-pop-in">
                     {jyutpingSyllables[i]}
                   </span>
@@ -704,7 +761,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
         {showHint && (
           <p className="text-base text-green-600 font-black flex items-center gap-1.5 animate-pop-in bg-green-50 px-4 py-1.5 rounded-full border border-green-200">
             <HelpCircle className="w-4 h-4" />
-            拼音提示已顯示！
+            已保留正確答案，請按發光嘅字卡放入下一格！
           </p>
         )}
 
@@ -723,9 +780,10 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
         {/* Character Tiles */}
         <div className="flex flex-wrap gap-4 justify-center max-w-md pt-4">
           {tiles.map((tile) => {
-            // glowFirstTile: highlight the first correct char as a visual nudge
-            const isFirstCorrect =
-              glowFirstTile && tile.char === targetChars[0] && !tile.used;
+            const hintedChar =
+              highlightedHintIndex !== null ? targetChars[highlightedHintIndex] : null;
+            const isHintedTile =
+              hintedChar !== null && tile.char === hintedChar && !tile.used;
             return (
               <button
                 key={tile.id}
@@ -734,7 +792,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
                 className={`w-20 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-all duration-200 ${
                   tile.used
                     ? "bg-gray-100 text-gray-300 border-4 border-gray-200 scale-90"
-                    : isFirstCorrect
+                    : isHintedTile
                       ? "bg-green-50 text-slate-800 border-4 border-green-400 shadow-[0_8px_0_#4ade80] animate-pulse hover:border-green-500"
                       : "bg-white text-slate-800 border-4 border-emerald-200 shadow-[0_8px_0_#a7f3d0] active:scale-90 active:translate-y-1 active:shadow-none hover:border-emerald-400"
                 }`}

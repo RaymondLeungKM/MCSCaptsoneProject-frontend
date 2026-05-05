@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Volume2, Sparkles, Loader2, Bot, GraduationCap } from "lucide-react";
-import { LanguagePreference } from "@/lib/types";
+import { LanguagePreference, type Word } from "@/lib/types";
 import {
   generateWordSentences,
   getWordSentences,
@@ -26,6 +26,74 @@ interface GeneratedSentence {
 interface AISentencesProps {
   wordId: string; // or number, depending on your API
   languagePreference: LanguagePreference;
+  word?: Word;
+}
+
+function normalizeSentence(value?: string | null): string {
+  return (value ?? "").replace(/["'`]/g, "").trim();
+}
+
+function buildFallbackSentences(word?: Word): GeneratedSentence[] {
+  if (!word) return [];
+
+  const cantoneseWord = word.word_cantonese || word.word;
+  const englishWord = word.word || word.word_cantonese || "this word";
+
+  return [
+    {
+      id: 1,
+      sentence: `我哋今日學緊${cantoneseWord}，可以一齊用佢講句子。`,
+      sentence_english: `Today we are learning ${englishWord}, and we can use it in a sentence together.`,
+      jyutping: word.jyutping || "",
+      context: "General",
+      difficulty: "easy",
+    },
+    {
+      id: 2,
+      sentence: `老師會用${cantoneseWord}幫我哋練習完整表達。`,
+      sentence_english: `The teacher uses ${englishWord} to help us practise full expressions.`,
+      jyutping: word.jyutping || "",
+      context: "School",
+      difficulty: "easy",
+    },
+  ];
+}
+
+function isUsefulSentence(value: string | undefined, word?: Word): boolean {
+  const normalized = normalizeSentence(value);
+  if (!normalized) return false;
+  if (!word) return normalized.length > 2;
+
+  const englishWord = normalizeSentence(word.word);
+  const cantoneseWord = normalizeSentence(word.word_cantonese || word.word);
+  return normalized !== englishWord && normalized !== cantoneseWord;
+}
+
+function sanitizeSentenceItem(
+  item: GeneratedSentenceResponse,
+  index: number,
+  word?: Word,
+): GeneratedSentence | null {
+  const fallbackSentences = buildFallbackSentences(word);
+  const fallback = fallbackSentences[index] ?? fallbackSentences[0];
+  const sentence = isUsefulSentence(item.sentence, word)
+    ? item.sentence.trim()
+    : fallback?.sentence ?? "";
+  const sentenceEnglish = isUsefulSentence(item.sentence_english, word)
+    ? (item.sentence_english || "").trim()
+    : fallback?.sentence_english ?? "";
+
+  if (!sentence || !sentenceEnglish) return null;
+
+  return {
+    id: item.id ?? index + 1,
+    sentence,
+    sentence_english: sentenceEnglish,
+    jyutping: item.jyutping || fallback?.jyutping || "",
+    context: item.context || fallback?.context || "General",
+    difficulty: item.difficulty || fallback?.difficulty || "easy",
+    created_at: item.created_at,
+  };
 }
 
 function translateContext(context?: string): string {
@@ -51,7 +119,7 @@ function translateDifficulty(difficulty?: string): string {
   return map[difficulty ?? ""] ?? "初級";
 }
 
-export function AISentences({ wordId, languagePreference }: AISentencesProps) {
+export function AISentences({ wordId, languagePreference, word }: AISentencesProps) {
   const [sentences, setSentences] = useState<GeneratedSentence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,23 +142,16 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
         setLoading(true);
         setError(null);
 
-        const toSentence = (
-          item: GeneratedSentenceResponse,
-          index: number,
-        ): GeneratedSentence => ({
-          id: item.id ?? index + 1,
-          sentence: item.sentence,
-          sentence_english: item.sentence_english || "",
-          jyutping: item.jyutping || "",
-          context: item.context || "General",
-          difficulty: item.difficulty || "easy",
-          created_at: item.created_at,
-        });
+        const toSentence = (item: GeneratedSentenceResponse, index: number) =>
+          sanitizeSentenceItem(item, index, word);
 
         const existingSentences = await getWordSentences(wordId);
+        const sanitizedExisting = existingSentences
+          .map(toSentence)
+          .filter((item): item is GeneratedSentence => item !== null);
 
-        if (existingSentences.length > 0) {
-          setSentences(existingSentences.map(toSentence));
+        if (sanitizedExisting.length > 0) {
+          setSentences(sanitizedExisting);
           return;
         }
 
@@ -98,7 +159,15 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
           num_sentences: 3,
         });
 
-        setSentences(generated.sentences.map(toSentence));
+        const sanitizedGenerated = generated.sentences
+          .map(toSentence)
+          .filter((item): item is GeneratedSentence => item !== null);
+
+        setSentences(
+          sanitizedGenerated.length > 0
+            ? sanitizedGenerated
+            : buildFallbackSentences(word),
+        );
       } catch (err: any) {
         // Ollama / AI service not running — hide component silently instead of red error
         const msg: string = err?.message ?? String(err);
@@ -112,18 +181,18 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
           msg.includes("AI service") ||
           msg.includes("generate-sentences")
         ) {
-          setSentences([]);
+          setSentences(buildFallbackSentences(word));
           return;
         }
         setError(msg || "未能載入 AI 例句，請稍後再試。");
-        setSentences([]);
+        setSentences(buildFallbackSentences(word));
       } finally {
         setLoading(false);
       }
     }
 
     fetchSentences();
-  }, [wordId, reloadKey]);
+  }, [wordId, reloadKey, word]);
 
   useEffect(() => {
     if (!isPlaying && playingId !== null) {
@@ -164,7 +233,7 @@ export function AISentences({ wordId, languagePreference }: AISentencesProps) {
     );
   }
 
-  if (error) {
+  if (error && sentences.length === 0) {
     return (
       <Card className="p-6 bg-red-50/60 border-red-100 rounded-4xl flex flex-col items-start gap-3">
         <p className="text-sm font-bold text-red-600">{error}</p>

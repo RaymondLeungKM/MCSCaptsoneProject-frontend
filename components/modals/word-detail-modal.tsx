@@ -295,26 +295,27 @@ export function WordDetailModal({
       : `先集齊 ${EXPOSURE_GOAL} 粒星`;
 
   const modal = (
-    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-9999">
       {/* Backdrop – blurs and dims the page behind the modal */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-md"
         onClick={onClose}
       />
 
-      {/* Card */}
-      <div
-        className={cn(
-          "relative w-full max-w-lg bg-white",
-          "rounded-[40px]",
-          "shadow-2xl border-4 border-white",
-          "flex flex-col max-h-[90vh] overflow-hidden",
-          "animate-in zoom-in-95 fade-in duration-300",
-        )}
-      >
+      <div className="relative z-10 flex min-h-full items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
+        {/* Card */}
+        <div
+          className={cn(
+            "relative w-full max-w-lg bg-white",
+            "rounded-[40px]",
+            "border-4 border-white shadow-2xl",
+            "max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain sm:max-h-[90dvh]",
+            "animate-in zoom-in-95 fade-in duration-300",
+          )}
+        >
         {/* ── HERO ───────────────────────────────────────────── */}
         <div
-          className="relative flex flex-col items-center pt-8 pb-6 px-6"
+          className="relative flex shrink-0 flex-col items-center px-6 pt-8 pb-6"
           style={{
             backgroundColor: heroBg,
             borderBottom: `3px solid ${heroBorder}`,
@@ -600,7 +601,8 @@ export function WordDetailModal({
         </div>
 
         {/* ── SCROLLABLE BODY ─────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+        <div className="px-5 py-5 touch-pan-y">
+          <div className="space-y-4 pb-2">
           {/* Definition */}
           <Section
             icon={<BookOpen className="w-4 h-4" />}
@@ -659,6 +661,7 @@ export function WordDetailModal({
             <AISentences
               wordId={word.id}
               languagePreference={languagePreference}
+              word={word}
             />
           </Section>
 
@@ -717,7 +720,9 @@ export function WordDetailModal({
 
           {/* Bottom padding to clear shadow */}
           <div className="h-2" />
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );

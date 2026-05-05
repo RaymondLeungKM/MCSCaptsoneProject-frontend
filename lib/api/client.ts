@@ -3,6 +3,11 @@
  * Handles all communication with FastAPI backend with retry logic and error handling
  */
 
+// NEXT_PUBLIC_API_URL is set in .env.local to "/api/v1" so all browser requests
+// go through the Next.js Route Handler proxy at app/api/v1/[...path]/route.ts,
+// which forwards them server-side to http://localhost:8000 — no CORS needed.
+// Falls back to the direct backend URL for server-side rendering or if the env
+// var is ever unset.
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 

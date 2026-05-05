@@ -4,13 +4,11 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowRight,
   Bell,
   Book,
   Clock3,
   Sparkles,
   ShieldAlert,
-  Users,
   Brain,
   Zap,
   BookMarked,
@@ -31,7 +29,7 @@ import { RewardsView } from "@/components/views/rewards-view";
 
 import { BedtimeStoryReader } from "@/components/modals/bedtime-story-reader";
 import { CommunityTab } from "@/components/child/community-tab";
-import { ParentPinModal, getStoredParentPin } from "@/components/modals/parent-pin-modal";
+import { ParentPinModal } from "@/components/modals/parent-pin-modal";
 import { QuizGame } from "@/components/child/games/quiz-game";
 import { WordBuilderGame } from "@/components/child/games/word-builder-game";
 import { SpeakingGame } from "@/components/child/games/speaking-game";
@@ -814,12 +812,7 @@ function ChildDashboardContent() {
   };
 
   const handleOpenParentDashboard = () => {
-    const pin = getStoredParentPin();
-    if (pin) {
-      setShowPinModal(true);
-    } else {
-      void proceedToParentDashboard();
-    }
+    setShowPinModal(true);
   };
 
   const refreshChildProfile = async (
@@ -906,24 +899,11 @@ function ChildDashboardContent() {
     <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
       <div className="w-full min-h-screen pb-32 px-4">
         {showDashboardHeader && (
-          <header className="flex flex-row items-center justify-between gap-2 py-4">
+          <header className="flex flex-row items-center gap-2 py-4">
             <ProfileHeader
               childId={profile.id}
               refreshKey={profileRefreshKey}
             />
-
-            <button
-              type="button"
-              onClick={() => handleOpenParentDashboard()}
-              className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
-            >
-              <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
-                <Users className="w-4 h-4" />
-              </span>
-              <span className="hidden sm:inline">家長中心</span>
-              <span className="sm:hidden">家長</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
           </header>
         )}
 

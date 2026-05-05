@@ -1,5 +1,33 @@
 import type { Word, Category, LanguagePreference } from "./types";
 
+function normalizeSentenceCandidate(value?: string | null): string {
+  return (value ?? "").replace(/["'`]/g, "").trim();
+}
+
+function isWordOnlySentence(candidate: string | undefined, word: Word): boolean {
+  const normalizedCandidate = normalizeSentenceCandidate(candidate);
+  const normalizedEnglishWord = normalizeSentenceCandidate(word.word);
+  const normalizedCantoneseWord = normalizeSentenceCandidate(
+    word.word_cantonese || word.word,
+  );
+
+  return (
+    !normalizedCandidate ||
+    normalizedCandidate === normalizedEnglishWord ||
+    normalizedCandidate === normalizedCantoneseWord
+  );
+}
+
+function buildFallbackCantoneseExample(word: Word): string {
+  const displayWord = word.word_cantonese || word.word;
+  return `我哋今日一齊學${displayWord}，再用佢講一個完整句子。`;
+}
+
+function buildFallbackEnglishExample(word: Word): string {
+  const displayWord = (word.word || word.word_cantonese || "this word").trim();
+  return `Today we are learning ${displayWord}, and we can use it in a full sentence.`;
+}
+
 /**
  * Get the appropriate word text based on language preference
  */
@@ -47,19 +75,21 @@ export function getExample(
   word: Word,
   language: LanguagePreference = "cantonese",
 ): string {
+  const cantoneseExample = isWordOnlySentence(word.example_cantonese, word)
+    ? buildFallbackCantoneseExample(word)
+    : (word.example_cantonese || "").trim();
+  const englishExample = isWordOnlySentence(word.example, word)
+    ? buildFallbackEnglishExample(word)
+    : (word.example || "").trim();
+
   switch (language) {
     case "cantonese":
-      // If no Cantonese example, create a simple one using the word
-      return (
-        word.example_cantonese || `我見到${word.word_cantonese || word.word}。`
-      );
+      return cantoneseExample;
     case "bilingual":
-      return word.example_cantonese
-        ? `${word.example_cantonese} / ${word.example}`
-        : `${word.word_cantonese || word.word} / ${word.example}`;
+      return `${cantoneseExample} / ${englishExample}`;
     case "english":
     default:
-      return word.example;
+      return englishExample;
   }
 }
 

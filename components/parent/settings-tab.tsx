@@ -13,6 +13,9 @@ import {
   Settings,
   Clock,
   Loader2,
+  Lock,
+  ShieldCheck,
+  Trash2,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +40,11 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ParentalControlsSettings } from "./parental-controls";
 import { cn } from "@/lib/utils";
+import {
+  clearStoredParentPin,
+  getStoredParentPin,
+  setStoredParentPin,
+} from "@/components/modals/parent-pin-modal";
 
 const MONTH_OPTIONS = [
   { value: "1", label: "1 月" },
@@ -177,6 +185,11 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   const [communitySharing, setCommunitySharing] = useState(
     profile.communityEnabled ?? false,
   );
+  const [storedParentPin, setStoredParentPinState] = useState<string | null>(null);
+  const [pinDraft, setPinDraft] = useState("");
+  const [confirmPinDraft, setConfirmPinDraft] = useState("");
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [editingPin, setEditingPin] = useState(false);
 
   const handleCommunitySharingChange = async (enabled: boolean) => {
     setCommunitySharing(enabled);
@@ -204,6 +217,10 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     setInterests(profile.interests);
     setInterestOptions((prev) => mergeInterestOptions(prev, profile.interests));
   }, [profile]);
+
+  useEffect(() => {
+    setStoredParentPinState(getStoredParentPin());
+  }, []);
 
   useEffect(() => {
     if (isMockData) {
@@ -354,6 +371,45 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const resetPinForm = () => {
+    setPinDraft("");
+    setConfirmPinDraft("");
+    setPinError(null);
+    setEditingPin(false);
+  };
+
+  const handleSaveParentPin = () => {
+    const normalizedPin = pinDraft.trim();
+
+    if (!/^\d{4,6}$/.test(normalizedPin)) {
+      setPinError("請設定 4 至 6 位數字 PIN。");
+      return;
+    }
+
+    if (normalizedPin !== confirmPinDraft.trim()) {
+      setPinError("兩次輸入的 PIN 不一致。");
+      return;
+    }
+
+    setStoredParentPin(normalizedPin);
+    setStoredParentPinState(normalizedPin);
+    resetPinForm();
+    toast({
+      title: "家長 PIN 已更新",
+      description: "之後切換到家長模式時會使用這組 PIN。",
+    });
+  };
+
+  const handleRemoveParentPin = () => {
+    clearStoredParentPin();
+    setStoredParentPinState(null);
+    resetPinForm();
+    toast({
+      title: "已移除家長 PIN",
+      description: "這部裝置上的家長模式鎖已清除。",
+    });
   };
 
   return (
@@ -664,6 +720,134 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm bg-white rounded-[28px]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+            <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
+              <Lock className="w-5 h-5" />
+            </div>
+            家長 PIN 設定
+          </CardTitle>
+          <CardDescription className="text-slate-400 pl-12">
+            切換到家長模式時需要輸入 PIN，避免小朋友誤進管理頁面。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="flex items-center justify-between rounded-2xl bg-amber-50 px-4 py-4">
+            <div className="space-y-1">
+              <p className="font-bold text-slate-700">目前狀態</p>
+              <p className="text-xs text-slate-500">
+                {storedParentPin
+                  ? "這部裝置已設定家長 PIN。"
+                  : "尚未設定家長 PIN，可在此新增。"}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black",
+                storedParentPin
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-slate-100 text-slate-500",
+              )}
+            >
+              {storedParentPin ? (
+                <ShieldCheck className="h-4 w-4" />
+              ) : (
+                <Lock className="h-4 w-4" />
+              )}
+              {storedParentPin ? "已啟用" : "未設定"}
+            </span>
+          </div>
+
+          {editingPin ? (
+            <div className="grid gap-4 rounded-[24px] border border-slate-100 bg-slate-50/80 p-4">
+              <div className="space-y-2">
+                <Label htmlFor="parent-mode-pin" className="text-slate-600 font-bold">
+                  {storedParentPin ? "新 PIN" : "設定 PIN"}
+                </Label>
+                <Input
+                  id="parent-mode-pin"
+                  type="password"
+                  inputMode="numeric"
+                  placeholder="輸入 4 至 6 位數字"
+                  value={pinDraft}
+                  onChange={(event) => {
+                    setPinDraft(event.target.value);
+                    setPinError(null);
+                  }}
+                  className="h-11 rounded-xl border-slate-200 text-center tracking-[0.35em]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="parent-mode-pin-confirm" className="text-slate-600 font-bold">
+                  確認 PIN
+                </Label>
+                <Input
+                  id="parent-mode-pin-confirm"
+                  type="password"
+                  inputMode="numeric"
+                  placeholder="再次輸入 PIN"
+                  value={confirmPinDraft}
+                  onChange={(event) => {
+                    setConfirmPinDraft(event.target.value);
+                    setPinError(null);
+                  }}
+                  className="h-11 rounded-xl border-slate-200 text-center tracking-[0.35em]"
+                />
+              </div>
+
+              {pinError && (
+                <p className="text-sm font-medium text-rose-500">{pinError}</p>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  onClick={handleSaveParentPin}
+                  className="rounded-full bg-slate-800 px-5 font-bold text-white hover:bg-slate-700"
+                >
+                  儲存 PIN
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetPinForm}
+                  className="rounded-full px-5 font-bold"
+                >
+                  取消
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                onClick={() => setEditingPin(true)}
+                className="rounded-full bg-amber-500 px-5 font-bold text-white hover:bg-amber-600"
+              >
+                {storedParentPin ? "更改 PIN" : "設定 PIN"}
+              </Button>
+              {storedParentPin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleRemoveParentPin}
+                  className="rounded-full border-rose-200 px-5 font-bold text-rose-600 hover:bg-rose-50"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  移除 PIN
+                </Button>
+              )}
+            </div>
+          )}
+
+          <p className="text-xs leading-relaxed text-slate-500">
+            PIN 只會儲存在目前這部裝置上。若你常用平板或手機讓小朋友學習，建議在該裝置也設定同一組 PIN。
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Community Sharing */}
       <Card className="border-none shadow-sm bg-white rounded-[28px]">
