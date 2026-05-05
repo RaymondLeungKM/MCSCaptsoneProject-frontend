@@ -15,6 +15,8 @@ export interface Word {
   difficulty: "easy" | "medium" | "hard";
   mastered: boolean;
   exposureCount: number;
+  pendingActiveVocabApproval?: boolean;
+  activeVocabRequestedAt?: Date;
   lastPracticed?: Date;
   // New fields for enhanced learning
   physicalAction?: string; // e.g., "Flap your arms like wings"
@@ -42,6 +44,8 @@ export interface ChildProfile {
   name: string;
   avatar: string;
   age: number;
+  birthYear?: number | null;
+  birthMonth?: number | null;
   level: number;
   xp: number;
   wordsLearned: number;
@@ -121,7 +125,12 @@ export interface ProgressStats {
   masteredWords: number;
   weeklyProgress: number[];
   streakDays: number;
-  categoryProgress: { category: string; progress: number }[];
+  categoryProgress: {
+    category: string;
+    progress: number;
+    mastered?: number;
+    total?: number;
+  }[];
   // New analytics
   averageExposuresPerWord: number;
   activeVocabulary: number; // Words used in output

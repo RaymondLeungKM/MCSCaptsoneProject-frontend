@@ -953,18 +953,20 @@ function LearningCalendar({
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1.5">
           {calendarCells.map((cell, idx) => {
-            if (!cell.day || !cell.dateStr) {
+            const dateStr = cell.dateStr;
+
+            if (!cell.day || !dateStr) {
               return <div key={`empty-${idx}`} className="aspect-square" />;
             }
-            const count = dateCountMap[cell.dateStr] ?? 0;
-            const isToday = cell.dateStr === todayStr;
-            const isSelected = cell.dateStr === selectedDate;
+            const count = dateCountMap[dateStr] ?? 0;
+            const isToday = dateStr === todayStr;
+            const isSelected = dateStr === selectedDate;
             const hasWords = count > 0;
 
             return (
               <button
-                key={cell.dateStr}
-                onClick={() => handleDayClick(cell.dateStr)}
+                key={dateStr}
+                onClick={() => handleDayClick(dateStr)}
                 className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-xl text-sm font-bold transition-all duration-150",
                   isSelected

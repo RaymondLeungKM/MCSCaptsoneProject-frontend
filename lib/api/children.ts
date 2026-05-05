@@ -7,6 +7,8 @@ import type { ChildProfile, LanguagePreference } from "../types";
 export interface ChildCreateRequest {
   name: string;
   age: number;
+  birth_year?: number | null;
+  birth_month?: number | null;
   avatar?: string;
   daily_goal?: number;
   learning_style?: "visual" | "auditory" | "kinesthetic" | "mixed";
@@ -23,6 +25,8 @@ export interface ChildResponse {
   name: string;
   avatar: string;
   age: number;
+  birth_year?: number | null;
+  birth_month?: number | null;
   level: number;
   xp: number;
   words_learned: number;
@@ -96,6 +100,8 @@ export function toChildProfile(response: ChildResponse): ChildProfile {
     name: response.name,
     avatar: response.avatar,
     age: response.age,
+    birthYear: response.birth_year ?? null,
+    birthMonth: response.birth_month ?? null,
     level: response.level,
     xp: response.xp,
     wordsLearned: response.words_learned,

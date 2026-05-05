@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -17,7 +17,10 @@ import { cn } from "@/lib/utils";
 import { getWordText, getDefinition, getExample } from "@/lib/language-utils";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { AISentences } from "@/components/child/ai-sentences";
-import { updateWordProgress } from "@/lib/api/vocabulary";
+import {
+  updateWordProgress,
+  requestActiveVocabApproval,
+} from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
 
 interface WordDetailModalProps {
@@ -84,6 +87,8 @@ const DIFFICULTY_CONFIG = {
   },
 };
 
+const EXPOSURE_GOAL = 6;
+
 export function WordDetailModal({
   word,
   onClose,
@@ -93,58 +98,86 @@ export function WordDetailModal({
 }: WordDetailModalProps) {
   const { playWord, playSentence, isPlaying, isLoading } = useWordAudio();
   const [mastered, setMastered] = useState(false);
-  const [markingMastered, setMarkingMastered] = useState(false);
-  const [justMastered, setJustMastered] = useState(false);
-  const exposureRecorded = useRef(false);
+  const [pendingParentApproval, setPendingParentApproval] = useState(false);
+  const [requestingParentApproval, setRequestingParentApproval] =
+    useState(false);
+  const [exposureCount, setExposureCount] = useState(0);
+  const [recordingExposure, setRecordingExposure] = useState(false);
 
   // Reset state when a new word is opened
   useEffect(() => {
     if (!word) return;
     setMastered(word.mastered ?? false);
-    setJustMastered(false);
-    exposureRecorded.current = false;
+    setPendingParentApproval(word.pendingActiveVocabApproval ?? false);
+    setExposureCount(word.exposureCount ?? 0);
+    setRecordingExposure(false);
   }, [word?.id]);
 
-  // Record an exposure once when the modal opens for this word
-  useEffect(() => {
-    if (!word || !childId || exposureRecorded.current) return;
-    exposureRecorded.current = true;
-    const nextCount = (word.exposureCount ?? 0) + 1;
-    // Update word progress and track in DailyWordTracking (needed for today_progress)
-    Promise.allSettled([
-      updateWordProgress(word.id, childId, { exposure_count: nextCount }),
-      trackDailyWord({
-        child_id: childId,
-        word_id: word.id,
-        date: new Date().toISOString(),
-        exposure_count: 1,
-        used_actively: false,
-        mastery_confidence: 0.3,
-        learned_context: {
-          activity: "word_detail",
-          source: "vocabulary_modal",
-        },
-        include_in_story: true,
-        story_priority: 5,
-      }),
-    ]).then(() => onProgressUpdate?.(word.id, mastered, nextCount));
-  }, [word?.id, childId]);
+  const recordExposure = async (
+    activity: string,
+    options?: {
+      masteryConfidence?: number;
+      storyPriority?: number;
+    },
+  ) => {
+    if (!word || !childId || recordingExposure) return;
 
-  // One-way: mark a word as mastered (cannot be reverted via the UI)
-  const handleMarkMastered = async () => {
-    if (!word || !childId || markingMastered || mastered) return;
-    setMarkingMastered(true);
+    const nextCount = exposureCount + 1;
+    setRecordingExposure(true);
+
     try {
-      await updateWordProgress(word.id, childId, { mastered: true });
-      setMastered(true);
-      setJustMastered(true);
-      onProgressUpdate?.(word.id, true, word.exposureCount ?? 0);
-      // Brief celebration flash then settle
-      setTimeout(() => setJustMastered(false), 2000);
+      const progress = await updateWordProgress(word.id, childId, {
+        exposure_count: nextCount,
+      });
+
+      setExposureCount(progress.exposure_count);
+      onProgressUpdate?.(word.id, mastered, progress.exposure_count);
+
+      try {
+        await trackDailyWord({
+          child_id: childId,
+          word_id: word.id,
+          date: new Date().toISOString(),
+          exposure_count: 1,
+          used_actively: false,
+          mastery_confidence: options?.masteryConfidence ?? 0.35,
+          learned_context: {
+            activity,
+            source: "vocabulary_modal",
+          },
+          include_in_story: true,
+          story_priority: options?.storyPriority ?? 5,
+        });
+      } catch (trackingError) {
+        console.warn("Failed to track exposure", trackingError);
+      }
     } catch {
       /* silent */
     } finally {
-      setMarkingMastered(false);
+      setRecordingExposure(false);
+    }
+  };
+
+  const handleRequestParentApproval = async () => {
+    if (
+      !word ||
+      !childId ||
+      requestingParentApproval ||
+      mastered ||
+      pendingParentApproval
+    ) {
+      return;
+    }
+
+    setRequestingParentApproval(true);
+    try {
+      const progress = await requestActiveVocabApproval(word.id, childId);
+      setPendingParentApproval(progress.pending_active_vocab_approval);
+      setMastered(progress.mastered);
+    } catch {
+      /* silent */
+    } finally {
+      setRequestingParentApproval(false);
     }
   };
 
@@ -159,18 +192,74 @@ export function WordDetailModal({
   const heroBorder = PASTEL_BORDER[colorKey] ?? PASTEL_BORDER.blue;
 
   const diff = DIFFICULTY_CONFIG[word.difficulty] ?? DIFFICULTY_CONFIG.easy;
+  const exposureProgress = Math.min(exposureCount, EXPOSURE_GOAL);
+  const exposureRemaining = Math.max(EXPOSURE_GOAL - exposureCount, 0);
+  const exposureProgressPercent = (exposureProgress / EXPOSURE_GOAL) * 100;
+  const reachedExposureGoal = exposureCount >= EXPOSURE_GOAL;
+
+  const exposureHeadline =
+    languagePreference === "english"
+      ? reachedExposureGoal
+        ? "Memory stars complete!"
+        : `Collected ${exposureProgress} of ${EXPOSURE_GOAL} memory stars`
+      : reachedExposureGoal
+        ? "記憶小星星集齊啦！"
+        : `已收集 ${exposureProgress} / ${EXPOSURE_GOAL} 粒記憶小星星`;
+
+  const exposureEncouragement =
+    languagePreference === "english"
+      ? reachedExposureGoal
+        ? "Amazing! This word has passed the practice goal and is getting easier to remember."
+        : exposureCount === 0
+          ? "Tap Listen to light up the first memory star."
+          : `Just ${exposureRemaining} more star${exposureRemaining === 1 ? "" : "s"} to reach today's memory goal!`
+      : reachedExposureGoal
+        ? "太叻啦！這個詞語已超過練習目標，會更容易記住。"
+        : exposureCount === 0
+          ? "按一下聆聽發音，先點亮第一粒記憶小星星吧！"
+          : `再收集 ${exposureRemaining} 粒小星星，就到達今日記憶目標！`;
 
   const handlePlayWord = () => {
     void playWord(word, { languagePreference, speechRate: 0.8 });
+    void recordExposure("listen_pronunciation", {
+      masteryConfidence: 0.35,
+      storyPriority: 5,
+    });
   };
 
   const handlePlayExample = () => {
     void playSentence(example, { languagePreference, speechRate: 0.8 });
+    void recordExposure("listen_example", {
+      masteryConfidence: 0.45,
+      storyPriority: 6,
+    });
   };
 
   const showCantonese = languagePreference !== "english" && word.word_cantonese;
   const showEnglishSub =
     languagePreference === "cantonese" && word.word_cantonese;
+  const activeVocabularyLabel =
+    languagePreference === "english" ? "Active vocabulary" : "主動詞彙";
+  const requestParentApprovalLabel =
+    languagePreference === "english" ? "Ask parent to confirm" : "請家長確認";
+  const pendingApprovalLabel =
+    languagePreference === "english" ? "Waiting for parent" : "等待家長確認";
+  const activeVocabularyHint =
+    languagePreference === "english"
+      ? "Collect all 6 memory stars first. Then ask a parent to confirm it in the parent dashboard."
+      : "先集齊 6 粒記憶小星星，之後才可以在這裡送出請求，再由家長到家長中心確認。";
+  const activeVocabularyPendingHint =
+    languagePreference === "english"
+      ? "A request has been sent. The word will count as active vocabulary only after a parent approves it."
+      : "已送出確認請求。這個詞語要等家長在家長中心批准後，才會計入主動詞彙。";
+  const activeVocabularyCompleteHint =
+    languagePreference === "english"
+      ? "This word is already counted in active vocabulary."
+      : "這個詞語已經計入主動詞彙。";
+  const collectStarsFirstLabel =
+    languagePreference === "english"
+      ? `Collect ${EXPOSURE_GOAL} stars first`
+      : `先集齊 ${EXPOSURE_GOAL} 粒星`;
 
   const modal = (
     <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
@@ -281,10 +370,108 @@ export function WordDetailModal({
             {mastered && (
               <span className="px-3 py-1 rounded-full text-xs font-bold border bg-green-50 text-green-600 border-green-200 flex items-center gap-1">
                 <Check className="w-3 h-3" />
-                {languagePreference === "english" ? "Mastered" : "已掌握"}
+                {activeVocabularyLabel}
               </span>
             )}
           </div>
+
+          {childId && (
+            <div className="mt-4 w-full max-w-sm rounded-[28px] border border-white/70 bg-white/70 px-4 py-4 shadow-md backdrop-blur-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm",
+                      reachedExposureGoal
+                        ? "bg-linear-to-br from-yellow-300 to-orange-300 text-yellow-900"
+                        : "bg-linear-to-br from-sky-300 to-cyan-200 text-white",
+                    )}
+                  >
+                    {reachedExposureGoal ? (
+                      <PartyPopper className="h-5 w-5" />
+                    ) : (
+                      <Zap className="h-5 w-5" />
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">
+                      {languagePreference === "english"
+                        ? "Memory Stars"
+                        : "記憶小星星"}
+                    </p>
+                    <p className="mt-1 text-sm font-black text-slate-700">
+                      {exposureHeadline}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white px-3 py-2 text-right shadow-sm border border-white/80 shrink-0">
+                  <p className="text-xl font-black leading-none text-slate-700">
+                    {exposureCount}
+                  </p>
+                  <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                    {languagePreference === "english"
+                      ? reachedExposureGoal
+                        ? "stars+"
+                        : `of ${EXPOSURE_GOAL}`
+                      : reachedExposureGoal
+                        ? "星星+"
+                        : `目標 ${EXPOSURE_GOAL}`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-6 gap-2">
+                {Array.from({ length: EXPOSURE_GOAL }).map((_, index) => {
+                  const isLit = index < exposureProgress;
+
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex h-10 items-center justify-center rounded-2xl border transition-all duration-300",
+                        isLit
+                          ? "border-yellow-200 bg-linear-to-br from-yellow-200 via-amber-200 to-orange-200 text-yellow-700 shadow-sm scale-[1.03]"
+                          : "border-white/80 bg-white/70 text-slate-300",
+                      )}
+                    >
+                      <Star
+                        className={cn("h-4 w-4", isLit && "fill-current")}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/80 shadow-inner">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    reachedExposureGoal
+                      ? "bg-linear-to-r from-emerald-400 via-lime-300 to-yellow-300"
+                      : "bg-linear-to-r from-sky-400 via-cyan-300 to-emerald-300",
+                    recordingExposure && "animate-pulse",
+                  )}
+                  style={{ width: `${exposureProgressPercent}%` }}
+                />
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-xs font-bold leading-relaxed text-slate-500">
+                  {exposureEncouragement}
+                </p>
+
+                {recordingExposure && (
+                  <span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-black text-slate-400 shadow-sm">
+                    {languagePreference === "english"
+                      ? "Saving..."
+                      : "記錄中..."}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Play Button + Mastery Toggle */}
           <div className="mt-4 flex items-center gap-3">
@@ -316,50 +503,67 @@ export function WordDetailModal({
                 <div
                   className={cn(
                     "flex items-center gap-2 px-5 py-3 rounded-full font-black border-2 select-none",
-                    justMastered
-                      ? "bg-yellow-300 text-yellow-800 border-yellow-400 scale-110 shadow-lg animate-pulse"
-                      : "bg-green-100 text-green-700 border-green-300",
+                    "bg-green-100 text-green-700 border-green-300",
                     "transition-all duration-500",
                   )}
                 >
-                  {justMastered ? (
-                    <PartyPopper className="w-5 h-5" />
-                  ) : (
-                    <Check className="w-5 h-5" />
-                  )}
-                  {justMastered
-                    ? languagePreference === "english"
-                      ? "Mastered! 🎉"
-                      : "掌握了！🎉"
-                    : languagePreference === "english"
-                      ? "Mastered"
-                      : "已掌握"}
+                  <Check className="w-5 h-5" />
+                  {languagePreference === "english"
+                    ? "In active vocab"
+                    : "已列入主動詞彙"}
+                </div>
+              ) : pendingParentApproval ? (
+                <div className="flex items-center gap-2 px-5 py-3 rounded-full font-black border-2 border-amber-300 bg-amber-50 text-amber-700 select-none">
+                  <PartyPopper className="w-5 h-5" />
+                  {pendingApprovalLabel}
                 </div>
               ) : (
-                // Mark-as-mastered button — one tap, then disappears
+                // Parent-confirmation request button
                 <button
-                  onClick={handleMarkMastered}
-                  disabled={markingMastered}
+                  onClick={handleRequestParentApproval}
+                  disabled={requestingParentApproval || !reachedExposureGoal}
                   className={cn(
                     "flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition-all",
                     "duration-200 hover:scale-105 active:scale-95 border-2",
-                    markingMastered
+                    requestingParentApproval
                       ? "bg-yellow-100 text-yellow-600 border-yellow-300 opacity-70"
-                      : "bg-white/80 text-slate-500 border-white/60 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300",
+                      : !reachedExposureGoal
+                        ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-80"
+                        : "bg-white/80 text-slate-500 border-white/60 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300",
                   )}
-                  aria-label="Mark as mastered"
+                  aria-label={requestParentApprovalLabel}
                 >
                   <Star
-                    className={cn("w-5 h-5", markingMastered && "animate-spin")}
+                    className={cn(
+                      "w-5 h-5",
+                      requestingParentApproval && "animate-spin",
+                    )}
                   />
-                  {markingMastered
+                  {requestingParentApproval
                     ? "..."
-                    : languagePreference === "english"
-                      ? "I know it!"
-                      : "我識啦！"}
+                    : reachedExposureGoal
+                      ? requestParentApprovalLabel
+                      : collectStarsFirstLabel}
                 </button>
               ))}
           </div>
+
+          {childId && (
+            <div className="mt-3 space-y-1 text-center text-xs font-bold text-slate-500">
+              <p>
+                {languagePreference === "english"
+                  ? "Each tap lights up a memory star when you listen or play the example."
+                  : "每次聽發音或播放例句，都會點亮一粒記憶小星星。"}
+              </p>
+              <p className="text-emerald-600">
+                {mastered
+                  ? activeVocabularyCompleteHint
+                  : pendingParentApproval
+                    ? activeVocabularyPendingHint
+                    : activeVocabularyHint}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── SCROLLABLE BODY ─────────────────────────────────── */}

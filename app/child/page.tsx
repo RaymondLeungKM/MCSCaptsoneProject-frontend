@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   Bell,
@@ -24,6 +24,7 @@ import { CategoryGrid } from "@/components/child/category-grid";
 import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
 import { CommunityFeed } from "@/components/child/community-feed";
 import { GamesList } from "@/components/child/game-card";
+import { ChildMissionsPanel } from "@/components/child/child-missions-panel";
 import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
 import { ProfileView } from "@/components/views/profile-view";
@@ -229,8 +230,9 @@ function localizeAdaptiveReason(reason?: string | null): string {
   return trimmedReason;
 }
 
-export default function ChildDashboard() {
+function ChildDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("home");
@@ -271,6 +273,23 @@ export default function ChildDashboard() {
     reason: string;
   } | null>(null);
   const wordAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+
+    if (
+      requestedTab === "home" ||
+      requestedTab === "learn" ||
+      requestedTab === "games" ||
+      requestedTab === "stories" ||
+      requestedTab === "community" ||
+      requestedTab === "ai" ||
+      requestedTab === "profile" ||
+      requestedTab === "rewards"
+    ) {
+      setActiveTab(requestedTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -1039,6 +1058,8 @@ export default function ChildDashboard() {
                 </div>
               )}
 
+              <ChildMissionsPanel childId={profile.id} />
+
               <DailyWordsViewer
                 childId={profile.id}
                 childName={profile.name}
@@ -1234,12 +1255,35 @@ export default function ChildDashboard() {
           <QuizGame childId={profile.id} onClose={() => setActiveGame(null)} />
         )}
         {activeGame === "word-builder" && (
-          <WordBuilderGame childId={profile.id} onClose={() => setActiveGame(null)} />
+          <WordBuilderGame
+            childId={profile.id}
+            onClose={() => setActiveGame(null)}
+          />
         )}
         {activeGame === "speaking" && (
-          <SpeakingGame childId={profile.id} onClose={() => setActiveGame(null)} />
+          <SpeakingGame
+            childId={profile.id}
+            onClose={() => setActiveGame(null)}
+          />
         )}
       </div>
     </CozyPageWrapper>
+  );
+}
+
+export default function ChildDashboard() {
+  return (
+    <Suspense
+      fallback={
+        <CozyPageWrapper type="dashboard">
+          <div className="w-full px-4 py-8 space-y-6">
+            <Skeleton className="h-44 w-full rounded-4xl" />
+            <Skeleton className="h-72 w-full rounded-[40px]" />
+          </div>
+        </CozyPageWrapper>
+      }
+    >
+      <ChildDashboardContent />
+    </Suspense>
   );
 }

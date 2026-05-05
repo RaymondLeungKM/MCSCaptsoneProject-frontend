@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import type { Category, LanguagePreference, Word } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getCategoryName, getWordText } from "@/lib/language-utils";
@@ -8,6 +13,7 @@ import { Sparkles, Play, ArrowLeft, Volume2, Check } from "lucide-react";
 import { getWords, getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
+import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -82,8 +88,7 @@ export function CategoryGrid({
         if (!cancelled) setCategoryWords(words);
       })
       .catch(() => {
-        if (!cancelled)
-          setWordsError("載入詞語失敗，請稍後再試。");
+        if (!cancelled) setWordsError("載入詞語失敗，請稍後再試。");
       })
       .finally(() => {
         if (!cancelled) setIsLoadingWords(false);
@@ -119,13 +124,34 @@ export function CategoryGrid({
     }
   };
 
-  const handlePlayWord = (e: React.MouseEvent, word: Word) => {
+  const handleWordActivate = (word: Word) => {
+    if (onWordSelect) {
+      onWordSelect(word);
+    } else {
+      setSelectedWord(word);
+    }
+  };
+
+  const handleWordCardKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    word: Word,
+  ) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleWordActivate(word);
+    }
+  };
+
+  const handlePlayWord = (e: MouseEvent<HTMLButtonElement>, word: Word) => {
     e.stopPropagation();
     void playWord(word, { languagePreference, speechRate: 0.75 });
   };
 
-  const headerText =
-    "探索主題";
+  const headerText = "探索主題";
   const subHeaderText = "選擇一個主題開始學習";
 
   // ── WORD LIST VIEW ──────────────────────────────────────────────────────────
@@ -162,7 +188,9 @@ export function CategoryGrid({
                   {catName}
                 </h2>
                 <p className="text-xs font-bold text-slate-400">
-                  {isLoadingWords ? "載入中…" : `${categoryWords.length} 個詞語`}
+                  {isLoadingWords
+                    ? "載入中…"
+                    : `${categoryWords.length} 個詞語`}
                 </p>
               </div>
             </div>
@@ -192,9 +220,7 @@ export function CategoryGrid({
           {!isLoadingWords && !wordsError && categoryWords.length === 0 && (
             <div className="text-center py-12">
               <p className="text-5xl mb-3">🔍</p>
-              <p className="text-slate-500 font-bold text-sm">
-                暫時還沒有詞語
-              </p>
+              <p className="text-slate-500 font-bold text-sm">暫時還沒有詞語</p>
             </div>
           )}
 
@@ -205,18 +231,15 @@ export function CategoryGrid({
                 const wordText = getWordText(word, languagePreference);
 
                 return (
-                  <button
+                  <div
                     key={word.id}
-                    onClick={() => {
-                      if (onWordSelect) {
-                        onWordSelect(word);
-                      } else {
-                        setSelectedWord(word);
-                      }
-                    }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleWordActivate(word)}
+                    onKeyDown={(event) => handleWordCardKeyDown(event, word)}
                     className={cn(
                       "group relative flex flex-col items-center justify-start p-4 h-44 rounded-[28px] border-[3px]",
-                      "transition-all duration-300 shadow-sm text-left",
+                      "cursor-pointer transition-all duration-300 shadow-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                       colorClass,
                       word.mastered && "ring-2 ring-green-400 ring-offset-1",
                     )}
@@ -265,8 +288,18 @@ export function CategoryGrid({
                       </span>
                     )}
 
+                    {childId && (
+                      <MemoryStarsProgress
+                        exposureCount={word.exposureCount}
+                        languagePreference={languagePreference}
+                        variant="badge"
+                        className="mt-2"
+                      />
+                    )}
+
                     {/* Audio Button */}
                     <button
+                      type="button"
                       onClick={(e) => handlePlayWord(e, word)}
                       className="absolute bottom-3 right-3 bg-white/70 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-200 hover:scale-110"
                       aria-label={`播放 ${word.word_cantonese || word.word}`}
@@ -278,7 +311,7 @@ export function CategoryGrid({
                         )}
                       />
                     </button>
-                  </button>
+                  </div>
                 );
               })}
             </div>

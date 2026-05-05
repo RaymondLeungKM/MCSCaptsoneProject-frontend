@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Brain,
@@ -13,17 +14,29 @@ import {
   Sparkles,
   ArrowRight,
   Info,
+  RefreshCw,
   Star, // <--- Added missing import
   CheckCircle2, // Used for the check icons
 } from "lucide-react";
-import type { ChildProfile, Word, LearningSession } from "@/lib/types";
+import type {
+  ChildProfile,
+  Word,
+  LearningSession,
+  ProgressStats,
+} from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   generateParentInsights,
   getAdaptiveLearningRecommendation,
 } from "@/lib/adaptive-learning";
+import {
+  getRecommendations,
+  type AdaptiveLearningRecommendation as ApiAdaptiveLearningRecommendation,
+} from "@/lib/api/adaptive";
 import {
   words as mockWords,
   childProfile as mockChildProfile,
@@ -32,64 +45,181 @@ import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { getAuthToken } from "@/lib/api/client";
 import { getDailyStats } from "@/lib/api/progress";
 import { getChild } from "@/lib/api/children";
-import { cn } from "@/lib/utils";
 
 interface InsightsTabProps {
   childId?: string;
+  stats?: ProgressStats;
 }
 
-export function InsightsTab({ childId }: InsightsTabProps = {}) {
-  const [profile, setProfile] = useState<ChildProfile>(mockChildProfile);
-  const [words, setWords] = useState<Word[]>(mockWords);
-  const [recentSessions, setRecentSessions] = useState<LearningSession[]>([
-    {
-      id: "mock-1",
-      childId: mockChildProfile.id,
-      date: new Date(),
-      duration: 15,
-      wordsEncountered: ["elephant", "giraffe", "apple", "butterfly"],
-      wordsUsedActively: ["elephant", "apple"],
-      engagementLevel: "high",
-      activitiesCompleted: ["story", "charades"],
-    },
-  ]);
-  const [loading, setLoading] = useState(true);
+interface InsightsRecommendation {
+  nextWords: Word[];
+  recommendedActivity: string;
+  reason: string;
+  estimatedDuration: number;
+  styleExplanation?: string;
+  suggestedActivities?: string[];
+}
 
-  // Check if we have a real child ID (not mock)
+const MOCK_RECENT_SESSIONS: LearningSession[] = [
+  {
+    id: "mock-1",
+    childId: mockChildProfile.id,
+    date: new Date(),
+    duration: 15,
+    wordsEncountered: ["elephant", "giraffe", "apple", "butterfly"],
+    wordsUsedActively: ["elephant", "apple"],
+    engagementLevel: "high",
+    activitiesCompleted: ["story", "charades"],
+  },
+];
+
+function createEmptyProfile(childId?: string): ChildProfile {
+  return {
+    id: childId ?? "",
+    name: "小朋友",
+    avatar: "👧",
+    age: 0,
+    level: 1,
+    xp: 0,
+    wordsLearned: 0,
+    currentStreak: 0,
+    interests: [],
+    dailyGoal: 10,
+    todayProgress: 0,
+    learningStyle: "mixed",
+    languagePreference: "bilingual",
+    attentionSpan: 15,
+    preferredTimeOfDay: "afternoon",
+  };
+}
+
+function buildLocalRecommendation(
+  allWords: Word[],
+  profile: ChildProfile,
+): InsightsRecommendation | null {
+  if (allWords.length === 0) {
+    return null;
+  }
+
+  const recommendation = getAdaptiveLearningRecommendation(
+    allWords,
+    profile,
+    profile.attentionSpan || 15,
+  );
+
+  return {
+    nextWords: recommendation.nextWords,
+    recommendedActivity: recommendation.recommendedActivity,
+    reason: recommendation.reason,
+    estimatedDuration: recommendation.estimatedDuration,
+    styleExplanation: undefined,
+    suggestedActivities: undefined,
+  };
+}
+
+function buildApiRecommendation(
+  apiRecommendation: ApiAdaptiveLearningRecommendation,
+  allWords: Word[],
+  fallbackProfile: ChildProfile,
+): InsightsRecommendation | null {
+  const nextWords = apiRecommendation.next_words
+    .map((wordId) => allWords.find((word) => word.id === wordId))
+    .filter((word): word is Word => Boolean(word));
+
+  if (nextWords.length === 0 && allWords.length === 0) {
+    return null;
+  }
+
+  return {
+    nextWords,
+    recommendedActivity: apiRecommendation.recommended_activity,
+    reason: apiRecommendation.reason,
+    estimatedDuration:
+      apiRecommendation.estimated_duration ||
+      fallbackProfile.attentionSpan ||
+      15,
+    styleExplanation: apiRecommendation.style_explanation,
+    suggestedActivities: apiRecommendation.suggested_activities,
+  };
+}
+
+export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
+  const router = useRouter();
+
   const isMockData =
     !childId ||
     childId === "1" ||
     childId === "mock-child-id" ||
     childId.length < 10;
 
-  // Fetch real data if we have a real child ID
-  useEffect(() => {
-    async function loadRealData() {
+  const [profile, setProfile] = useState<ChildProfile>(() =>
+    isMockData ? mockChildProfile : createEmptyProfile(childId),
+  );
+  const [words, setWords] = useState<Word[]>(() =>
+    isMockData ? mockWords : [],
+  );
+  const [recentSessions, setRecentSessions] = useState<LearningSession[]>(() =>
+    isMockData ? MOCK_RECENT_SESSIONS : [],
+  );
+  const [recommendation, setRecommendation] =
+    useState<InsightsRecommendation | null>(() =>
+      isMockData ? buildLocalRecommendation(mockWords, mockChildProfile) : null,
+    );
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadRealData = useCallback(
+    async (options?: { background?: boolean }) => {
+      const isBackgroundRefresh = options?.background === true;
+
       if (isMockData) {
+        setProfile(mockChildProfile);
+        setWords(mockWords);
+        setRecentSessions(MOCK_RECENT_SESSIONS);
+        setRecommendation(
+          buildLocalRecommendation(mockWords, mockChildProfile),
+        );
         setLoading(false);
+        setRefreshing(false);
         return;
+      }
+
+      const fallbackProfile = createEmptyProfile(childId);
+
+      if (isBackgroundRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+        setProfile(fallbackProfile);
+        setWords([]);
+        setRecentSessions([]);
+        setRecommendation(null);
       }
 
       try {
         const token = getAuthToken();
         if (!token) {
           console.log("No auth token, using mock data");
-          setLoading(false);
+          setRecommendation(null);
           return;
         }
 
-        // Fetch child profile, words, and daily stats in parallel
-        const [childResult, wordsResult, statsResult] =
+        // Fetch child profile, words, daily stats, and adaptive recommendation in parallel
+        const [childResult, wordsResult, statsResult, recommendationResult] =
           await Promise.allSettled([
             getChild(childId!),
             getWordsWithProgress(childId!),
             getDailyStats(childId!, 7),
+            getRecommendations(childId!),
           ]);
+
+        let resolvedProfile = fallbackProfile;
+        let resolvedWords: Word[] = [];
 
         // Update profile with real data
         if (childResult.status === "fulfilled") {
           const c = childResult.value;
-          setProfile({
+          resolvedProfile = {
             id: c.id,
             name: c.name,
             avatar: c.avatar,
@@ -103,18 +233,17 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
             languagePreference: c.language_preference || "bilingual",
             dailyGoal: c.daily_goal || 10,
             todayProgress: 0,
-            attentionSpan: 15,
+            attentionSpan: c.attention_span || 15,
             preferredTimeOfDay: "afternoon",
-          });
+          };
+          setProfile(resolvedProfile);
         }
 
         // Update words
         if (wordsResult.status === "fulfilled") {
-          const loadedWords = wordsResult.value.map((w) =>
-            toWord(w, w.progress),
-          );
-          setWords(loadedWords);
-          console.log(`[Insights] Loaded ${loadedWords.length} words`);
+          resolvedWords = wordsResult.value.map((w) => toWord(w, w.progress));
+          setWords(resolvedWords);
+          console.log(`[Insights] Loaded ${resolvedWords.length} words`);
         }
 
         // Build approximate LearningSession objects from daily stats
@@ -147,26 +276,78 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
             `[Insights] Built ${sessions.length} sessions from stats`,
           );
         }
+
+        let resolvedRecommendation =
+          recommendationResult.status === "fulfilled"
+            ? buildApiRecommendation(
+                recommendationResult.value,
+                resolvedWords,
+                resolvedProfile,
+              )
+            : null;
+
+        if (
+          (!resolvedRecommendation ||
+            resolvedRecommendation.nextWords.length === 0) &&
+          resolvedWords.length > 0
+        ) {
+          resolvedRecommendation = buildLocalRecommendation(
+            resolvedWords,
+            resolvedProfile,
+          );
+        }
+
+        setRecommendation(resolvedRecommendation);
       } catch (error) {
         console.error("Failed to load data for insights:", error);
       } finally {
-        setLoading(false);
+        if (isBackgroundRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
       }
+    },
+    [childId, isMockData],
+  );
+
+  useEffect(() => {
+    void loadRealData();
+  }, [loadRealData]);
+
+  useEffect(() => {
+    if (isMockData) {
+      return;
     }
 
-    loadRealData();
-  }, [childId, isMockData]);
+    const handleWindowFocus = () => {
+      void loadRealData({ background: true });
+    };
 
-  const insights = generateParentInsights(profile, words, recentSessions);
-  const recommendation = getAdaptiveLearningRecommendation(words, profile, 15);
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [isMockData, loadRealData]);
+
+  const insights =
+    words.length > 0
+      ? generateParentInsights(profile, words, recentSessions)
+      : [
+          `${profile.name} 暫時還未有足夠的學習數據，完成更多練習後會顯示更準確的個人化建議。`,
+        ];
 
   // Calculate stats
-  const activeVocab = words.filter((w) => w.mastered).length;
-  const passiveVocab = words.filter(
-    (w) => !w.mastered && w.exposureCount > 0,
-  ).length;
+  const activeVocab =
+    stats?.activeVocabulary ?? words.filter((w) => w.mastered).length;
+  const passiveVocab =
+    stats?.passiveVocabulary ??
+    words.filter((w) => !w.mastered && w.exposureCount > 0).length;
   const needingExposure = words.filter((w) => w.exposureCount < 6).length;
   const wellLearned = words.filter((w) => w.exposureCount >= 6).length;
+  const masteredProgress =
+    words.length > 0 ? (wellLearned / words.length) * 100 : 0;
 
   // Translation Helper for Learning Styles
   const getStyleLabel = (style: string) => {
@@ -202,12 +383,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
   const getRecommendedActivities = (style: string) => {
     switch (style) {
       case "kinesthetic":
-        return [
-          "做動作猜謎",
-          "肢體動作遊戲",
-          "實物尋寶",
-          "角色扮演",
-        ];
+        return ["做動作猜謎", "肢體動作遊戲", "實物尋寶", "角色扮演"];
       case "visual":
         return ["圖像配對遊戲", "彩色閃卡", "繪本閱讀", "繪畫與填色"];
       case "auditory":
@@ -222,13 +398,56 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
     const map: { [key: string]: string } = {
       story: "故事時間",
       game: "互動遊戲",
+      learn: "開始學習",
+      mixed: "綜合練習",
       flashcards: "閃卡練習",
       song: "唱遊時間",
       quiz: "小測驗",
+      matching: "配對遊戲",
+      ispy: "找找看",
+      pronunciation: "發音練習",
       charades: "做動作猜謎",
+      actions: "動感學習",
+      scavenger: "實物尋寶",
     };
     return map[activity.toLowerCase()] || activity;
   };
+
+  const getRecommendedTab = (activity: string) => {
+    switch (activity.toLowerCase()) {
+      case "story":
+        return "stories";
+      case "game":
+      case "matching":
+      case "ispy":
+      case "pronunciation":
+      case "charades":
+      case "actions":
+      case "scavenger":
+        return "games";
+      default:
+        return "learn";
+    }
+  };
+
+  const handleOpenRecommendedActivity = () => {
+    if (!recommendation) {
+      return;
+    }
+
+    router.push(
+      `/child?tab=${getRecommendedTab(recommendation.recommendedActivity)}`,
+    );
+  };
+
+  const learningStyleDescription =
+    recommendation?.styleExplanation ||
+    getStyleDescription(profile.learningStyle);
+  const learningStyleActivities =
+    recommendation?.suggestedActivities &&
+    recommendation.suggestedActivities.length > 0
+      ? recommendation.suggestedActivities
+      : getRecommendedActivities(profile.learningStyle);
 
   if (loading) {
     return (
@@ -319,11 +538,26 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
 
       {/* --- EXPOSURE TRACKING --- */}
       <Card className="border-none shadow-sm bg-white rounded-[28px]">
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
             <Target className="w-6 h-6 text-orange-500" />
             詞彙接觸頻率追蹤
           </CardTitle>
+          {!isMockData && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => void loadRealData({ background: true })}
+              disabled={refreshing}
+              className="text-slate-500 hover:text-slate-700"
+            >
+              <RefreshCw
+                className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
+              />
+              更新數據
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6 pt-4">
           <div className="space-y-3">
@@ -336,7 +570,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
             <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${(wellLearned / words.length) * 100}%` }}
+                style={{ width: `${masteredProgress}%` }}
               />
             </div>
           </div>
@@ -400,48 +634,79 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
         </CardHeader>
 
         <CardContent className="space-y-6 relative z-10">
-          <div className="grid grid-cols-2 gap-6 p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
-            <div>
-              <p className="text-xs text-slate-400 uppercase font-bold mb-1">
-                活動類型
-              </p>
-              <p className="text-xl font-bold capitalize text-white flex items-center gap-2">
-                {getActivityLabel(recommendation.recommendedActivity)}{" "}
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 uppercase font-bold mb-1">
-                建議時間
-              </p>
-              <p className="text-xl font-bold text-white">
-                {recommendation.estimatedDuration} 分鐘
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-slate-400 font-bold uppercase mb-3">
-              重點詞彙
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {recommendation.nextWords.map((word) => (
-                <Badge
-                  key={word.id}
-                  className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
+          {recommendation ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10 md:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={handleOpenRecommendedActivity}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                 >
-                  {word.word}
-                </Badge>
-              ))}
-            </div>
-          </div>
+                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">
+                    活動類型
+                  </p>
+                  <p className="text-xl font-bold text-white flex items-center gap-2">
+                    {getActivityLabel(recommendation.recommendedActivity)}
+                    <ArrowRight className="w-4 h-4 text-emerald-300" />
+                  </p>
+                  <p className="mt-2 text-sm text-slate-300">
+                    按一下前往孩子頁面開始這個活動
+                  </p>
+                </button>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">
+                    建議時間
+                  </p>
+                  <p className="text-xl font-bold text-white">
+                    {recommendation.estimatedDuration} 分鐘
+                  </p>
+                </div>
+              </div>
 
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-            <p className="text-sm text-emerald-100 leading-relaxed">
-              <strong className="text-emerald-400 block mb-1">推薦原因</strong>
-              {recommendation.reason}
-            </p>
-          </div>
+              <div>
+                <p className="text-sm text-slate-400 font-bold uppercase mb-3">
+                  重點詞彙
+                </p>
+                {recommendation.nextWords.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {recommendation.nextWords.map((word) => (
+                      <Badge
+                        key={word.id}
+                        className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
+                      >
+                        {word.word}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-300">
+                    暫時未能整理出建議詞彙，完成更多練習後會更新。
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                <p className="text-sm text-emerald-100 leading-relaxed">
+                  <strong className="text-emerald-400 block mb-1">
+                    推薦原因
+                  </strong>
+                  {recommendation.reason}
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleOpenRecommendedActivity}
+                className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300 font-black rounded-full"
+              >
+                前往 {getActivityLabel(recommendation.recommendedActivity)}
+              </Button>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200">
+              暫時未有足夠的活動建議數據，待孩子完成更多學習後會自動更新。
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -466,7 +731,7 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
                 {getStyleLabel(profile.learningStyle)}
               </h3>
               <p className="text-pink-800/80 font-medium">
-                {getStyleDescription(profile.learningStyle)}
+                {learningStyleDescription}
               </p>
             </div>
           </div>
@@ -477,19 +742,17 @@ export function InsightsTab({ childId }: InsightsTabProps = {}) {
               建議活動
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {getRecommendedActivities(profile.learningStyle).map(
-                (activity, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
-                    <span className="text-slate-600 font-medium text-sm">
-                      {activity}
-                    </span>
-                  </div>
-                ),
-              )}
+              {learningStyleActivities.map((activity, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
+                >
+                  <div className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
+                  <span className="text-slate-600 font-medium text-sm">
+                    {activity}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
