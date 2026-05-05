@@ -54,13 +54,13 @@ const navItems = [
     activeBg: "bg-teal-400",
     activeText: "text-teal-600",
   },
-  {
-    id: "ai",
-    icon: Brain,
-    label: "智能",
-    activeBg: "bg-violet-400",
-    activeText: "text-violet-600",
-  },
+  // {
+  //   id: "ai",
+  //   icon: Brain,
+  //   label: "智能",
+  //   activeBg: "bg-violet-400",
+  //   activeText: "text-violet-600",
+  // },
   {
     id: "rewards",
     icon: Trophy,
