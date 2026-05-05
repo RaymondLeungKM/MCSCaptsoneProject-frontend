@@ -97,9 +97,9 @@ const STATUS_OPTIONS: Array<{ value: MissionStatus; label: string }> = [
 ];
 
 const SURFACE_OPTIONS: Array<{ value: MissionSurface; label: string }> = [
-  { value: "parent", label: "家長端" },
-  { value: "child", label: "小朋友端" },
-  { value: "both", label: "雙端" },
+  { value: "parent", label: "家長介面" },
+  { value: "child", label: "小朋友介面" },
+  { value: "both", label: "兩個介面" },
 ];
 
 const CONTEXT_OPTIONS: Array<{ value: MissionContext; label: string }> = [
@@ -218,7 +218,7 @@ function getStatusLabel(status: MissionStatus | undefined): string {
 function getSurfaceLabel(surface: MissionSurface | undefined): string {
   return (
     SURFACE_OPTIONS.find((option) => option.value === surface)?.label ??
-    "家長端"
+    "家長介面"
   );
 }
 
@@ -677,7 +677,7 @@ export default function AdminPage() {
                 {selectedMissionId ? "編輯任務" : "建立新任務"}
               </DialogTitle>
               <DialogDescription className="text-sm font-medium text-slate-500">
-                編輯 catalog 欄位後即可影響後續任務分派與家長端顯示。
+                編輯 catalog 欄位後即可影響後續任務分派與家長介面顯示。
               </DialogDescription>
             </DialogHeader>
 

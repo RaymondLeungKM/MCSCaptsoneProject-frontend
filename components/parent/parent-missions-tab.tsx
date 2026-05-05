@@ -370,8 +370,8 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
           },
           {
             icon: "🤝",
-            title: "雙端同步",
-            desc: "雙端任務會同時在家長與小朋友端出現。",
+            title: "兩個介面同步",
+            desc: "兩個介面任務會同時在家長與小朋友介面出現。",
             color: "bg-violet-50 text-violet-700 border-violet-100",
           },
         ].map((item, index) => (
@@ -603,9 +603,9 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
           <div className="flex gap-3">
             <span className="font-bold text-indigo-400 text-lg">03</span>
             <div>
-              <strong className="block text-indigo-900">雙端任務</strong>
+              <strong className="block text-indigo-900">兩個介面任務</strong>
               <span className="text-indigo-700/80">
-                雙端只決定顯示對象；是否屬於每日任務或生活實戰任務仍由任務類型決定。
+                兩個介面只決定顯示對象；是否屬於每日任務或生活實戰任務仍由任務類型決定。
               </span>
             </div>
           </div>

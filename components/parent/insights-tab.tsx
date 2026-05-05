@@ -760,7 +760,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
 
       {/* --- BEST PRACTICES GRID --- */}
       <Card className="border-none shadow-sm bg-white rounded-[28px] overflow-hidden">
-        <CardHeader className="bg-indigo-50 border-b border-indigo-100/50">
+        <CardHeader>
           <CardTitle className="flex items-center gap-3 text-indigo-900 text-xl">
             <Clock className="w-6 h-6 text-indigo-500" />
             專家學習錦囊

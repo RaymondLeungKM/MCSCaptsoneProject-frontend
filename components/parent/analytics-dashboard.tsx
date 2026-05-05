@@ -36,6 +36,7 @@ import {
   getWordsByDate,
 } from "@/lib/api/parent-dashboard";
 import { API_BASE_URL, getAuthToken } from "@/lib/api/client";
+import { lookupEmojiOrFallback } from "@/lib/word-emoji";
 
 // --- TYPES (Locally defined to ensure standalone functionality) ---
 interface DashboardSummary {
@@ -283,9 +284,31 @@ const MOCK_WORDS_BY_DATE: WordEntry[] = [
 
 const MOCK_DB = generateMockData();
 
+function isStoredImageUrl(url?: string): boolean {
+  if (!url) return false;
+  return (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("/") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  );
+}
+
+function looksLikeEmoji(value?: string): boolean {
+  return !!value && /\p{Extended_Pictographic}/u.test(value);
+}
+
 function resolveImageUrl(url?: string): string {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (!url || !isStoredImageUrl(url)) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
   const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
@@ -1108,12 +1131,19 @@ function LearningCalendar({
 
 function WordDateImage({ word }: { word: WordEntry }) {
   const [failed, setFailed] = useState(false);
-  const imageSrc = failed ? "" : resolveImageUrl(word.image_url);
+  const storedVisual = word.image_url?.trim();
+  const imageSrc =
+    !failed && storedVisual && isStoredImageUrl(storedVisual)
+      ? resolveImageUrl(storedVisual)
+      : "";
+  const placeholderEmoji = looksLikeEmoji(storedVisual)
+    ? storedVisual
+    : lookupEmojiOrFallback(word.word, word.word_cantonese || word.word);
 
   if (!imageSrc) {
     return (
       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100">
-        <BookOpen className="h-6 w-6 text-blue-400" />
+        <span className="text-2xl leading-none">{placeholderEmoji}</span>
       </div>
     );
   }
