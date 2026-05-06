@@ -52,13 +52,15 @@ interface InsightsTabProps {
 }
 
 interface InsightsRecommendation {
-  nextWords: Word[];
+  focusWords: string[];
   recommendedActivity: string;
   reason: string;
   estimatedDuration: number;
   styleExplanation?: string;
   suggestedActivities?: string[];
 }
+
+const PLACEHOLDER_FOCUS_WORDS = ["太陽", "蝴蝶", "薄餅", "牛奶", "筆記簿"];
 
 const ACTIVITY_LABELS = {
   story: "故事時間",
@@ -130,10 +132,6 @@ function normalizeSuggestedActivities(
   );
 }
 
-function getCantoneseFocusWords(words: Word[]): Word[] {
-  return words.filter((word) => Boolean(word.word_cantonese?.trim()));
-}
-
 const MOCK_RECENT_SESSIONS: LearningSession[] = [
   {
     id: "mock-1",
@@ -182,7 +180,9 @@ function buildLocalRecommendation(
   );
 
   return {
-    nextWords: getCantoneseFocusWords(recommendation.nextWords),
+    // Temporarily bypass DB-backed focus-word selection until the word records are cleaned up.
+    // nextWords: getCantoneseFocusWords(recommendation.nextWords),
+    focusWords: PLACEHOLDER_FOCUS_WORDS,
     recommendedActivity: normalizeSupportedActivity(
       recommendation.recommendedActivity,
     ),
@@ -198,18 +198,18 @@ function buildApiRecommendation(
   allWords: Word[],
   fallbackProfile: ChildProfile,
 ): InsightsRecommendation | null {
-  const nextWords = getCantoneseFocusWords(
-    apiRecommendation.next_words
-      .map((wordId) => allWords.find((word) => word.id === wordId))
-      .filter((word): word is Word => Boolean(word)),
-  );
-
-  if (nextWords.length === 0 && allWords.length === 0) {
+  if (allWords.length === 0 && !apiRecommendation.recommended_activity) {
     return null;
   }
 
   return {
-    nextWords,
+    // Temporarily bypass DB-backed focus-word selection until the word records are cleaned up.
+    // focusWords: apiRecommendation.next_words
+    //   .map((wordId) => allWords.find((word) => word.id === wordId))
+    //   .filter((word): word is Word => Boolean(word))
+    //   .map((word) => word.word_cantonese)
+    //   .filter((word): word is string => Boolean(word?.trim())),
+    focusWords: PLACEHOLDER_FOCUS_WORDS,
     recommendedActivity: normalizeSupportedActivity(
       apiRecommendation.recommended_activity,
     ),
@@ -371,7 +371,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
 
         if (
           (!resolvedRecommendation ||
-            resolvedRecommendation.nextWords.length === 0) &&
+            resolvedRecommendation.focusWords.length === 0) &&
           resolvedWords.length > 0
         ) {
           resolvedRecommendation = buildLocalRecommendation(
@@ -729,14 +729,14 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
                 <p className="text-sm text-slate-400 font-bold uppercase mb-3">
                   重點詞彙
                 </p>
-                {recommendation.nextWords.length > 0 ? (
+                {recommendation.focusWords.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {recommendation.nextWords.map((word) => (
+                    {recommendation.focusWords.map((word) => (
                       <Badge
-                        key={word.id}
+                        key={word}
                         className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
                       >
-                        {word.word_cantonese}
+                        {word}
                       </Badge>
                     ))}
                   </div>
