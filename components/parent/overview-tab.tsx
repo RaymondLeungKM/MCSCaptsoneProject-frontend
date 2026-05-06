@@ -132,19 +132,17 @@ export function OverviewTab({
     stats.totalWords > 0 ? (stats.masteredWords / stats.totalWords) * 100 : 0;
   const remaining = Math.max(0, profile.dailyGoal - profile.todayProgress);
   const days = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+  const weeklySeries = days.map((_, index) => stats.weeklyProgress[index] ?? 0);
   const timeOfDayLabel: Record<string, string> = {
     morning: "早上",
     afternoon: "下午",
     evening: "晚上",
   };
-  const weeklyTotal = stats.weeklyProgress.reduce(
-    (sum, value) => sum + value,
-    0,
-  );
-  const peakValue = Math.max(...stats.weeklyProgress, 0);
-  const peakDayIndex = stats.weeklyProgress.findIndex(
-    (value) => value === peakValue,
-  );
+  const weeklyTotal = weeklySeries.reduce((sum, value) => sum + value, 0);
+  const peakValue = Math.max(...weeklySeries, 0);
+  const hasWeeklyActivity = peakValue > 0;
+  const peakDayIndex = weeklySeries.findIndex((value) => value === peakValue);
+  const maxWeeklyValue = hasWeeklyActivity ? peakValue : 1;
   const categoryRanking = [...stats.categoryProgress].sort(
     (left, right) => right.progress - left.progress,
   );
@@ -326,36 +324,64 @@ export function OverviewTab({
               <MiniMetric
                 icon={<Activity className="h-4 w-4 text-violet-500" />}
                 label="最活躍日"
-                value={peakDayIndex >= 0 ? days[peakDayIndex] : "暫無"}
+                value={
+                  hasWeeklyActivity && peakDayIndex >= 0
+                    ? days[peakDayIndex]
+                    : "暫無"
+                }
               />
             </div>
-            <div className="flex h-44 items-end justify-between gap-2 px-1 pt-2">
-              {days.map((day, index) => {
-                const maxValue = Math.max(...stats.weeklyProgress, 1);
-                const heightPercent =
-                  (stats.weeklyProgress[index] / maxValue) * 100;
-                return (
-                  <div
-                    key={day}
-                    className="group flex flex-1 flex-col items-center gap-2"
-                  >
-                    <div className="relative h-full w-full overflow-hidden rounded-[18px] bg-slate-100">
-                      <div
-                        className="absolute bottom-0 w-full rounded-[18px] bg-linear-to-t from-sky-500 to-cyan-300 transition-all duration-700 group-hover:from-orange-400 group-hover:to-amber-300"
-                        style={{ height: `${Math.max(heightPercent, 8)}%` }}
-                      />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-black text-slate-700">
-                        {stats.weeklyProgress[index]}
+            <div className="rounded-[28px] bg-linear-to-b from-slate-50 to-white p-4 ring-1 ring-slate-100">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    每日詞彙軌跡
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-500">
+                    依照每天接觸到的不同詞彙數量統計
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
+                    本週峰值
+                  </p>
+                  <p className="text-lg font-black text-slate-700">
+                    {peakValue} 個
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-3">
+                {days.map((day, index) => {
+                  const dayValue = weeklySeries[index];
+                  const heightPercent = (dayValue / maxWeeklyValue) * 100;
+                  const barHeight =
+                    dayValue > 0 ? Math.max(heightPercent, 14) : 0;
+
+                  return (
+                    <div
+                      key={day}
+                      className="group flex flex-col items-center gap-2"
+                    >
+                      <p
+                        className={`text-xs font-black ${
+                          dayValue > 0 ? "text-slate-700" : "text-slate-300"
+                        }`}
+                      >
+                        {dayValue}
                       </p>
-                      <p className="text-[10px] font-bold text-slate-400">
+                      <div className="flex h-28 w-full items-end rounded-[20px] bg-slate-100/90 p-2 shadow-inner shadow-slate-200/60">
+                        <div
+                          className="w-full rounded-[14px] bg-linear-to-t from-sky-500 to-cyan-300 shadow-[0_10px_24px_rgba(14,165,233,0.24)] transition-all duration-700 group-hover:from-orange-400 group-hover:to-amber-300"
+                          style={{ height: `${barHeight}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-400">
                         {day}
                       </p>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>

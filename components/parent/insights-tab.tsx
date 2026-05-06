@@ -60,6 +60,80 @@ interface InsightsRecommendation {
   suggestedActivities?: string[];
 }
 
+const ACTIVITY_LABELS = {
+  story: "故事時間",
+  game: "互動遊戲",
+  learn: "開始學習",
+  mixed: "綜合練習",
+} as const;
+
+type SupportedActivity = keyof typeof ACTIVITY_LABELS;
+
+const ACTIVITY_ALIASES: Record<string, SupportedActivity> = {
+  story: "story",
+  stories: "story",
+  故事時間: "story",
+  朗讀故事: "story",
+  繪本閱讀: "story",
+  game: "game",
+  games: "game",
+  matching: "game",
+  ispy: "game",
+  pronunciation: "game",
+  charades: "game",
+  actions: "game",
+  scavenger: "game",
+  互動遊戲: "game",
+  配對遊戲: "game",
+  圖像配對遊戲: "game",
+  圖片配對重複練習: "game",
+  做動作猜謎: "game",
+  肢體動作遊戲: "game",
+  實物尋寶: "game",
+  走動式重複練習: "game",
+  角色扮演: "game",
+  learn: "learn",
+  learning: "learn",
+  flashcards: "learn",
+  song: "learn",
+  quiz: "learn",
+  開始學習: "learn",
+  閃卡練習: "learn",
+  彩色閃卡: "learn",
+  兒歌與韻律: "learn",
+  聲音配對: "learn",
+  口語重複練習: "learn",
+  慢速跟讀與節奏複誦: "learn",
+  繪畫與填色: "learn",
+  美勞創作: "learn",
+  mixed: "mixed",
+  綜合活動: "mixed",
+  綜合練習: "mixed",
+};
+
+function normalizeSupportedActivity(
+  activity?: string | null,
+): SupportedActivity {
+  const normalized = (activity || "").trim().toLowerCase();
+  return ACTIVITY_ALIASES[normalized] || "learn";
+}
+
+function normalizeSuggestedActivities(
+  activities?: string[] | null,
+): SupportedActivity[] {
+  if (!activities || activities.length === 0) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(activities.map((activity) => normalizeSupportedActivity(activity))),
+  );
+}
+
+function getCantoneseFocusWords(words: Word[]): Word[] {
+  return words.filter((word) => Boolean(word.word_cantonese?.trim()));
+}
+
 const MOCK_RECENT_SESSIONS: LearningSession[] = [
   {
     id: "mock-1",
@@ -108,8 +182,10 @@ function buildLocalRecommendation(
   );
 
   return {
-    nextWords: recommendation.nextWords,
-    recommendedActivity: recommendation.recommendedActivity,
+    nextWords: getCantoneseFocusWords(recommendation.nextWords),
+    recommendedActivity: normalizeSupportedActivity(
+      recommendation.recommendedActivity,
+    ),
     reason: recommendation.reason,
     estimatedDuration: recommendation.estimatedDuration,
     styleExplanation: undefined,
@@ -122,9 +198,11 @@ function buildApiRecommendation(
   allWords: Word[],
   fallbackProfile: ChildProfile,
 ): InsightsRecommendation | null {
-  const nextWords = apiRecommendation.next_words
-    .map((wordId) => allWords.find((word) => word.id === wordId))
-    .filter((word): word is Word => Boolean(word));
+  const nextWords = getCantoneseFocusWords(
+    apiRecommendation.next_words
+      .map((wordId) => allWords.find((word) => word.id === wordId))
+      .filter((word): word is Word => Boolean(word)),
+  );
 
   if (nextWords.length === 0 && allWords.length === 0) {
     return null;
@@ -132,14 +210,18 @@ function buildApiRecommendation(
 
   return {
     nextWords,
-    recommendedActivity: apiRecommendation.recommended_activity,
+    recommendedActivity: normalizeSupportedActivity(
+      apiRecommendation.recommended_activity,
+    ),
     reason: apiRecommendation.reason,
     estimatedDuration:
       apiRecommendation.estimated_duration ||
       fallbackProfile.attentionSpan ||
       15,
     styleExplanation: apiRecommendation.style_explanation,
-    suggestedActivities: apiRecommendation.suggested_activities,
+    suggestedActivities: normalizeSuggestedActivities(
+      apiRecommendation.suggested_activities,
+    ),
   };
 }
 
@@ -384,47 +466,26 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
   const getRecommendedActivities = (style: string) => {
     switch (style) {
       case "kinesthetic":
-        return ["做動作猜謎", "肢體動作遊戲", "實物尋寶", "角色扮演"];
+        return ["game", "learn"];
       case "visual":
-        return ["圖像配對遊戲", "彩色閃卡", "繪本閱讀", "繪畫與填色"];
+        return ["story", "learn"];
       case "auditory":
-        return ["兒歌與韻律", "朗讀故事", "聲音配對", "口語重複練習"];
+        return ["story", "learn"];
       default:
-        return ["綜合活動", "講故事", "互動遊戲", "美勞創作"];
+        return ["mixed", "story", "game"];
     }
   };
 
   // Translation Helper for Activities
   const getActivityLabel = (activity: string) => {
-    const map: { [key: string]: string } = {
-      story: "故事時間",
-      game: "互動遊戲",
-      learn: "開始學習",
-      mixed: "綜合練習",
-      flashcards: "閃卡練習",
-      song: "唱遊時間",
-      quiz: "小測驗",
-      matching: "配對遊戲",
-      ispy: "找找看",
-      pronunciation: "發音練習",
-      charades: "做動作猜謎",
-      actions: "動感學習",
-      scavenger: "實物尋寶",
-    };
-    return map[activity.toLowerCase()] || activity;
+    return ACTIVITY_LABELS[normalizeSupportedActivity(activity)];
   };
 
   const getRecommendedTab = (activity: string) => {
-    switch (activity.toLowerCase()) {
+    switch (normalizeSupportedActivity(activity)) {
       case "story":
         return "stories";
       case "game":
-      case "matching":
-      case "ispy":
-      case "pronunciation":
-      case "charades":
-      case "actions":
-      case "scavenger":
         return "games";
       default:
         return "learn";
@@ -675,7 +736,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
                         key={word.id}
                         className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
                       >
-                        {word.word}
+                        {word.word_cantonese}
                       </Badge>
                     ))}
                   </div>
@@ -750,7 +811,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
                 >
                   <div className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
                   <span className="text-slate-600 font-medium text-sm">
-                    {activity}
+                    {getActivityLabel(activity)}
                   </span>
                 </div>
               ))}

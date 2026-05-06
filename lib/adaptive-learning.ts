@@ -13,6 +13,13 @@ export interface AdaptiveLearningRecommendation {
   estimatedDuration: number; // minutes
 }
 
+const SUPPORTED_ACTIVITY_LABELS: Record<string, string> = {
+  story: "故事時間",
+  game: "互動遊戲",
+  learn: "開始學習",
+  mixed: "綜合練習",
+};
+
 // --- TRANSLATION HELPERS ---
 
 const getStyleLabel = (style: string) => {
@@ -35,16 +42,7 @@ const getTimeLabel = (time: string) => {
 };
 
 const getActivityLabelCN = (activity: string) => {
-  const map: Record<string, string> = {
-    actions: "動感學習",
-    pronunciation: "發音練習",
-    matching: "配對遊戲",
-    ispy: "找找看 (I Spy)",
-    charades: "做動作猜謎",
-    story: "故事時間",
-    scavenger: "實物尋寶",
-  };
-  return map[activity] || activity;
+  return SUPPORTED_ACTIVITY_LABELS[activity] || activity;
 };
 
 // --- LOGIC FUNCTIONS ---
@@ -150,24 +148,15 @@ export function recommendActivity(
 ): AdaptiveLearningRecommendation["recommendedActivity"] {
   const { learningStyle, attentionSpan } = profile;
 
-  // Short session (< 10 minutes)
   if (availableMinutes < 10 || attentionSpan < 10) {
-    if (learningStyle === "kinesthetic") return "actions";
-    if (learningStyle === "auditory") return "pronunciation";
-    if (learningStyle === "visual") return "matching";
-    return "ispy";
+    return "learn";
   }
 
-  // Medium session (10-20 minutes)
-  if (availableMinutes < 20 || attentionSpan < 20) {
-    if (learningStyle === "kinesthetic") return "charades";
-    if (learningStyle === "auditory") return "story";
-    return "scavenger";
+  if (learningStyle === "kinesthetic") return "game";
+  if (learningStyle === "visual" || learningStyle === "auditory") {
+    return "story";
   }
-
-  // Long session (20+ minutes)
-  if (learningStyle === "kinesthetic") return "scavenger";
-  return "story";
+  return "mixed";
 }
 
 /**
@@ -194,14 +183,14 @@ export function getAdaptiveLearningRecommendation(
   ).length;
 
   let reason = `根據 ${profile.name} 的學習需要而設。`;
-  
+
   if (needingExposure > 0) {
     reason += `當中有 ${needingExposure} 個詞彙需要加強練習。`;
   }
   if (interestMatch > 0) {
     reason += `選了 ${interestMatch} 個符合興趣的詞彙。`;
   }
-  
+
   reason += `推薦活動：${getActivityLabelCN(recommendedActivity)} (最適合 ${getStyleLabel(profile.learningStyle)} 學習風格)。`;
 
   // Estimate duration
@@ -293,7 +282,10 @@ export function generateParentInsights(
   );
 
   // Learning style match
-  const styleAction = profile.learningStyle === "kinesthetic" ? "加入更多肢體動作和動手做的體驗" : "使用更多配合學習風格的教材";
+  const styleAction =
+    profile.learningStyle === "kinesthetic"
+      ? "加入更多肢體動作和動手做的體驗"
+      : "使用更多配合學習風格的教材";
   insights.push(
     `${profile.name} 透過「${getStyleLabel(profile.learningStyle)}」活動學習效果最好。試著${styleAction}！`,
   );
@@ -324,9 +316,7 @@ export function generateParentInsights(
         `上一次的學習表現非常棒！${profile.name} 非常投入，這是一個很好的鼓勵機會。`,
       );
     } else if (avgEngagement < 1.5) {
-      insights.push(
-        `試著縮短學習時間或加入更多動感活動來提升專注力。`,
-      );
+      insights.push(`試著縮短學習時間或加入更多動感活動來提升專注力。`);
     }
   }
 
