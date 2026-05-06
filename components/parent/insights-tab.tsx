@@ -234,7 +234,8 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
             dailyGoal: c.daily_goal || 10,
             todayProgress: 0,
             attentionSpan: c.attention_span || 15,
-            preferredTimeOfDay: "afternoon",
+            preferredTimeOfDay:
+              c.preferred_time_of_day || fallbackProfile.preferredTimeOfDay,
           };
           setProfile(resolvedProfile);
         }

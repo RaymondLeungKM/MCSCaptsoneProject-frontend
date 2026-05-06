@@ -12,6 +12,7 @@ import {
   Save,
   Settings,
   Clock,
+  Globe2,
   Loader2,
   Lock,
   ShieldCheck,
@@ -25,7 +26,11 @@ import {
   updateParentalControls,
 } from "@/lib/api/parent-dashboard";
 import { getCategories } from "@/lib/api/vocabulary";
-import type { ChildProfile, ParentalControl } from "@/lib/types";
+import type {
+  ChildProfile,
+  LanguagePreference,
+  ParentalControl,
+} from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -92,6 +97,61 @@ const LEARNING_STYLE_OPTIONS: Array<{
     description: "交替使用多種學習方式最有效。",
   },
 ];
+
+const PREFERRED_TIME_OPTIONS: Array<{
+  value: ChildProfile["preferredTimeOfDay"];
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "morning",
+    label: "早上",
+    description: "適合精神剛開始集中時做一段清爽短練習。",
+  },
+  {
+    value: "afternoon",
+    label: "下午",
+    description: "適合午睡後或活動間安排互動式詞彙練習。",
+  },
+  {
+    value: "evening",
+    label: "晚上",
+    description: "適合晚餐後或睡前做輕鬆複習與對話練習。",
+  },
+];
+
+const LANGUAGE_PREFERENCE_OPTIONS: Array<{
+  value: LanguagePreference;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "cantonese",
+    label: "粵語",
+    description: "以粵語為主，貼近孩子平日的生活語境。",
+  },
+  // {
+  //   value: "english",
+  //   label: "英文",
+  //   description: "以英文為主，幫助孩子集中建立英文詞彙。",
+  // },
+  // {
+  //   value: "bilingual",
+  //   label: "雙語",
+  //   description: "同時呈現廣東話與英文，方便對照和轉換。",
+  // },
+];
+
+const MIN_ATTENTION_SPAN = 5;
+const MAX_ATTENTION_SPAN = 30;
+const DEFAULT_ATTENTION_SPAN = 15;
+
+function normalizeAttentionSpan(value?: number | null) {
+  return Math.min(
+    Math.max(value ?? DEFAULT_ATTENTION_SPAN, MIN_ATTENTION_SPAN),
+    MAX_ATTENTION_SPAN,
+  );
+}
 
 interface SettingsTabProps {
   profile: ChildProfile;
@@ -174,9 +234,17 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     profile.birthMonth ?? null,
   );
   const [dailyGoal, setDailyGoal] = useState(profile.dailyGoal);
+  const [attentionSpan, setAttentionSpan] = useState(
+    normalizeAttentionSpan(profile.attentionSpan),
+  );
   const [learningStyle, setLearningStyle] = useState<
     ChildProfile["learningStyle"]
   >(profile.learningStyle);
+  const [languagePreference, setLanguagePreference] =
+    useState<LanguagePreference>(profile.languagePreference ?? "cantonese");
+  const [preferredTimeOfDay, setPreferredTimeOfDay] = useState<
+    ChildProfile["preferredTimeOfDay"]
+  >(profile.preferredTimeOfDay);
   const [interests, setInterests] = useState(profile.interests);
   const [notifications, setNotifications] = useState(true);
   const [reminderTime, setReminderTime] = useState("18:00");
@@ -185,7 +253,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   const [communitySharing, setCommunitySharing] = useState(
     profile.communityEnabled ?? false,
   );
-  const [storedParentPin, setStoredParentPinState] = useState<string | null>(null);
+  const [storedParentPin, setStoredParentPinState] = useState<string | null>(
+    null,
+  );
   const [pinDraft, setPinDraft] = useState("");
   const [confirmPinDraft, setConfirmPinDraft] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
@@ -213,7 +283,10 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     setAge(profile.age);
     setBirthMonth(profile.birthMonth ?? null);
     setDailyGoal(profile.dailyGoal);
+    setAttentionSpan(normalizeAttentionSpan(profile.attentionSpan));
     setLearningStyle(profile.learningStyle);
+    setLanguagePreference(profile.languagePreference ?? "cantonese");
+    setPreferredTimeOfDay(profile.preferredTimeOfDay);
     setInterests(profile.interests);
     setInterestOptions((prev) => mergeInterestOptions(prev, profile.interests));
   }, [profile]);
@@ -303,8 +376,11 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         age,
         birthMonth,
         dailyGoal,
+        attentionSpan,
         interests,
         learningStyle,
+        languagePreference,
+        preferredTimeOfDay,
         communityEnabled: communitySharing,
       });
 
@@ -325,6 +401,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           birth_month: birthMonth,
           daily_goal: dailyGoal,
           learning_style: learningStyle,
+          attention_span: attentionSpan,
+          language_preference: languagePreference,
+          preferred_time_of_day: preferredTimeOfDay,
           interests,
         }),
         updateParentalControls(profile.id, {
@@ -341,7 +420,10 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       setAge(nextProfile.age);
       setBirthMonth(nextProfile.birthMonth ?? null);
       setDailyGoal(nextProfile.dailyGoal);
+      setAttentionSpan(normalizeAttentionSpan(nextProfile.attentionSpan));
       setLearningStyle(nextProfile.learningStyle);
+      setLanguagePreference(nextProfile.languagePreference ?? "cantonese");
+      setPreferredTimeOfDay(nextProfile.preferredTimeOfDay);
       setInterests(nextProfile.interests);
       setInterestOptions((prev) =>
         mergeInterestOptions(prev, nextProfile.interests),
@@ -583,6 +665,129 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                 })}
               </div>
             </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <Label className="text-slate-600 font-bold">
+                    偏好練習時段
+                  </Label>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    這個設定會影響家長頁面的短練習建議與個人化任務推薦。
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {PREFERRED_TIME_OPTIONS.map((option) => {
+                  const isSelected = preferredTimeOfDay === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setPreferredTimeOfDay(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-sky-300 bg-sky-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-sky-200 hover:bg-sky-50/40",
+                      )}
+                    >
+                      <p className="font-bold text-slate-800">{option.label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-cyan-100 rounded-xl text-cyan-600 shrink-0">
+                  <Globe2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <Label className="text-slate-600 font-bold">語言模式</Label>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    這個設定會影響孩子頁面顯示的主要語言，以及部分推薦內容的呈現方式。
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {LANGUAGE_PREFERENCE_OPTIONS.map((option) => {
+                  const isSelected = languagePreference === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setLanguagePreference(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-cyan-300 bg-cyan-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-cyan-200 hover:bg-cyan-50/40",
+                      )}
+                    >
+                      <p className="font-bold text-slate-800">{option.label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                        {option.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-slate-600 font-bold">專注時間</Label>
+                    <span className="font-black text-amber-600 text-lg bg-amber-50 px-3 py-1 rounded-lg">
+                      {attentionSpan} 分鐘
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    系統會盡量把活動長度控制在這個範圍內，減少疲勞並保持投入感。
+                  </p>
+                </div>
+              </div>
+
+              <Slider
+                value={[attentionSpan]}
+                onValueChange={([value]) => setAttentionSpan(value)}
+                min={MIN_ATTENTION_SPAN}
+                max={MAX_ATTENTION_SPAN}
+                step={1}
+                disabled={settingsLoading}
+                className="py-4"
+              />
+              <div className="flex items-center justify-between text-xs font-medium text-slate-400">
+                <span>{MIN_ATTENTION_SPAN} 分鐘</span>
+                <span>{MAX_ATTENTION_SPAN} 分鐘</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
+              已掌握詞彙和今日目標完成度會按孩子的實際學習紀錄自動更新，這裡只需要設定可調整的學習偏好。
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -761,9 +966,12 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           </div>
 
           {editingPin ? (
-            <div className="grid gap-4 rounded-[24px] border border-slate-100 bg-slate-50/80 p-4">
+            <div className="grid gap-4 rounded-3xl border border-slate-100 bg-slate-50/80 p-4">
               <div className="space-y-2">
-                <Label htmlFor="parent-mode-pin" className="text-slate-600 font-bold">
+                <Label
+                  htmlFor="parent-mode-pin"
+                  className="text-slate-600 font-bold"
+                >
                   {storedParentPin ? "新 PIN" : "設定 PIN"}
                 </Label>
                 <Input
@@ -781,7 +989,10 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="parent-mode-pin-confirm" className="text-slate-600 font-bold">
+                <Label
+                  htmlFor="parent-mode-pin-confirm"
+                  className="text-slate-600 font-bold"
+                >
                   確認 PIN
                 </Label>
                 <Input
@@ -844,7 +1055,9 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           )}
 
           <p className="text-xs leading-relaxed text-slate-500">
-            PIN 只會儲存在目前這部裝置上。若你常用平板或手機讓小朋友學習，建議在該裝置也設定同一組 PIN。
+            PIN
+            只會儲存在目前這部裝置上。若你常用平板或手機讓小朋友學習，建議在該裝置也設定同一組
+            PIN。
           </p>
         </CardContent>
       </Card>
