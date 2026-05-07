@@ -273,7 +273,10 @@ function WordListItem({
   return (
     <div
       className={cn(
-        "group flex items-center justify-between gap-3 rounded-3xl border-2 bg-white transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)]",
+        "group rounded-3xl border-2 bg-white transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)]",
+        compact
+          ? "flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between"
+          : "flex flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:justify-between",
         compact ? "p-3" : "p-4",
         word.mastered
           ? "border-transparent hover:border-[#E8F5E9]"
@@ -300,10 +303,10 @@ function WordListItem({
         </div>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <h4
               className={cn(
-                "truncate font-black text-gray-700",
+                "min-w-0 flex-1 truncate font-black text-gray-700",
                 compact ? "text-base" : "text-lg",
               )}
             >
@@ -311,7 +314,7 @@ function WordListItem({
             </h4>
             <button
               onClick={() => onPlay(getWordLabel(word))}
-              className="rounded-full p-2 text-[#29B6F6] opacity-0 transition-opacity hover:bg-gray-100 group-hover:opacity-100"
+              className="shrink-0 rounded-full p-2 text-[#29B6F6] opacity-0 transition-opacity hover:bg-gray-100 group-hover:opacity-100"
               aria-label={`Listen to ${getWordLabel(word)}`}
             >
               <Volume2 className="h-4 w-4" />
@@ -323,8 +326,22 @@ function WordListItem({
         </div>
       </div>
 
-      <div className="shrink-0 text-right">
-        <div className="flex justify-end gap-1">
+      <div
+        className={cn(
+          "shrink-0",
+          compact
+            ? "pl-13 text-left sm:pl-0 sm:text-right"
+            : "pl-15 text-left lg:pl-0 lg:text-right",
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-1",
+            compact
+              ? "justify-start sm:justify-end"
+              : "justify-start lg:justify-end",
+          )}
+        >
           {Array.from({ length: EXPOSURE_TARGET }, (_, index) => index + 1).map(
             (star) => (
               <Star
@@ -717,14 +734,16 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                   <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
                     <Card className="rounded-[28px] border border-[#FFE0B2] bg-[#FFF8F1] shadow-none">
                       <CardContent className="space-y-4 p-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#FFB74D]">
                               優先複習
                             </p>
-                            <h4 className="mt-2 flex items-center gap-2 text-xl font-black text-gray-700">
-                              <Target className="h-5 w-5 text-[#FB8C00]" />
-                              先處理低接觸詞語
+                            <h4 className="mt-2 flex min-w-0 items-center gap-2 text-xl font-black text-gray-700">
+                              <Target className="h-5 w-5 shrink-0 text-[#FB8C00]" />
+                              <span className="min-w-0 wrap-break-word">
+                                先處理低接觸詞語
+                              </span>
                             </h4>
                           </div>
                           <span className="rounded-full bg-white px-3 py-1 text-sm font-black text-[#EF6C00] shadow-sm">
@@ -760,18 +779,20 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
                     <Card className="rounded-[28px] border border-[#BBDEFB] bg-[#F5FBFF] shadow-none">
                       <CardContent className="space-y-4 p-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#64B5F6]">
                               {nearMasteryWords.length > 0
                                 ? "快將掌握"
                                 : "掌握較穩定"}
                             </p>
-                            <h4 className="mt-2 flex items-center gap-2 text-xl font-black text-gray-700">
-                              <TrendingUp className="h-5 w-5 text-[#1E88E5]" />
-                              {nearMasteryWords.length > 0
-                                ? "再加一點練習就可以"
-                                : "可帶入生活情境鞏固"}
+                            <h4 className="mt-2 flex min-w-0 items-center gap-2 text-xl font-black text-gray-700">
+                              <TrendingUp className="h-5 w-5 shrink-0 text-[#1E88E5]" />
+                              <span className="min-w-0 wrap-break-word">
+                                {nearMasteryWords.length > 0
+                                  ? "再加一點練習就可以"
+                                  : "可帶入生活情境鞏固"}
+                              </span>
                             </h4>
                           </div>
                           <span className="rounded-full bg-white px-3 py-1 text-sm font-black text-[#1E88E5] shadow-sm">
