@@ -65,6 +65,25 @@ function applyProgressUpdate(
   );
 }
 
+function isSameLocalDay(dateLike?: string) {
+  if (!dateLike) {
+    return false;
+  }
+
+  const parsedDate = new Date(dateLike);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return false;
+  }
+
+  const today = new Date();
+
+  return (
+    parsedDate.getFullYear() === today.getFullYear() &&
+    parsedDate.getMonth() === today.getMonth() &&
+    parsedDate.getDate() === today.getDate()
+  );
+}
+
 export function DailyWordsViewer({
   childId = "1",
   childName = "Emma",
@@ -129,9 +148,6 @@ export function DailyWordsViewer({
   const loadCameraWords = async () => {
     setCameraLoading(true);
     try {
-      let dailyWords: DailyWordSummary[] = [];
-      let cameraWordsData: DailyWordSummary[] = [];
-
       if (childId && childId !== "1") {
         try {
           const captured = await getCapturedWords(childId, {
@@ -139,36 +155,14 @@ export function DailyWordsViewer({
             includeMongodb: true,
           });
 
-          cameraWordsData = captured.map((item) => ({
-            word_id: item.id,
-            word: item.word,
-            word_cantonese: item.word_cantonese,
-            jyutping: item.jyutping,
-            definition_cantonese: item.definition_cantonese || item.definition,
-            image_url: item.image_url,
-            exposure_count: item.total_exposures || 0,
-            used_actively: (item.success_rate || 0) >= 0.7,
-            story_priority: Math.max(
-              1,
-              Math.min(10, Math.round((item.success_rate || 0) * 10 || 5)),
-            ),
-          }));
-        } catch (captureErr) {
-          console.warn(
-            "Failed to load camera-captured words, using fallback data",
-            captureErr,
-          );
-        }
-      }
-
-      if (childId && childId !== "1") {
-        const ownWords = await getWordsWithProgress(childId, undefined, true);
-        const mapped: DailyWordSummary[] = ownWords
-          .map((item: any) => {
-            const progress = item.progress;
-            const exposureCount = progress?.exposure_count ?? 0;
-            const successRate = progress?.success_rate ?? 0;
-            return {
+          const todayCameraWords = captured
+            .filter((item) => isSameLocalDay(item.created_at))
+            .sort(
+              (left, right) =>
+                new Date(right.created_at).getTime() -
+                new Date(left.created_at).getTime(),
+            )
+            .map((item) => ({
               word_id: item.id,
               word: item.word,
               word_cantonese: item.word_cantonese,
@@ -176,20 +170,20 @@ export function DailyWordsViewer({
               definition_cantonese:
                 item.definition_cantonese || item.definition,
               image_url: item.image_url,
-              exposure_count: exposureCount,
-              used_actively: progress?.mastered ?? false,
+              exposure_count: item.total_exposures || 0,
+              used_actively: (item.success_rate || 0) >= 0.7,
               story_priority: Math.max(
                 1,
-                Math.min(10, Math.round(10 - Math.min(exposureCount, 9))),
+                Math.min(10, Math.round((item.success_rate || 0) * 10 || 5)),
               ),
-              last_practiced: progress?.last_practiced,
-            };
-          })
-          .sort(
-            (a: DailyWordSummary, b: DailyWordSummary) =>
-              b.story_priority - a.story_priority,
-          );
-        setCameraWords(mapped);
+              last_practiced: item.created_at,
+            }));
+
+          setCameraWords(todayCameraWords);
+        } catch (captureErr) {
+          console.warn("Failed to load camera-captured words", captureErr);
+          setCameraWords([]);
+        }
       } else {
         setCameraWords([]);
       }
@@ -377,8 +371,8 @@ export function DailyWordsViewer({
         <Card className="bg-white/80 backdrop-blur-md rounded-[40px] border-4 border-white shadow-sm overflow-hidden">
           {/* Header Section */}
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-2xl font-black text-slate-700 tracking-tight">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <CardTitle className="flex min-w-0 items-center gap-3 text-2xl font-black text-slate-700 tracking-tight">
                 <span className="bg-yellow-400 text-white p-2 rounded-2xl shadow-sm rotate-3">
                   <Sparkles className="w-6 h-6 fill-white" />
                 </span>
@@ -454,9 +448,9 @@ export function DailyWordsViewer({
                     }}
                     className={cn(
                       "relative group cursor-pointer transition-all duration-300",
-                      "flex items-center gap-4 p-4 rounded-3xl",
+                      "flex flex-wrap items-start gap-4 rounded-3xl p-4 sm:flex-nowrap sm:items-center",
                       selectedWordId === word.word_id
-                        ? "bg-yellow-50 border-2 border-yellow-400 shadow-md scale-[1.02]"
+                        ? "border-2 border-yellow-400 bg-yellow-50 shadow-md sm:scale-[1.02]"
                         : "bg-white border-2 border-slate-100 hover:border-yellow-200 hover:shadow-sm",
                     )}
                   >
@@ -496,17 +490,17 @@ export function DailyWordsViewer({
                       <MemoryStarsProgress
                         exposureCount={word.exposure_count}
                         languagePreference={languagePreference}
-                        className="mt-3"
+                        className="mt-3 max-w-full"
                       />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex w-full justify-end pl-14 sm:w-auto sm:pl-0">
                       <button
                         onClick={(event) => {
                           event.stopPropagation();
                           handlePlayWord(word);
                         }}
-                        className="w-12 h-12 rounded-full bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors text-[#38BDF8]"
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#38BDF8] transition-colors hover:bg-blue-100"
                         aria-label={`Listen to ${word.word_cantonese}`}
                       >
                         <Volume2

@@ -48,6 +48,17 @@ const getColorClass = (color: string) => {
 const isImageUrl = (value?: string) =>
   !!value && (value.startsWith("http") || value.startsWith("/"));
 
+const isMyCollectionCategory = (category: Category) => {
+  const normalizedName = category.name.trim().toLowerCase();
+  const normalizedCantonese = (category.name_cantonese || "").trim();
+
+  return (
+    normalizedName === "my collection" ||
+    normalizedCantonese === "我的" ||
+    normalizedCantonese === "我的收藏"
+  );
+};
+
 export function CategoryGrid({
   categories,
   onCategorySelect,
@@ -73,8 +84,8 @@ export function CategoryGrid({
     setWordsError(null);
     setCategoryWords([]);
 
-    // For "My Collection" category, only fetch words uploaded by this specific child
-    const isMyCollection = selectedCategory.name === "My Collection";
+    // For My Collection, only fetch words uploaded by this specific child.
+    const isMyCollection = isMyCollectionCategory(selectedCategory);
     const fetchFn = childId
       ? getWordsWithProgress(childId, selectedCategory.id, isMyCollection).then(
           (responses) => responses.map((r) => toWord(r, r.progress)),

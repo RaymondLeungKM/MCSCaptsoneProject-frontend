@@ -73,14 +73,14 @@ export function MemoryStarsProgress({
   return (
     <div
       className={cn(
-        "rounded-3xl border px-3.5 py-3 shadow-sm backdrop-blur-sm",
+        "w-full max-w-full rounded-3xl border px-3.5 py-3 shadow-sm backdrop-blur-sm",
         reachedGoal
           ? "border-yellow-200 bg-linear-to-r from-yellow-50 via-amber-50 to-orange-50"
           : "border-sky-100 bg-linear-to-r from-sky-50 via-cyan-50 to-emerald-50",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2.5">
           <div
             className={cn(
@@ -101,7 +101,7 @@ export function MemoryStarsProgress({
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
               {label}
             </p>
-            <div className="mt-1 flex items-center gap-1">
+            <div className="mt-1 flex flex-wrap items-center gap-1">
               {Array.from({ length: MEMORY_STARS_GOAL }).map((_, index) => {
                 const isLit = index < progress;
 
@@ -121,7 +121,7 @@ export function MemoryStarsProgress({
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white/90 px-2.5 py-1.5 text-xs font-black text-slate-600 shadow-sm">
+        <div className="self-end rounded-2xl bg-white/90 px-2.5 py-1.5 text-xs font-black text-slate-600 shadow-sm sm:self-auto">
           {countText}
         </div>
       </div>
