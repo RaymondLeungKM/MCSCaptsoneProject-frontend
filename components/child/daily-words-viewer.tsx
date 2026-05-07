@@ -470,7 +470,10 @@ export function DailyWordsViewer({
             ) : displayWords.length > 0 ? (
               <div className="grid gap-3">
                 {displayWords.map((word, index) => {
-                  const photoUrl = resolveImageUrl(word.image_url);
+                  const visualValue = word.image_url?.trim() ?? "";
+                  const photoUrl = resolveImageUrl(visualValue);
+                  const emojiVisual =
+                    visualValue && !photoUrl ? visualValue : "";
 
                   return (
                     <div
@@ -515,6 +518,19 @@ export function DailyWordsViewer({
                               alt={word.word_cantonese || word.word}
                               className="h-48 w-full object-cover sm:h-full sm:min-h-48"
                             />
+                          ) : emojiVisual ? (
+                            <div className="flex h-48 w-full flex-col items-center justify-center gap-3 px-4 text-center sm:h-full sm:min-h-48">
+                              <div className="rounded-[2rem] bg-white/75 px-6 py-4 shadow-sm backdrop-blur-sm">
+                                <span className="text-7xl leading-none drop-shadow-sm sm:text-8xl">
+                                  {emojiVisual}
+                                </span>
+                              </div>
+                              <p className="text-sm font-black leading-snug text-slate-500">
+                                {activeTab === "camera"
+                                  ? "相機找到的圖像"
+                                  : "今日詞語圖示"}
+                              </p>
+                            </div>
                           ) : (
                             <div className="flex h-48 w-full flex-col items-center justify-center gap-3 px-4 text-center text-slate-500 sm:h-full sm:min-h-48">
                               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/80 text-slate-400 shadow-sm">
