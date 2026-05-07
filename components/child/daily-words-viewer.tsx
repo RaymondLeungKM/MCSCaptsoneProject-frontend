@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { AISentences } from "@/components/child/ai-sentences";
 import { getWords, getWordsWithProgress, getCapturedWords } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/api/client";
 import { getGraphRecommendations } from "@/lib/api/phase8";
 import type { LanguagePreference, Word } from "@/lib/types";
 import { useWordAudio } from "@/hooks/use-word-audio";
@@ -82,6 +83,35 @@ function isSameLocalDay(dateLike?: string) {
     parsedDate.getMonth() === today.getMonth() &&
     parsedDate.getDate() === today.getDate()
   );
+}
+
+function isImageUrl(value?: string) {
+  return (
+    !!value &&
+    (value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("/") ||
+      value.startsWith("data:image/"))
+  );
+}
+
+function resolveImageUrl(url?: string) {
+  const safeUrl = url?.trim() ?? "";
+
+  if (!isImageUrl(safeUrl)) {
+    return "";
+  }
+
+  if (
+    safeUrl.startsWith("http://") ||
+    safeUrl.startsWith("https://") ||
+    safeUrl.startsWith("data:image/")
+  ) {
+    return safeUrl;
+  }
+
+  const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+  return `${base}${safeUrl.startsWith("/") ? "" : "/"}${safeUrl}`;
 }
 
 export function DailyWordsViewer({
@@ -433,86 +463,135 @@ export function DailyWordsViewer({
             {(activeTab === "camera" && cameraLoading) ||
             (activeTab === "default" && loading) ? (
               <div className="grid gap-3">
-                <Skeleton className="h-20 w-full rounded-3xl" />
-                <Skeleton className="h-20 w-full rounded-3xl" />
-                <Skeleton className="h-20 w-full rounded-3xl" />
+                <Skeleton className="h-52 w-full rounded-4xl" />
+                <Skeleton className="h-52 w-full rounded-4xl" />
+                <Skeleton className="h-52 w-full rounded-4xl" />
               </div>
             ) : displayWords.length > 0 ? (
               <div className="grid gap-3">
-                {displayWords.map((word, index) => (
-                  <div
-                    key={word.word_id}
-                    onClick={() => {
-                      setSelectedWordId(word.word_id);
-                      setModalWord(buildWord(word));
-                    }}
-                    className={cn(
-                      "relative group cursor-pointer transition-all duration-300",
-                      "flex flex-wrap items-start gap-4 rounded-3xl p-4 sm:flex-nowrap sm:items-center",
-                      selectedWordId === word.word_id
-                        ? "border-2 border-yellow-400 bg-yellow-50 shadow-md sm:scale-[1.02]"
-                        : "bg-white border-2 border-slate-100 hover:border-yellow-200 hover:shadow-sm",
-                    )}
-                  >
-                    {/* Priority / Number Badge */}
-                    <div className="shrink-0">
-                      <div
-                        className={cn(
-                          "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm transition-transform group-hover:scale-110",
-                          activeTab === "camera"
-                            ? "bg-linear-to-br from-purple-400 to-fuchsia-400 text-white"
-                            : word.story_priority >= 8
-                              ? "bg-linear-to-br from-yellow-400 to-orange-400 text-white"
-                              : word.story_priority >= 5
-                                ? "bg-linear-to-br from-blue-400 to-cyan-400 text-white"
-                                : "bg-linear-to-br from-slate-200 to-slate-300 text-slate-500",
-                        )}
-                      >
-                        {index + 1}
-                      </div>
-                    </div>
+                {displayWords.map((word, index) => {
+                  const photoUrl = resolveImageUrl(word.image_url);
 
-                    {/* Word Info (Cantonese Only) */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-black text-2xl text-slate-700">
-                          {word.word_cantonese || word.word}
-                        </span>
-                        {word.jyutping && (
-                          <span className="text-sm font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                            {word.jyutping}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium text-slate-400 line-clamp-1">
-                        {word.definition_cantonese}
-                      </p>
-                      <MemoryStarsProgress
-                        exposureCount={word.exposure_count}
-                        languagePreference={languagePreference}
-                        className="mt-3 max-w-full"
-                      />
-                    </div>
+                  return (
+                    <div
+                      key={word.word_id}
+                      onClick={() => {
+                        setSelectedWordId(word.word_id);
+                        setModalWord(buildWord(word));
+                      }}
+                      className={cn(
+                        "group relative cursor-pointer overflow-hidden rounded-4xl border-2 p-3 transition-all duration-300 sm:p-4",
+                        selectedWordId === word.word_id
+                          ? "border-yellow-300 bg-linear-to-br from-yellow-50 via-orange-50 to-white shadow-md sm:scale-[1.01]"
+                          : "border-slate-100 bg-white hover:border-yellow-200 hover:shadow-sm",
+                      )}
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+                        <div className="relative shrink-0 overflow-hidden rounded-[28px] border-4 border-white/80 bg-linear-to-br from-sky-100 via-white to-yellow-50 shadow-sm sm:w-40 md:w-44">
+                          <div className="absolute left-3 top-3 z-10 flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black text-white shadow-sm",
+                                activeTab === "camera"
+                                  ? "bg-linear-to-br from-purple-400 to-fuchsia-400"
+                                  : word.story_priority >= 8
+                                    ? "bg-linear-to-br from-yellow-400 to-orange-400"
+                                    : word.story_priority >= 5
+                                      ? "bg-linear-to-br from-blue-400 to-cyan-400"
+                                      : "bg-linear-to-br from-slate-300 to-slate-400",
+                              )}
+                            >
+                              {index + 1}
+                            </div>
+                            <Badge className="rounded-full border-none bg-white/90 px-3 py-1 text-xs font-black text-slate-600 shadow-sm backdrop-blur-sm">
+                              {activeTab === "camera" ? "相機探索" : "今日推薦"}
+                            </Badge>
+                          </div>
 
-                    <div className="flex w-full justify-end pl-14 sm:w-auto sm:pl-0">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handlePlayWord(word);
-                        }}
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[#38BDF8] transition-colors hover:bg-blue-100"
-                        aria-label={`Listen to ${word.word_cantonese}`}
-                      >
-                        <Volume2
-                          className={cn(
-                            "w-6 h-6",
-                            (isPlaying || isLoading) && "animate-pulse",
+                          {photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photoUrl}
+                              alt={word.word_cantonese || word.word}
+                              className="h-48 w-full object-cover sm:h-full sm:min-h-48"
+                            />
+                          ) : (
+                            <div className="flex h-48 w-full flex-col items-center justify-center gap-3 px-4 text-center text-slate-500 sm:h-full sm:min-h-48">
+                              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/80 text-slate-400 shadow-sm">
+                                {activeTab === "camera" ? (
+                                  <Camera className="h-8 w-8" />
+                                ) : (
+                                  <BookOpen className="h-8 w-8" />
+                                )}
+                              </div>
+                              <p className="text-sm font-black leading-snug">
+                                {activeTab === "camera"
+                                  ? "相片準備中"
+                                  : "插圖準備中"}
+                              </p>
+                            </div>
                           )}
-                        />
-                      </button>
+                        </div>
+
+                        <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 rounded-[28px] bg-slate-50/70 p-4 sm:p-5">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                                {activeTab === "camera"
+                                  ? "Today Camera Discovery"
+                                  : "Today Story Word"}
+                              </p>
+                              <h3 className="mt-2 wrap-break-word text-[2.1rem] font-black leading-[0.95] tracking-tight text-slate-800 sm:text-[2.6rem]">
+                                {word.word_cantonese || word.word}
+                              </h3>
+                              {word.jyutping && (
+                                <span className="mt-3 inline-flex max-w-full rounded-2xl border border-sky-100 bg-white px-3 py-2 text-base font-black text-sky-600 shadow-sm">
+                                  {word.jyutping}
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handlePlayWord(word);
+                              }}
+                              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-sky-400 to-cyan-300 text-white shadow-sm transition-transform hover:scale-105"
+                              aria-label={`Listen to ${word.word_cantonese || word.word}`}
+                            >
+                              <Volume2
+                                className={cn(
+                                  "h-7 w-7",
+                                  (isPlaying || isLoading) && "animate-pulse",
+                                )}
+                              />
+                            </button>
+                          </div>
+
+                          <p className="text-base font-bold leading-relaxed text-slate-500 sm:text-lg">
+                            {word.definition_cantonese ||
+                              "點一下學習這個新詞語。"}
+                          </p>
+
+                          <MemoryStarsProgress
+                            exposureCount={word.exposure_count}
+                            languagePreference={languagePreference}
+                            className="max-w-full"
+                          />
+
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Badge className="rounded-full border-none bg-emerald-100 px-3 py-1.5 text-sm font-black text-emerald-700 hover:bg-emerald-100">
+                              已練習 {word.exposure_count} 次
+                            </Badge>
+                            <span className="text-xs font-black tracking-wide text-slate-400">
+                              點一下打開學習卡
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="py-12 text-center flex flex-col items-center">
