@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -339,82 +339,103 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const loadData = useCallback(
+    async ({ background = false }: { background?: boolean } = {}) => {
+      if (!background) {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const token = getAuthToken();
+        const isMockChild = !childId || childId.length < 10;
+
+        if (!token || isMockChild) {
+          setSummary(MOCK_DB.summary);
+          setCharts(MOCK_DB.charts);
+          return;
+        }
+
+        const [apiSummary, apiCharts] = await Promise.all([
+          getDashboardSummary(childId),
+          getAnalyticsCharts(childId, "all"),
+        ]);
+
+        setSummary({
+          total_words_learned: apiSummary.total_words_learned,
+          current_streak: apiSummary.current_streak,
+          level: apiSummary.level,
+          xp: apiSummary.xp,
+          weekly_words_learned: apiSummary.weekly_words_learned,
+          weekly_learning_time: apiSummary.weekly_learning_time,
+          weekly_sessions: apiSummary.weekly_sessions,
+          weekly_xp_earned: apiSummary.weekly_xp_earned,
+          category_progress: (apiSummary.category_progress ?? []).map((cp) => ({
+            category_id: cp.category_id,
+            category_name: cp.category_name,
+            category_name_cantonese: cp.category_name_cantonese,
+            words_learned: cp.words_learned,
+            total_words: cp.total_words,
+            progress_percentage: cp.progress_percentage,
+          })),
+          recent_insights: (apiSummary.recent_insights ?? []).map((ins) => ({
+            id: ins.id,
+            title: ins.title,
+            description: ins.description,
+            type: mapInsightType(ins.insight_type),
+            priority: ins.priority,
+          })),
+          latest_report: apiSummary.latest_report
+            ? {
+                id: apiSummary.latest_report.id,
+                week_start: apiSummary.latest_report.week_start_date,
+                week_end: apiSummary.latest_report.week_end_date,
+                total_words_learned:
+                  apiSummary.latest_report.total_words_learned,
+                total_learning_time:
+                  apiSummary.latest_report.total_learning_time,
+                days_active: apiSummary.latest_report.days_active,
+                growth_percentage: apiSummary.latest_report.growth_percentage,
+                strengths: apiSummary.latest_report.strengths,
+                recommendations: apiSummary.latest_report.recommendations,
+              }
+            : undefined,
+        });
+
+        setCharts({
+          time_series: {
+            dates: apiCharts.time_series.dates,
+            words_learned: apiCharts.time_series.words_learned,
+          },
+        });
+
+        console.log("[Analytics] Loaded real data for child:", childId);
+      } catch (error: any) {
+        console.error("Failed to load analytics:", error);
+        setError("無法載入分析數據，請稍後再試。");
+      } finally {
+        if (!background) {
+          setLoading(false);
+        }
+      }
+    },
+    [childId],
+  );
+
   useEffect(() => {
     void loadData();
-  }, [childId]);
+  }, [loadData]);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = getAuthToken();
-      const isMockChild = !childId || childId.length < 10;
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      void loadData({ background: true });
+    };
 
-      if (!token || isMockChild) {
-        setSummary(MOCK_DB.summary);
-        setCharts(MOCK_DB.charts);
-        return;
-      }
+    window.addEventListener("focus", handleWindowFocus);
 
-      const [apiSummary, apiCharts] = await Promise.all([
-        getDashboardSummary(childId),
-        getAnalyticsCharts(childId, "all"),
-      ]);
-
-      setSummary({
-        total_words_learned: apiSummary.total_words_learned,
-        current_streak: apiSummary.current_streak,
-        level: apiSummary.level,
-        xp: apiSummary.xp,
-        weekly_words_learned: apiSummary.weekly_words_learned,
-        weekly_learning_time: apiSummary.weekly_learning_time,
-        weekly_sessions: apiSummary.weekly_sessions,
-        weekly_xp_earned: apiSummary.weekly_xp_earned,
-        category_progress: (apiSummary.category_progress ?? []).map((cp) => ({
-          category_id: cp.category_id,
-          category_name: cp.category_name,
-          category_name_cantonese: cp.category_name_cantonese,
-          words_learned: cp.words_learned,
-          total_words: cp.total_words,
-          progress_percentage: cp.progress_percentage,
-        })),
-        recent_insights: (apiSummary.recent_insights ?? []).map((ins) => ({
-          id: ins.id,
-          title: ins.title,
-          description: ins.description,
-          type: mapInsightType(ins.insight_type),
-          priority: ins.priority,
-        })),
-        latest_report: apiSummary.latest_report
-          ? {
-              id: apiSummary.latest_report.id,
-              week_start: apiSummary.latest_report.week_start_date,
-              week_end: apiSummary.latest_report.week_end_date,
-              total_words_learned: apiSummary.latest_report.total_words_learned,
-              total_learning_time: apiSummary.latest_report.total_learning_time,
-              days_active: apiSummary.latest_report.days_active,
-              growth_percentage: apiSummary.latest_report.growth_percentage,
-              strengths: apiSummary.latest_report.strengths,
-              recommendations: apiSummary.latest_report.recommendations,
-            }
-          : undefined,
-      });
-
-      setCharts({
-        time_series: {
-          dates: apiCharts.time_series.dates,
-          words_learned: apiCharts.time_series.words_learned,
-        },
-      });
-
-      console.log("[Analytics] Loaded real data for child:", childId);
-    } catch (error: any) {
-      console.error("Failed to load analytics:", error);
-      setError("無法載入分析數據，請稍後再試。");
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [loadData]);
 
   if (loading) {
     return (
@@ -436,7 +457,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         <h3 className="mb-2 text-lg font-semibold text-red-900">
           無法載入分析數據
         </h3>
-        <Button onClick={loadData} variant="destructive">
+        <Button onClick={() => void loadData()} variant="destructive">
           重試
         </Button>
       </div>

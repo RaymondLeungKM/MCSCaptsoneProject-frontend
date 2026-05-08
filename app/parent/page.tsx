@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Baby,
@@ -149,79 +149,105 @@ function ParentDashboardContent() {
     if (tab) setActiveTab(tab);
   }, [searchParams]);
 
-  useEffect(() => {
-    void loadParentDashboardProfile();
-  }, []);
+  const loadParentDashboardProfile = useCallback(
+    async ({ background = false }: { background?: boolean } = {}) => {
+      if (!background) {
+        setIsLoadingProfile(true);
+      }
+      setProfileError(null);
 
-  async function loadParentDashboardProfile() {
-    setIsLoadingProfile(true);
-    setProfileError(null);
-
-    const token = getAuthToken();
-    if (!token) {
-      // Not authenticated – use mock data for demo
-      setProfile(MOCK_PROFILE);
-      setStats(MOCK_STATS);
-      setInsights(MOCK_INSIGHTS);
-      setIsLoadingProfile(false);
-      return;
-    }
-
-    try {
-      const children = await getChildren();
-      if (children.length === 0) {
-        setProfile(null);
-        setInsights([]);
-        setIsLoadingProfile(false);
+      const token = getAuthToken();
+      if (!token) {
+        // Not authenticated – use mock data for demo
+        setProfile(MOCK_PROFILE);
+        setStats(MOCK_STATS);
+        setInsights(MOCK_INSIGHTS);
+        if (!background) {
+          setIsLoadingProfile(false);
+        }
         return;
       }
 
-      const childProfile = toChildProfile(children[0]);
-      setProfile(childProfile);
+      try {
+        const children = await getChildren();
+        if (children.length === 0) {
+          setProfile(null);
+          setInsights([]);
+          if (!background) {
+            setIsLoadingProfile(false);
+          }
+          return;
+        }
 
-      const [statsResult, insightsResult] = await Promise.allSettled([
-        getProgressStats(childProfile.id),
-        getLearningInsights(childProfile.id, {
-          includeRead: true,
-          includeDismissed: false,
-          limit: 3,
-        }),
-      ]);
+        const childProfile = toChildProfile(children[0]);
+        setProfile(childProfile);
 
-      if (statsResult.status === "rejected") {
-        throw statsResult.reason;
+        const [statsResult, insightsResult] = await Promise.allSettled([
+          getProgressStats(childProfile.id),
+          getLearningInsights(childProfile.id, {
+            includeRead: true,
+            includeDismissed: false,
+            limit: 3,
+          }),
+        ]);
+
+        if (statsResult.status === "rejected") {
+          throw statsResult.reason;
+        }
+
+        setStats({
+          totalWords: statsResult.value.total_words,
+          masteredWords: statsResult.value.mastered_words,
+          weeklyProgress: statsResult.value.weekly_progress,
+          streakDays: statsResult.value.streak_days,
+          categoryProgress: statsResult.value.category_progress.map((cp) => ({
+            category: cp.category,
+            progress: cp.progress,
+            mastered: cp.mastered,
+            total: cp.total,
+          })),
+          averageExposuresPerWord: statsResult.value.average_exposures_per_word,
+          activeVocabulary: statsResult.value.active_vocabulary,
+          passiveVocabulary: statsResult.value.passive_vocabulary,
+          multiSensoryEngagement: statsResult.value.multi_sensory_engagement,
+        });
+
+        if (insightsResult.status === "fulfilled") {
+          setInsights(insightsResult.value);
+        } else {
+          console.warn(
+            "Failed to load parent insights:",
+            insightsResult.reason,
+          );
+          setInsights([]);
+        }
+      } catch (error) {
+        console.error("Failed to load parent dashboard:", error);
+        setProfileError("載入家長中心失敗，請稍後再試。");
+      } finally {
+        if (!background) {
+          setIsLoadingProfile(false);
+        }
       }
+    },
+    [],
+  );
 
-      setStats({
-        totalWords: statsResult.value.total_words,
-        masteredWords: statsResult.value.mastered_words,
-        weeklyProgress: statsResult.value.weekly_progress,
-        streakDays: statsResult.value.streak_days,
-        categoryProgress: statsResult.value.category_progress.map((cp) => ({
-          category: cp.category,
-          progress: cp.progress,
-          mastered: cp.mastered,
-          total: cp.total,
-        })),
-        averageExposuresPerWord: statsResult.value.average_exposures_per_word,
-        activeVocabulary: statsResult.value.active_vocabulary,
-        passiveVocabulary: statsResult.value.passive_vocabulary,
-        multiSensoryEngagement: statsResult.value.multi_sensory_engagement,
-      });
+  useEffect(() => {
+    void loadParentDashboardProfile();
+  }, [loadParentDashboardProfile]);
 
-      if (insightsResult.status === "fulfilled") {
-        setInsights(insightsResult.value);
-      } else {
-        console.warn("Failed to load parent insights:", insightsResult.reason);
-        setInsights([]);
-      }
-    } catch (error) {
-      console.error("Failed to load parent dashboard:", error);
-      setProfileError("載入家長中心失敗，請稍後再試。");
-    } finally {
-      setIsLoadingProfile(false);
-    }
-  }
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      void loadParentDashboardProfile({ background: true });
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [loadParentDashboardProfile]);
 
   if (isLoadingProfile) {
     return (
