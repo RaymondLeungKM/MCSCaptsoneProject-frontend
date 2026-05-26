@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { GeneratedStory, LanguagePreference } from "@/lib/types";
 import { generateStory } from "@/lib/api/bedtime-stories";
-import { StoryGeneratingAnimation } from "@/components/child/story-generating-animation";
 
 interface BedtimeStoryGeneratorProps {
   childId?: string;
@@ -105,8 +104,6 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
-      {/* ── Story generating overlay ── */}
-      <StoryGeneratingAnimation isVisible={isGenerating} />
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}

@@ -2,6 +2,11 @@ const BACKEND_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") ||
   "http://localhost:8000";
 
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
+
 export interface CartoonImageInput {
   wordId: string;
   word?: string;
@@ -63,16 +68,19 @@ export function preloadGameImages(
 
   const promises = words.map((w) => {
     return new Promise<void>((resolve) => {
-      // If the backend already stored an image URL, preload that directly.
-      // This avoids going through generate-image which re-generates and may fail.
-      const url = w.image_url && w.image_url.trim()
-        ? w.image_url
-        : getAiCartoonImageUrl({
-            wordId: w.id,
-            word: w.word,
-            wordCantonese: w.word_cantonese || "",
-            category: w.category_name || w.category || "",
-          });
+      // Games only preload image URLs already stored for the word.
+      // If the DB has no usable image URL, skip preloading and let the UI show
+      // the emoji placeholder instead of generating a new image on the fly.
+      const hasStoredImage = isBackendImageUrl(w.image_url);
+
+      if (!hasStoredImage) {
+        loaded += 1;
+        onProgress?.(loaded, total);
+        resolve();
+        return;
+      }
+
+      const url = resolveBackendAssetUrl(w.image_url);
       const img = new Image();
       const done = () => {
         loaded += 1;

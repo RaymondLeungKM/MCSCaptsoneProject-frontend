@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import { lookupEmojiOrFallback } from "@/lib/word-emoji";
-import { getAiCartoonImageUrl } from "@/lib/cartoon-image";
 import {
   isBackendImageUrl,
   resolveBackendAssetUrl,
@@ -52,22 +51,10 @@ export function CartoonWordImage({
 
   const emoji = lookupEmojiOrFallback(word, wordCantonese);
 
-  // Use the stored image URL directly when the backend has already provided one.
-  // Backend images are curated/generated at word creation time and are always more
-  // relevant than re-generating on the fly. Only fall back to AI generation when
-  // no stored URL is available.
+  // Games should only use image URLs already stored for the word in the DB.
   // Guard against emoji/non-URL values being stored in image_url (causes 404s).
   const hasStoredImage = isBackendImageUrl(existingImageUrl);
-
-  const imgUrl = hasStoredImage
-    ? existingImageUrl!
-    : getAiCartoonImageUrl({
-        wordId,
-        word,
-        wordCantonese,
-        category,
-        existingImageUrl,
-      });
+  const imgUrl = hasStoredImage ? resolveBackendAssetUrl(existingImageUrl) : "";
 
   const label = wordCantonese || word;
 
@@ -83,7 +70,11 @@ export function CartoonWordImage({
     }
   }, []);
 
-  const showPlaceholder = !realLoaded || gaveUp;
+  const showPlaceholder = !imgUrl || !realLoaded || gaveUp;
+  const shouldShowEmojiFallback = !imgUrl || gaveUp;
+  const imageSrc = imgUrl
+    ? `${imgUrl}${imgKey > 0 ? `${imgUrl.includes("?") ? "&" : "?"}_r=${imgKey}` : ""}`
+    : "";
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -95,7 +86,7 @@ export function CartoonWordImage({
             : "opacity-100"
         } ${placeholderBg}`}
       >
-        {gaveUp ? (
+        {shouldShowEmojiFallback ? (
           <span className={`${emojiSize} drop-shadow-sm`}>{emoji}</span>
         ) : (
           <div className="flex items-center justify-center">
@@ -104,15 +95,11 @@ export function CartoonWordImage({
         )}
       </div>
 
-      {/* ── Real image (stored backend photo or AI-generated fallback) ── */}
-      {!gaveUp && (
+      {/* ── Real image (stored backend photo only) ── */}
+      {imgUrl && !gaveUp && (
         <img
           key={imgKey}
-          src={
-            hasStoredImage
-              ? resolveBackendAssetUrl(imgUrl)
-              : imgUrl + (imgKey > 0 ? `&_r=${imgKey}` : "")
-          }
+          src={imageSrc}
           alt={label}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             realLoaded ? "opacity-100" : "opacity-0"
