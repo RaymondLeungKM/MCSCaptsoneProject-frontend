@@ -229,6 +229,8 @@ export function useSpeech() {
       options?: {
         rate?: number;
         pitch?: number;
+        volume?: number;
+        lang?: string;
         onStart?: () => void;
         onEnd?: () => void;
         onError?: (error: string) => void;

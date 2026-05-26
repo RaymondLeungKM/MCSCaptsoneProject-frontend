@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { Sun, Moon, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CartoonKeyframes, CartoonOwl } from "@/components/child/cartoon-characters";
 
 interface WrapperProps {
   children: React.ReactNode;
   type?: "center" | "dashboard";
   hideThemeToggle?: boolean;
+  hideFloatingStar?: boolean;
 }
 
 // --- SVG COMPONENTS ---
@@ -118,8 +120,15 @@ const FLOWER_BED = [
   { type: 1, left: '97%', bottom: '20px', scale: 0.8, delay: '-0.2s' },
 ];
 
-export default function CozyPageWrapper({ children, type = "center", hideThemeToggle = false }: WrapperProps) {
+export default function CozyPageWrapper({
+  children,
+  type = "center",
+  hideThemeToggle = false,
+  hideFloatingStar = false,
+}: WrapperProps) {
   const [isNight, setIsNight] = useState(false);
+
+  void hideFloatingStar;
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -130,6 +139,7 @@ export default function CozyPageWrapper({ children, type = "center", hideThemeTo
 
   return (
     <>
+      <CartoonKeyframes />
       <style jsx global>{`
         /* --- ANIMATIONS --- */
         
@@ -245,6 +255,20 @@ export default function CozyPageWrapper({ children, type = "center", hideThemeTo
             {/* Layer 5: Fast, Small, Front */}
             <div className={cn("absolute top-10 -left-10 animate-flow-fast delay-n10", isNight ? "opacity-5 text-indigo-300" : "opacity-60 text-white")}>
               <CustomCloud path={CLOUD_PATHS[0]} className="w-20 h-20" />
+            </div>
+
+            {/* ── Cartoon mascots (day only) ── */}
+            <div className={cn(
+              "absolute transition-all duration-[2000ms]",
+              isNight ? "opacity-0 pointer-events-none" : "opacity-100"
+            )} style={{ bottom: "18%", right: "3%" }}>
+              <CartoonOwl size={88} animate="float" />
+            </div>
+            <div className={cn(
+              "absolute transition-all duration-[2000ms]",
+              isNight ? "opacity-60" : "opacity-0 pointer-events-none"
+            )} style={{ bottom: "22%", right: "4%" }}>
+              <CartoonOwl size={80} animate="float" />
             </div>
 
             {/* --- HILLS & GARDEN --- */}

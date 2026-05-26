@@ -13,7 +13,7 @@ interface MemoryStarsProgressProps {
 
 export function MemoryStarsProgress({
   exposureCount = 0,
-  languagePreference = "cantonese",
+  languagePreference: _languagePreference = "cantonese",
   variant = "compact",
   className,
 }: MemoryStarsProgressProps) {
@@ -22,20 +22,12 @@ export function MemoryStarsProgress({
   const reachedGoal = exposureCount >= MEMORY_STARS_GOAL;
 
   const countText = `${exposureCount}/${MEMORY_STARS_GOAL}`;
-  const label =
-    languagePreference === "english" ? "Memory Stars" : "記憶小星星";
-  const encouragement =
-    languagePreference === "english"
-      ? reachedGoal
-        ? "Goal reached!"
-        : exposureCount === 0
-          ? "Light the first star"
-          : `${remaining} more to go`
-      : reachedGoal
-        ? "已達目標！"
-        : exposureCount === 0
-          ? "點亮第一粒星"
-          : `再差 ${remaining} 粒星`;
+  const label = "記憶小星星";
+  const encouragement = reachedGoal
+    ? "已達目標！"
+    : exposureCount === 0
+      ? "點亮第一粒星"
+      : `再差 ${remaining} 粒星`;
 
   if (variant === "badge") {
     return (

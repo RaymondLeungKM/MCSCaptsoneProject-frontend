@@ -5,6 +5,10 @@ import { Volume2, ChevronRight, Sparkles, Star, Lightbulb } from "lucide-react";
 import type { Word, LanguagePreference } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
 // Ensure you have this hook, or replace with standard synthesis
 import { useSpeech } from "@/lib/speech"; 
 import {
@@ -76,9 +80,9 @@ export function WordOfTheDay({
             )}
             
             <div className="w-32 h-32 rounded-[32px] bg-white flex items-center justify-center border-4 border-slate-50 shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                {word.image && word.image.startsWith("http") ? (
+                {isBackendImageUrl(word.image) ? (
                     <img
-                    src={word.image}
+                  src={resolveBackendAssetUrl(word.image)}
                     alt={word.word}
                     className="w-full h-full object-cover"
                     />

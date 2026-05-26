@@ -22,6 +22,8 @@ import { CategoryGrid } from "@/components/child/category-grid";
 import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
 import { GamesList } from "@/components/child/game-card";
 import { ChildMissionsPanel } from "@/components/child/child-missions-panel";
+import { CartoonKeyframes } from "@/components/child/cartoon-characters";
+import { OwlCompanion } from "@/components/child/owl-companion";
 import { ChildNavigation } from "@/components/child/navigation";
 import { StoryCard } from "@/components/child/story-card";
 import { ProfileView } from "@/components/views/profile-view";
@@ -848,9 +850,9 @@ function ChildDashboardContent() {
   };
 
   const showDashboardHeader = activeTab === "home";
-  const _lang = profile?.languagePreference || "cantonese";
-  const recommendedWordLabel =
-    _lang === "english" ? wordOfDay?.word : wordOfDay?.word_cantonese;
+  // Force Cantonese for children's mode - no English for young learners (4-7 years)
+  const _lang = "cantonese";
+  const recommendedWordLabel = wordOfDay?.word_cantonese;
   const localizedWordReason = localizeAdaptiveReason(wordOfDay?.reason);
   const localizedNextStepReason = localizeAdaptiveReason(
     nextActivityRec?.reason,
@@ -864,7 +866,7 @@ function ChildDashboardContent() {
 
   if (authLoading || loading) {
     return (
-      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
+      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
         <div className="w-full px-4 py-8 space-y-6">
           <Skeleton className="h-44 w-full rounded-4xl" />
           <Skeleton className="h-72 w-full rounded-[40px]" />
@@ -875,7 +877,7 @@ function ChildDashboardContent() {
 
   if (!profile) {
     return (
-      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
+      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
         <div className="w-full px-4 py-8">
           <Alert variant="destructive" className="rounded-2xl">
             <AlertDescription>
@@ -896,7 +898,9 @@ function ChildDashboardContent() {
   }
 
   return (
-    <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame}>
+    <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
+      <CartoonKeyframes />
+      <OwlCompanion level={profile.level} />
       <div className="w-full min-h-screen pb-32 px-4">
         {showDashboardHeader && (
           <header className="flex flex-row items-center gap-2 py-4">
@@ -1056,8 +1060,9 @@ function ChildDashboardContent() {
               <DailyWordsViewer
                 childId={profile.id}
                 childName={profile.name}
-                languagePreference={profile.languagePreference || "cantonese"}
+                languagePreference="cantonese"
                 onWordLearned={handleLearningProgressUpdated}
+                variant="home"
               />
             </section>
           )}
@@ -1066,7 +1071,7 @@ function ChildDashboardContent() {
             <section>
               <CategoryGrid
                 categories={categories}
-                languagePreference={profile.languagePreference || "cantonese"}
+                languagePreference="cantonese"
                 childId={profile.id}
                 onWordLearned={handleLearningProgressUpdated}
               />
@@ -1088,7 +1093,7 @@ function ChildDashboardContent() {
                 <BedtimeStoryGenerator
                   childId={profile.id}
                   childName={profile.name}
-                  languagePreference={profile.languagePreference || "cantonese"}
+                  languagePreference="cantonese"
                   onStoryGenerated={handleStoryGenerated}
                 />
               </section>
@@ -1098,7 +1103,7 @@ function ChildDashboardContent() {
                   <div className="bg-blue-400 p-2 rounded-xl -rotate-3 shadow-sm">
                     <Book className="w-5 h-5 text-white" />
                   </div>
-                  <h2 className="text-2xl font-black text-slate-700">
+                  <h2 className="text-3xl font-black text-slate-700">
                     我的故事書
                   </h2>
                 </div>
@@ -1130,15 +1135,15 @@ function ChildDashboardContent() {
                     ))}
 
                   {!storiesLoading && stories.length === 0 && (
-                    <div className="min-w-45 h-70 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
-                      <Sparkles className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="font-bold text-sm">生成第一個故事</span>
+                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <Sparkles className="w-10 h-10 mb-3 opacity-50" />
+                      <span className="font-bold text-base">生成第一個故事</span>
                     </div>
                   )}
 
                   {storiesLoading && (
-                    <div className="min-w-45 h-70 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
-                      <span className="font-bold text-sm">載入故事中...</span>
+                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <span className="font-bold text-base">載入故事中...</span>
                     </div>
                   )}
                 </div>
@@ -1150,7 +1155,7 @@ function ChildDashboardContent() {
             <div className="min-h-[60vh]">
               <CommunityTab
                 childId={profile.id}
-                languagePreference={profile.languagePreference || "cantonese"}
+                languagePreference="cantonese"
               />
             </div>
           )}
@@ -1269,7 +1274,7 @@ export default function ChildDashboard() {
   return (
     <Suspense
       fallback={
-        <CozyPageWrapper type="dashboard">
+        <CozyPageWrapper type="dashboard" hideFloatingStar>
           <div className="w-full px-4 py-8 space-y-6">
             <Skeleton className="h-44 w-full rounded-4xl" />
             <Skeleton className="h-72 w-full rounded-[40px]" />

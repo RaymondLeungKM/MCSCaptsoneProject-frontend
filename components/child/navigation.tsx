@@ -81,7 +81,7 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
   return (
     <div className="fixed bottom-4 left-2 right-2 z-50 flex justify-center safe-area-inset-bottom">
       {/* 🏝️ Floating Glass Island */}
-      <nav className="flex items-end justify-between w-full max-w-lg px-2 py-3 bg-white/95 backdrop-blur-xl border-[3px] border-white/50 rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
+      <nav className="flex items-end justify-between w-full max-w-lg px-2 py-3.5 bg-white/95 backdrop-blur-xl border-[3px] border-white/50 rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -90,23 +90,23 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className="group relative flex flex-col items-center justify-end w-full gap-1"
+              className="group relative flex flex-col items-center justify-end w-full gap-1.5 px-0.5"
             >
               {/* ✨ Icon Container */}
               <div
                 className={cn(
                   "flex items-center justify-center rounded-full transition-all duration-300",
                   isActive
-                    ? `w-12 h-12 ${item.activeBg} -translate-y-4 shadow-md border-4 border-white` // Active: Big, colored bubble, pops up
-                    : "w-8 h-8 bg-transparent text-slate-400 group-hover:bg-slate-100", // Inactive: Small, gray
+                    ? `w-16 h-16 ${item.activeBg} -translate-y-4 shadow-md border-4 border-white`
+                    : "w-11 h-11 bg-transparent text-slate-400 group-hover:bg-slate-100",
                 )}
               >
                 <Icon
                   className={cn(
                     "transition-all duration-300",
                     isActive
-                      ? "w-6 h-6 text-white stroke-[3]"
-                      : "w-6 h-6 stroke-[2.5]",
+                      ? "w-7 h-7 text-white stroke-[3]"
+                      : "w-7 h-7 stroke-[2.5]",
                   )}
                 />
               </div>
@@ -114,10 +114,10 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
               {/* 📝 The Label (Now sitting INSIDE the white box) */}
               <span
                 className={cn(
-                  "text-[11px] font-black tracking-wide transition-all duration-300",
+                  "min-h-[1rem] text-[11px] font-black tracking-wide leading-none transition-all duration-300 sm:text-xs",
                   isActive
-                    ? `${item.activeText} -translate-y-2 opacity-100` // Active: Colored, moves up
-                    : "text-slate-400 opacity-0 h-0 overflow-hidden", // Inactive: Hidden to save space
+                    ? `${item.activeText} -translate-y-1 text-sm opacity-100`
+                    : "text-slate-500 opacity-100",
                 )}
               >
                 {item.label}

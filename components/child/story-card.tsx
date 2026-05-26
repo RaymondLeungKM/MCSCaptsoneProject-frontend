@@ -64,7 +64,7 @@ export function StoryCard({
     <button
       onClick={() => onRead(story)}
       className={cn(
-        "group relative flex flex-col rounded-4xl overflow-hidden min-w-50 w-50 h-70",
+        "group relative flex flex-col rounded-4xl overflow-hidden min-w-[17rem] w-[17rem] h-[23rem]",
         "border-4 transition-all duration-300",
         "hover:scale-105 active:scale-95 shadow-sm hover:shadow-xl",
         story.completed
@@ -75,31 +75,31 @@ export function StoryCard({
     >
       <div
         className={cn(
-          "flex-1 w-full flex flex-col items-center justify-center relative p-4",
+          "flex-1 w-full flex flex-col items-center justify-center relative p-5",
           styles,
         )}
       >
         {story.completed && (
-          <div className="absolute top-3 right-3 bg-white text-emerald-500 rounded-full p-1 shadow-sm animate-in zoom-in">
-            <CheckCircle className="w-5 h-5 fill-emerald-100" />
+          <div className="absolute top-4 right-4 bg-white text-emerald-500 rounded-full p-2 shadow-sm animate-in zoom-in">
+            <CheckCircle className="w-6 h-6 fill-emerald-100" />
           </div>
         )}
 
-        <span className="text-7xl drop-shadow-sm filter transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+        <span className="text-9xl drop-shadow-sm filter transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
           {displayEmoji}
         </span>
       </div>
 
-      <div className="p-5 bg-white w-full text-left flex flex-col justify-between h-25">
+      <div className="p-6 bg-white w-full text-left flex flex-col justify-between h-36">
         <div>
-          <h3 className="font-black text-slate-700 text-lg leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+          <h3 className="font-black text-slate-700 text-[1.9rem] leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
             {story.title}
           </h3>
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">
-            <Clock className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-between mt-3">
+          <span className="flex items-center gap-2 text-lg font-black text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
+            <Clock className="w-4 h-4" />
             {story.duration}
           </span>
 
@@ -109,12 +109,12 @@ export function StoryCard({
                 event.stopPropagation();
                 onPlayAudio(story);
               }}
-              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
-              aria-label={`Play audio for ${story.title}`}
+              className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+              aria-label={`播放 ${story.title}`}
             >
               <Play
                 className={cn(
-                  "w-3.5 h-3.5 fill-current ml-0.5 text-slate-500",
+                  "w-4.5 h-4.5 fill-current ml-0.5 text-slate-500",
                   (isAudioPlaying || isAudioLoading) && "animate-pulse",
                 )}
               />
@@ -122,8 +122,8 @@ export function StoryCard({
           )}
 
           {!story.completed && !onPlayAudio && (
-            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#38BDF8] group-hover:text-white transition-colors">
-              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-[#38BDF8] group-hover:text-white transition-colors">
+              <Play className="w-4.5 h-4.5 fill-current ml-0.5" />
             </div>
           )}
         </div>
@@ -149,10 +149,10 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
           <BookOpen className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-slate-700 tracking-tight">
+          <h2 className="text-3xl font-black text-slate-700 tracking-tight">
             故事時間
           </h2>
-          <p className="text-sm font-bold text-slate-400">重溫你最愛的故事！</p>
+          <p className="text-base font-bold text-slate-400">重溫你最愛的故事！</p>
         </div>
       </div>
 
@@ -165,12 +165,12 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
         ))}
 
         {/* "More" Placeholder Card (Optional) */}
-        <div className="min-w-25 flex items-center justify-center opacity-50">
+        <div className="min-w-28 flex items-center justify-center opacity-50">
           <div className="text-center">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
               <Star className="w-6 h-6 text-slate-400" />
             </div>
-            <p className="text-xs font-bold text-slate-400">
+            <p className="text-sm font-bold text-slate-400">
               更多故事
               <br />
               即將推出

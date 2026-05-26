@@ -278,14 +278,17 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
               nextRound();
             }, 1800);
           } else {
-            // Replay audio to give another chance
+            // Replay audio twice (with a pause) to reinforce pronunciation
             setTimeout(() => {
               void playCurrentWord();
             }, 400);
             setTimeout(() => {
+              void playCurrentWord();
+            }, 1400);
+            setTimeout(() => {
               setResult(null);
               setTranscript("");
-            }, 1600);
+            }, 2200);
           }
           return newCount;
         });

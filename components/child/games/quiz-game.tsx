@@ -48,6 +48,48 @@ function getFallbackBg(wordId: string): string {
   return FALLBACK_BG[hashKey(wordId) % FALLBACK_BG.length];
 }
 
+function playCorrectAnswerChime() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+  if (!AudioContextCtor) {
+    return;
+  }
+
+  try {
+    const audioContext = new AudioContextCtor();
+    const gainNode = audioContext.createGain();
+    gainNode.connect(audioContext.destination);
+    gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.14, audioContext.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.65);
+
+    const notes = [659.25, 783.99, 987.77];
+    notes.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(
+        frequency,
+        audioContext.currentTime + index * 0.11,
+      );
+      oscillator.connect(gainNode);
+      oscillator.start(audioContext.currentTime + index * 0.11);
+      oscillator.stop(audioContext.currentTime + index * 0.11 + 0.22);
+    });
+
+    window.setTimeout(() => {
+      void audioContext.close().catch(() => undefined);
+    }, 900);
+  } catch {
+    // Ignore browsers that block synthesized audio until a stronger gesture is available.
+  }
+}
+
 function wordResponseToWord(w: WordResponse): Word {
   return {
     id: w.id,
@@ -308,6 +350,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
         wordsCorrect.current = [...wordsCorrect.current, correctWord.id];
       }
       setMascotMood("excited");
+      playCorrectAnswerChime();
       confetti({
         particleCount: 80,
         spread: 60,

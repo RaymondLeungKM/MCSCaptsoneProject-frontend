@@ -15,3 +15,19 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
+if (
+  process.env.NODE_ENV === "development" &&
+  process.env.OPENNEXT_ENABLE_CLOUDFLARE_DEV === "1"
+) {
+  import("@opennextjs/cloudflare")
+    .then(async ({ initOpenNextCloudflareForDev }) => {
+      await initOpenNextCloudflareForDev();
+    })
+    .catch((error) => {
+      console.warn(
+        "[next.config] Failed to initialize OpenNext Cloudflare dev bindings:",
+        error,
+      );
+    });
+}

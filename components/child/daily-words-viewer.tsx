@@ -47,6 +47,7 @@ interface DailyWordsViewerProps {
   childName?: string;
   languagePreference?: LanguagePreference;
   onWordLearned?: () => void;
+  variant?: "full" | "home";
 }
 
 function applyProgressUpdate(
@@ -119,10 +120,12 @@ export function DailyWordsViewer({
   childName = "Emma",
   languagePreference = "cantonese", // Defaulted to Cantonese
   onWordLearned,
+  variant = "full",
 }: DailyWordsViewerProps) {
+  const showDefaultLibrary = variant === "full";
   const { playWord, isLoading, isPlaying } = useWordAudio();
   const [words, setWords] = useState<DailyWordSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(showDefaultLibrary);
   const [error, setError] = useState<string | null>(null);
 
   // Camera tab state (API-backed)
@@ -160,12 +163,21 @@ export function DailyWordsViewer({
   });
 
   useEffect(() => {
-    loadDailyWords();
-    loadCameraWords();
-  }, [childId]);
+    if (showDefaultLibrary) {
+      void loadDailyWords();
+    } else {
+      setWords([]);
+      setLoading(false);
+      setError(null);
+      setGraphReason(null);
+    }
+
+    void loadCameraWords();
+  }, [childId, showDefaultLibrary]);
 
   // Handle auto-selecting the first word when switching tabs
-  const currentWords = activeTab === "default" ? words : cameraWords;
+  const currentTab = showDefaultLibrary ? activeTab : "camera";
+  const currentWords = currentTab === "default" ? words : cameraWords;
 
   useEffect(() => {
     if (currentWords.length > 0) {
@@ -331,7 +343,7 @@ export function DailyWordsViewer({
     }
   };
 
-  if (error) {
+  if (showDefaultLibrary && error) {
     return (
       <Card className="bg-white/80 backdrop-blur-md rounded-4xl border-none shadow-sm p-6">
         <Alert variant="destructive" className="rounded-2xl">
@@ -350,7 +362,9 @@ export function DailyWordsViewer({
     );
   }
 
-  if (loading && cameraLoading) {
+  const isInitialLoading = showDefaultLibrary ? loading && cameraLoading : cameraLoading;
+
+  if (isInitialLoading) {
     return (
       <Card className="bg-white/80 backdrop-blur-md rounded-[40px] border-4 border-white shadow-sm p-6">
         <div className="space-y-4">
@@ -406,7 +420,7 @@ export function DailyWordsViewer({
                 <span className="bg-yellow-400 text-white p-2 rounded-2xl shadow-sm rotate-3">
                   <Sparkles className="w-6 h-6 fill-white" />
                 </span>
-                今日學習
+                {showDefaultLibrary ? "今日學習" : "今日發現"}
               </CardTitle>
               <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-none px-4 py-1.5 text-sm font-bold rounded-full">
                 共 {currentWords.length} 個詞語
@@ -415,48 +429,72 @@ export function DailyWordsViewer({
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            {/* --- TAB SWITCHER --- */}
-            <div className="flex bg-slate-100/80 p-1.5 rounded-full mb-6">
-              <button
-                onClick={() => {
-                  setActiveTab("camera");
-                  setIsExpanded(false);
-                }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
-                  activeTab === "camera"
-                    ? "bg-white text-purple-500 shadow-md scale-[1.02]"
-                    : "text-slate-400 hover:text-slate-600",
-                )}
-              >
-                <Camera className="w-5 h-5" />
-                相機探索
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("default");
-                  setIsExpanded(false);
-                }}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
-                  activeTab === "default"
-                    ? "bg-white text-[#38BDF8] shadow-md scale-[1.02]"
-                    : "text-slate-400 hover:text-slate-600",
-                )}
-              >
-                <BookOpen className="w-5 h-5" />
-                預設字庫
-              </button>
-            </div>
+            {showDefaultLibrary ? (
+              <div className="flex bg-slate-100/80 p-1.5 rounded-full mb-6">
+                <button
+                  onClick={() => {
+                    setActiveTab("camera");
+                    setIsExpanded(false);
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
+                    activeTab === "camera"
+                      ? "bg-white text-purple-500 shadow-md scale-[1.02]"
+                      : "text-slate-400 hover:text-slate-600",
+                  )}
+                >
+                  <Camera className="w-5 h-5" />
+                  相機探索
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("default");
+                    setIsExpanded(false);
+                  }}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
+                    activeTab === "default"
+                      ? "bg-white text-[#38BDF8] shadow-md scale-[1.02]"
+                      : "text-slate-400 hover:text-slate-600",
+                  )}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  預設字庫
+                </button>
+              </div>
+            ) : (
+              <div className="mb-6 rounded-[28px] border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-cyan-50 px-5 py-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-500 text-white shadow-sm">
+                    <Camera className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black tracking-[0.14em] text-teal-500">
+                      今日相機探索
+                    </p>
+                    <p className="mt-1 text-base font-black text-slate-700">
+                      這裡只顯示你今天用相機發現的新詞語。
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      預設字庫已經放在學習頁，首頁只保留今日最即時的相機探索。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <p className="text-slate-500 font-bold text-center mb-6 text-sm">
-              {activeTab === "default"
-                ? (graphReason ?? "這些詞語將會出現在你的睡前故事中！")
-                : "這些是你用相機發現的新鮮事物！"}
+              {showDefaultLibrary
+                ? currentTab === "default"
+                  ? (graphReason ?? "這些詞語將會出現在你的睡前故事中！")
+                  : "這些是你用相機發現的新鮮事物！"
+                : "把今天親自拍到的東西先放在首頁，再慢慢帶進學習和分享流程。"}
             </p>
 
             <p className="-mt-3 mb-6 text-center text-xs font-bold text-emerald-600">
-              點開詞語後按「請家長確認」，再由家長到家長中心批准，主動詞彙才會增加。
+              {showDefaultLibrary
+                ? "點開詞語後按「請家長確認」，再由家長到家長中心批准，主動詞彙才會增加。"
+                : "點開相片卡後先請家長確認，批准後才會加入學習，再決定是否分享到社區。"}
             </p>
 
             {/* Word List */}
@@ -507,7 +545,7 @@ export function DailyWordsViewer({
                               {index + 1}
                             </div>
                             <Badge className="rounded-full border-none bg-white/90 px-3 py-1 text-xs font-black text-slate-600 shadow-sm backdrop-blur-sm">
-                              {activeTab === "camera" ? "相機探索" : "今日推薦"}
+                              {currentTab === "camera" ? "相機探索" : "今日推薦"}
                             </Badge>
                           </div>
 
@@ -526,7 +564,7 @@ export function DailyWordsViewer({
                                 </span>
                               </div>
                               <p className="text-sm font-black leading-snug text-slate-500">
-                                {activeTab === "camera"
+                                {currentTab === "camera"
                                   ? "相機找到的圖像"
                                   : "今日詞語圖示"}
                               </p>
@@ -534,14 +572,14 @@ export function DailyWordsViewer({
                           ) : (
                             <div className="flex h-48 w-full flex-col items-center justify-center gap-3 px-4 text-center text-slate-500 sm:h-full sm:min-h-48">
                               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/80 text-slate-400 shadow-sm">
-                                {activeTab === "camera" ? (
+                                {currentTab === "camera" ? (
                                   <Camera className="h-8 w-8" />
                                 ) : (
                                   <BookOpen className="h-8 w-8" />
                                 )}
                               </div>
                               <p className="text-sm font-black leading-snug">
-                                {activeTab === "camera"
+                                {currentTab === "camera"
                                   ? "相片準備中"
                                   : "插圖準備中"}
                               </p>
@@ -553,9 +591,11 @@ export function DailyWordsViewer({
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
-                                {activeTab === "camera"
-                                  ? "Today Camera Discovery"
-                                  : "Today Story Word"}
+                                {showDefaultLibrary
+                                  ? currentTab === "camera"
+                                  ? "今日相機探索"
+                                  : "今日故事詞語"
+                                  : "今日相機探索"}
                               </p>
                               <h3 className="mt-2 wrap-break-word text-[2.1rem] font-black leading-[0.95] tracking-tight text-slate-800 sm:text-[2.6rem]">
                                 {word.word_cantonese || word.word}
@@ -573,7 +613,7 @@ export function DailyWordsViewer({
                                 handlePlayWord(word);
                               }}
                               className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-sky-400 to-cyan-300 text-white shadow-sm transition-transform hover:scale-105"
-                              aria-label={`Listen to ${word.word_cantonese || word.word}`}
+                              aria-label={`播放 ${word.word_cantonese || word.word}`}
                             >
                               <Volume2
                                 className={cn(
@@ -619,14 +659,18 @@ export function DailyWordsViewer({
                   )}
                 </div>
                 <p className="text-slate-500 font-bold text-lg">
-                  {activeTab === "default"
-                    ? "暫時未有今日詞語。"
-                    : "尚未發現新詞語。"}
+                  {showDefaultLibrary
+                    ? currentTab === "default"
+                      ? "暫時未有今日詞語。"
+                      : "尚未發現新詞語。"
+                    : "今天暫時未有新發現。"}
                 </p>
                 <p className="text-slate-400 text-sm mt-1">
-                  {activeTab === "default"
-                    ? "開始學習後會自動產生建議。"
-                    : "請用相機探索周圍的世界！"}
+                  {showDefaultLibrary
+                    ? currentTab === "default"
+                      ? "開始學習後會自動產生建議。"
+                      : "請用相機探索周圍的世界！"
+                    : "先用相機拍攝身邊物件，預設字庫則可以到學習頁查看。"}
                 </p>
               </div>
             )}
@@ -653,29 +697,54 @@ export function DailyWordsViewer({
 
             {/* Summary Stats Footer */}
             <div className="mt-6 pt-6 border-t-2 border-dashed border-slate-100 grid grid-cols-3 gap-4">
-              <StatBox
-                icon={
-                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                }
-                label="高優先級"
-                value={currentWords.filter((w) => w.story_priority >= 7).length}
-                color="bg-yellow-50 text-yellow-700 border border-yellow-100"
-              />
-              <StatBox
-                icon={<BookOpen className="w-5 h-5 text-blue-500" />}
-                label="平均練習"
-                value={(
-                  currentWords.reduce((sum, w) => sum + w.exposure_count, 0) /
-                  (currentWords.length || 1)
-                ).toFixed(1)}
-                color="bg-blue-50 text-blue-700 border border-blue-100"
-              />
-              <StatBox
-                icon={<Trophy className="w-5 h-5 text-orange-500" />}
-                label="主動詞彙"
-                value={currentWords.filter((w) => w.used_actively).length}
-                color="bg-orange-50 text-orange-700 border border-orange-100"
-              />
+              {showDefaultLibrary ? (
+                <>
+                  <StatBox
+                    icon={
+                      <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                    }
+                    label="高優先級"
+                    value={currentWords.filter((w) => w.story_priority >= 7).length}
+                    color="bg-yellow-50 text-yellow-700 border border-yellow-100"
+                  />
+                  <StatBox
+                    icon={<BookOpen className="w-5 h-5 text-blue-500" />}
+                    label="平均練習"
+                    value={(
+                      currentWords.reduce((sum, w) => sum + w.exposure_count, 0) /
+                      (currentWords.length || 1)
+                    ).toFixed(1)}
+                    color="bg-blue-50 text-blue-700 border border-blue-100"
+                  />
+                  <StatBox
+                    icon={<Trophy className="w-5 h-5 text-orange-500" />}
+                    label="主動詞彙"
+                    value={currentWords.filter((w) => w.used_actively).length}
+                    color="bg-orange-50 text-orange-700 border border-orange-100"
+                  />
+                </>
+              ) : (
+                <>
+                  <StatBox
+                    icon={<Camera className="w-5 h-5 text-teal-500" />}
+                    label="新發現"
+                    value={currentWords.length}
+                    color="bg-teal-50 text-teal-700 border border-teal-100"
+                  />
+                  <StatBox
+                    icon={<Zap className="w-5 h-5 text-blue-500" />}
+                    label="已開始練習"
+                    value={currentWords.filter((w) => w.exposure_count > 0).length}
+                    color="bg-blue-50 text-blue-700 border border-blue-100"
+                  />
+                  <StatBox
+                    icon={<Trophy className="w-5 h-5 text-orange-500" />}
+                    label="已會主動說"
+                    value={currentWords.filter((w) => w.used_actively).length}
+                    color="bg-orange-50 text-orange-700 border border-orange-100"
+                  />
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

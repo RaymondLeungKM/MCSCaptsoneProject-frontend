@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function bootstrapAuthFromUrl() {
     if (typeof window === "undefined") {
-      void checkAuth();
+      setLoading(false);
       return;
     }
 

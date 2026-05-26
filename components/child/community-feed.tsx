@@ -13,25 +13,19 @@
 import { useEffect, useState } from "react";
 import {
   Star,
-  GalleryHorizontalEnd,
-  Loader2,
   ImageOff,
   Trophy,
   Users,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toChildFriendlyText } from "@/lib/child-text";
 import {
   getCommunityFeed,
   reactToPost,
   removeReaction,
-  submitCommunityPostFromCollection,
   type CommunityPost,
 } from "@/lib/api/community";
-import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
-import type { Word } from "@/lib/types";
 import { API_BASE_URL } from "@/lib/api/client";
 
 interface CommunityFeedProps {
@@ -49,6 +43,23 @@ function resolveImageUrl(url: string): string {
 const isImageUrl = (value?: string) =>
   !!value && (value.startsWith("http") || value.startsWith("/"));
 
+function getPostTitle(post: CommunityPost): string {
+  return (
+    toChildFriendlyText(post.word_text_cantonese) ??
+    toChildFriendlyText(post.word_text) ??
+    "小發現"
+  );
+}
+
+function getPostCaption(post: CommunityPost, title: string): string | null {
+  const caption = toChildFriendlyText(post.caption);
+  if (!caption || caption === title) {
+    return null;
+  }
+
+  return caption;
+}
+
 export function CommunityFeed({
   childId,
   languagePreference = "cantonese",
@@ -57,13 +68,6 @@ export function CommunityFeed({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reactedIds, setReactedIds] = useState<Set<string>>(new Set());
-  const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-
-  // Collection picker state
-  const [showPicker, setShowPicker] = useState(false);
-  const [collectionWords, setCollectionWords] = useState<Word[]>([]);
-  const [loadingCollection, setLoadingCollection] = useState(false);
 
   // ─── Load Feed ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -134,46 +138,11 @@ export function CommunityFeed({
     }
   };
 
-  // ─── Open Collection Picker ─────────────────────────────────────────────────
-  const openPicker = async () => {
-    setShowPicker(true);
-    if (collectionWords.length > 0) return; // use cached list
-    setLoadingCollection(true);
-    try {
-      const responses = await getWordsWithProgress(childId, undefined, true);
-      const words = responses
-        .map((r) => toWord(r, r.progress))
-        .filter((w) => isImageUrl(w.image));
-      setCollectionWords(words);
-    } catch {
-      setError("無法載入我的收藏，請稍後再試。");
-      setShowPicker(false);
-    } finally {
-      setLoadingCollection(false);
-    }
-  };
-
-  // ─── Pick & Submit ──────────────────────────────────────────────────────────
-  const handlePickWord = async (word: Word) => {
-    setShowPicker(false);
-    setSubmitting(true);
-    setSubmitSuccess(false);
-    try {
-      await submitCommunityPostFromCollection(childId, word.id);
-      setSubmitSuccess(true);
-      setTimeout(() => setSubmitSuccess(false), 3000);
-    } catch {
-      setError("提交失敗，請再試一次。");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 hidden">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-pink-400 p-2.5 rounded-xl -rotate-3 shadow-sm">
             <Users className="w-5 h-5 text-white" />
@@ -185,107 +154,7 @@ export function CommunityFeed({
             </p>
           </div>
         </div>
-
-        {/* Pick from My Collection button */}
-        <button
-          onClick={() => void openPicker()}
-          disabled={submitting}
-          className={cn(
-            "flex items-center gap-2 bg-linear-to-r from-pink-400 to-orange-400",
-            "text-white px-4 py-2.5 rounded-full font-black text-sm shadow-md",
-            "hover:scale-105 active:scale-95 transition-all",
-            submitting && "opacity-60 cursor-not-allowed",
-          )}
-        >
-          {submitting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <GalleryHorizontalEnd className="w-4 h-4" />
-          )}
-          {languagePreference === "english" ? "Share a Find!" : "分享發現！"}
-        </button>
       </div>
-
-      {/* Collection Picker Modal */}
-      {showPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-4xl w-full max-w-md max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <div>
-                <h3 className="text-xl font-black text-slate-700">
-                  {languagePreference === "english"
-                    ? "Pick from My Collection"
-                    : "選擇我的收藏"}
-                </h3>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  {languagePreference === "english"
-                    ? "Choose a photo to share with friends!"
-                    : "選一張相片與大家分享！"}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowPicker(false)}
-                className="bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-all"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="overflow-y-auto p-4 flex-1">
-              {loadingCollection ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="w-8 h-8 animate-spin text-pink-400" />
-                </div>
-              ) : collectionWords.length === 0 ? (
-                <div className="text-center py-10">
-                  <p className="text-5xl mb-3">📸</p>
-                  <p className="text-slate-500 font-bold text-sm">
-                    {languagePreference === "english"
-                      ? "No photos in your collection yet!"
-                      : "你的收藏還沒有相片！"}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-3">
-                  {collectionWords.map((word) => (
-                    <button
-                      key={word.id}
-                      onClick={() => void handlePickWord(word)}
-                      className="group relative aspect-square rounded-2xl overflow-hidden border-2 border-slate-200 hover:border-pink-400 transition-all hover:scale-105 bg-slate-100"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={resolveImageUrl(word.image)}
-                        alt={word.word_cantonese || word.word}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent px-2 py-1.5">
-                        <p className="text-white text-[10px] font-black truncate text-center">
-                          {word.word_cantonese || word.word}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Submit success notice */}
-      {submitSuccess && (
-        <Alert className="bg-green-50 border-green-200 rounded-2xl">
-          <AlertDescription className="text-green-700 font-bold">
-            🎉{" "}
-            {languagePreference === "english"
-              ? "Photo submitted! A grown-up will review it first."
-              : "相片已提交！等家長審核後就會出現囉！"}
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Error */}
       {error && (
@@ -312,68 +181,48 @@ export function CommunityFeed({
           <div className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-10 h-10 text-pink-400" />
           </div>
-          <h3 className="text-xl font-black text-slate-700 mb-2">
-            {languagePreference === "english"
-              ? "No discoveries yet!"
-              : "還沒有發現！"}
-          </h3>
+          <h3 className="text-xl font-black text-slate-700 mb-2">還沒有發現！</h3>
           <p className="text-slate-500 font-bold text-sm">
-            {languagePreference === "english"
-              ? "Be the first to share a photo!"
-              : "成為第一個分享相片的人吧！"}
+            先到「我的相片」揀相，再分享發現吧！
           </p>
         </div>
       )}
 
       {/* Feed grid */}
       {!loading && posts.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {posts.map((post) => {
             const starred = reactedIds.has(post.id);
+            const title = getPostTitle(post);
+            const caption = getPostCaption(post, title);
             return (
               <div
                 key={post.id}
-                className="relative bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden border-2 border-white shadow-md group"
+                className="group overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-md transition-all duration-200 hover:border-sky-200 hover:shadow-lg"
               >
-                {/* Image */}
-                <div className="aspect-square overflow-hidden bg-slate-100">
-                  {post.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={resolveImageUrl(post.image_url)}
-                      alt={post.word_text || "Discovery"}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-3 sm:h-44">
+                  {isImageUrl(post.image_url) ? (
+                    <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-white/85 p-2 shadow-inner">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveImageUrl(post.image_url)}
+                        alt={title}
+                        className="max-h-full max-w-full rounded-[18px] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.04]"
+                      />
+                    </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageOff className="w-10 h-10 text-slate-300" />
                     </div>
                   )}
-                </div>
 
-                {/* Footer */}
-                <div className="p-3 flex items-center justify-between">
-                  <div className="min-w-0">
-                    {post.word_text_cantonese || post.word_text ? (
-                      <p className="font-black text-slate-700 text-sm truncate">
-                        {post.word_text_cantonese || post.word_text}
-                      </p>
-                    ) : null}
-                    {post.caption && (
-                      <p className="text-slate-400 text-xs font-bold truncate">
-                        {post.caption}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Star button */}
                   <button
                     onClick={() => void handleReact(post.id)}
                     className={cn(
-                      "flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-black transition-all",
+                      "absolute top-3 right-3 shrink-0 flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-black transition-all shadow-sm",
                       starred
-                        ? "bg-yellow-100 text-yellow-600"
-                        : "bg-slate-100 text-slate-400 hover:bg-yellow-50 hover:text-yellow-500",
+                        ? "border-yellow-200 bg-yellow-100 text-yellow-600"
+                        : "border-white bg-white/95 text-slate-400 hover:bg-yellow-50 hover:text-yellow-500",
                     )}
                   >
                     <Star
@@ -384,6 +233,19 @@ export function CommunityFeed({
                     />
                     {post.reaction_count}
                   </button>
+                </div>
+
+                <div className="px-5 py-4 space-y-1">
+                  <div className="min-w-0">
+                    <p className="text-2xl font-black tracking-tight text-slate-700 truncate">
+                      {title}
+                    </p>
+                    {caption && (
+                      <p className="mt-2 text-sm font-bold text-slate-500 line-clamp-2 break-all">
+                        {caption}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -183,7 +183,7 @@ export function CategoryGrid({
           childId={childId}
           onProgressUpdate={handleProgressUpdate}
         />
-        <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full animate-in fade-in slide-in-from-right-4 duration-300">
+        <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full animate-in fade-in slide-in-from-right-4 duration-300 max-h-[calc(100vh-140px)] overflow-y-auto flex flex-col">
           {/* Header – Back Button */}
           <div className="flex items-center gap-3 mb-6">
             <button
@@ -195,12 +195,12 @@ export function CategoryGrid({
             </button>
 
             <div className="flex items-center gap-2.5">
-              <span className="text-3xl">{selectedCategory.icon}</span>
+              <span className="text-5xl">{selectedCategory.icon}</span>
               <div>
-                <h2 className="text-2xl font-black text-slate-700 tracking-tight leading-tight">
+                <h2 className="text-4xl font-black text-slate-700 tracking-tight leading-tight">
                   {catName}
                 </h2>
-                <p className="text-xs font-bold text-slate-400">
+                <p className="text-base font-bold text-slate-400">
                   {isLoadingWords
                     ? "載入中…"
                     : `${categoryWords.length} 個詞語`}
@@ -251,7 +251,7 @@ export function CategoryGrid({
                     onClick={() => handleWordActivate(word)}
                     onKeyDown={(event) => handleWordCardKeyDown(event, word)}
                     className={cn(
-                      "group relative flex flex-col items-center justify-start p-4 h-44 rounded-[28px] border-[3px]",
+                      "group relative flex min-h-[18.5rem] flex-col items-center justify-start rounded-[28px] border-[3px] p-5 pb-4",
                       "cursor-pointer transition-all duration-300 shadow-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                       colorClass,
                       word.mastered && "ring-2 ring-green-400 ring-offset-1",
@@ -259,9 +259,9 @@ export function CategoryGrid({
                   >
                     {/* Mastered badge */}
                     {word.mastered && (
-                      <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-green-400 flex items-center justify-center shadow-sm">
+                      <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-green-400 flex items-center justify-center shadow-sm">
                         <Check
-                          className="w-3.5 h-3.5 text-white"
+                          className="w-4 h-4 text-white"
                           strokeWidth={3}
                         />
                       </div>
@@ -269,9 +269,9 @@ export function CategoryGrid({
                     {/* Image / Emoji */}
                     <div
                       className={cn(
-                        "w-20 h-20 rounded-2xl flex items-center justify-center mb-2 overflow-hidden shrink-0",
+                        "w-28 h-28 rounded-3xl flex items-center justify-center mb-3 overflow-hidden shrink-0",
                         bgColorClass,
-                        "border-2 border-white/60 shadow-sm",
+                        "border-3 border-white/60 shadow-sm",
                       )}
                     >
                       {isImageUrl(word.image) ? (
@@ -285,45 +285,48 @@ export function CategoryGrid({
                           }}
                         />
                       ) : (
-                        <span className="text-4xl">{word.image || "📝"}</span>
+                        <span className="text-7xl drop-shadow-sm filter">{word.image || "📝"}</span>
                       )}
                     </div>
 
                     {/* Word Label */}
-                    <span className="text-base font-black tracking-tight text-center leading-tight">
+                    <span className="text-xl font-black tracking-tight text-center leading-tight">
                       {wordText}
                     </span>
 
                     {/* Jyutping */}
                     {word.jyutping && (
-                      <span className="mt-1 px-2 py-0.5 rounded-full bg-white/40 text-[10px] font-bold tracking-wide">
+                      <span className="mt-2 px-3 py-1 rounded-full bg-white/40 text-sm font-bold tracking-wide">
                         {word.jyutping}
                       </span>
                     )}
 
-                    {childId && (
-                      <MemoryStarsProgress
-                        exposureCount={word.exposureCount}
-                        languagePreference={languagePreference}
-                        variant="badge"
-                        className="mt-2"
-                      />
-                    )}
+                    <div className="mt-auto flex w-full items-end justify-between gap-3 pt-4">
+                      {childId ? (
+                        <MemoryStarsProgress
+                          exposureCount={word.exposureCount}
+                          languagePreference={languagePreference}
+                          variant="badge"
+                          className="max-w-full shrink-0"
+                        />
+                      ) : (
+                        <div className="flex-1" />
+                      )}
 
-                    {/* Audio Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handlePlayWord(e, word)}
-                      className="absolute bottom-3 right-3 bg-white/70 hover:bg-white rounded-full p-1.5 shadow-sm transition-all duration-200 hover:scale-110"
-                      aria-label={`播放 ${word.word_cantonese || word.word}`}
-                    >
-                      <Volume2
-                        className={cn(
-                          "w-4 h-4",
-                          (isPlaying || isAudioLoading) && "animate-pulse",
-                        )}
-                      />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handlePlayWord(e, word)}
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/80 shadow-sm transition-all duration-200 hover:scale-110 hover:bg-white"
+                        aria-label={`播放 ${word.word_cantonese || word.word}`}
+                      >
+                        <Volume2
+                          className={cn(
+                            "h-5 w-5",
+                            (isPlaying || isAudioLoading) && "animate-pulse",
+                          )}
+                        />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -354,7 +357,7 @@ export function CategoryGrid({
             <h2 className="text-2xl font-black text-slate-700 tracking-tight">
               {headerText}
             </h2>
-            <p className="text-sm font-bold text-slate-400">{subHeaderText}</p>
+            <p className="text-base font-bold text-slate-400">{subHeaderText}</p>
           </div>
         </div>
 
@@ -363,21 +366,28 @@ export function CategoryGrid({
           {categories.map((category) => {
             const categoryName = getCategoryName(category, languagePreference);
             const colorClasses = getColorClass(category.color);
+            const bgColorClass = colorClasses.split(" ")[0];
 
             return (
               <button
                 key={category.id}
                 onClick={() => handleCategoryClick(category)}
                 className={cn(
-                  "group relative flex flex-col items-center justify-center p-4 h-44 rounded-4xl border-[3px]",
+                  "group relative flex flex-col items-center justify-start p-5 h-56 rounded-[28px] border-[3px]",
                   "transition-all duration-300 shadow-sm",
                   colorClasses,
                 )}
               >
-                {/* Icon */}
-                <span className="text-5xl mb-3 drop-shadow-sm filter transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                  {category.icon}
-                </span>
+                <div
+                  className={cn(
+                    "w-28 h-28 rounded-3xl flex items-center justify-center mb-3 shrink-0 border-3 border-white/60 shadow-sm",
+                    bgColorClass,
+                  )}
+                >
+                  <span className="text-6xl drop-shadow-sm filter transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                    {category.icon}
+                  </span>
+                </div>
 
                 {/* Name */}
                 <span className="text-lg font-black tracking-tight text-center leading-tight">
@@ -385,7 +395,7 @@ export function CategoryGrid({
                 </span>
 
                 {/* Word Count Tag */}
-                <span className="mt-2 px-2.5 py-1 rounded-full bg-white/40 text-[10px] font-black uppercase tracking-wide">
+                <span className="mt-2 px-3 py-1 rounded-full bg-white/40 text-sm font-bold uppercase tracking-wide">
                   {category.wordCount} 詞語
                 </span>
 

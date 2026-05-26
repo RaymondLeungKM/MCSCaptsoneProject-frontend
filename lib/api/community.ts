@@ -160,6 +160,13 @@ export async function submitCommunityPostFromCollection(
   );
 }
 
+/** Fetch the current child's own community posts, including pending shares */
+export async function getMyCommunityPosts(
+  childId: string,
+): Promise<CommunityPost[]> {
+  return apiRequest<CommunityPost[]>(`/community/posts/${childId}/mine`);
+}
+
 /** Get posts awaiting parent moderation */
 export async function getPendingPosts(): Promise<CommunityPost[]> {
   return apiRequest<CommunityPost[]>("/community/posts/pending");

@@ -230,52 +230,52 @@ export function ProfileView({
               <ProfileAvatar avatar={selectedAvatar} name={profile.name} />
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-black uppercase tracking-[0.25em] text-slate-400">
+                  <p className="text-base font-black uppercase tracking-[0.25em] text-slate-400">
                     我的檔案
                   </p>
-                  <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-800 md:text-4xl">
+                  <h2 className="mt-1 text-4xl font-black tracking-tight text-slate-800 md:text-5xl">
                     {profile.name}
                   </h2>
-                  <p className="mt-2 text-sm font-semibold text-slate-500 md:text-base">
+                  <p className="mt-2 text-base font-semibold text-slate-500 md:text-lg">
                     {profile.age} 歲 ・ Lv.{profile.level} ・ {profile.xp} XP
                   </p>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="rounded-full bg-sky-500 px-3 py-1 text-white hover:bg-sky-500">
+                  <Badge className="rounded-full bg-sky-500 px-4 py-2 text-base text-white hover:bg-sky-500 font-bold">
                     {languageLabels[profile.languagePreference || "cantonese"]}
                   </Badge>
-                  <Badge className="rounded-full bg-emerald-500 px-3 py-1 text-white hover:bg-emerald-500">
+                  <Badge className="rounded-full bg-emerald-500 px-4 py-2 text-base text-white hover:bg-emerald-500 font-bold">
                     {learningStyle.label}
                   </Badge>
-                  <Badge className="rounded-full bg-violet-500 px-3 py-1 text-white hover:bg-violet-500">
+                  <Badge className="rounded-full bg-violet-500 px-4 py-2 text-base text-white hover:bg-violet-500 font-bold">
                     專注 {profile.attentionSpan} 分鐘
                   </Badge>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/70 bg-white/75 p-5 shadow-sm backdrop-blur-md md:w-[320px]">
-              <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-500">
+            <div className="rounded-[32px] border border-white/70 bg-white/75 p-6 shadow-sm backdrop-blur-md md:w-[360px]">
+              <div className="mb-3 flex items-center justify-between text-base font-bold text-slate-500">
                 <span>升級進度</span>
                 <span>{xpToNextLevel} XP 到下一級</span>
               </div>
               <Progress
                 value={xpProgress}
-                className="h-3 rounded-full bg-slate-100"
+                className="h-4 rounded-full bg-slate-100"
                 indicatorClassName="bg-linear-to-r from-yellow-400 via-orange-400 to-pink-400"
               />
-              <div className="mt-4 grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-2xl bg-amber-50 px-3 py-3">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">
+              <div className="mt-4 grid grid-cols-2 gap-4 text-center">
+                <div className="rounded-2xl bg-amber-50 px-4 py-4">
+                  <p className="text-sm font-black uppercase tracking-[0.2em] text-amber-500">
                     今日進度
                   </p>
-                  <p className="mt-2 text-2xl font-black text-slate-800">
+                  <p className="mt-2 text-3xl font-black text-slate-800">
                     {profile.todayProgress}/{profile.dailyGoal}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-rose-50 px-3 py-3">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-rose-500">
+                <div className="rounded-2xl bg-rose-50 px-4 py-4">
+                  <p className="text-sm font-black uppercase tracking-[0.2em] text-rose-500">
                     連續天數
                   </p>
                   <p className="mt-2 text-2xl font-black text-slate-800">

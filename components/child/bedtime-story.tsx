@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { GeneratedStory, LanguagePreference } from "@/lib/types";
 import { generateStory } from "@/lib/api/bedtime-stories";
+import { StoryGeneratingAnimation } from "@/components/child/story-generating-animation";
 
 interface BedtimeStoryGeneratorProps {
   childId?: string;
@@ -57,8 +58,8 @@ const themes = [
 
 export function BedtimeStoryGenerator({
   childId = "1",
-  childName = "Emma",
-  languagePreference = "bilingual",
+  childName = "小朋友",
+  languagePreference = "cantonese",
   onStoryGenerated,
 }: BedtimeStoryGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -85,7 +86,7 @@ export function BedtimeStoryGenerator({
           | "bedtime",
         reading_time_minutes: 5,
         word_count_target: 400,
-        include_english: languagePreference === "bilingual",
+        include_english: false,
         include_jyutping: true,
       });
 
@@ -104,6 +105,8 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
+      {/* ── Story generating overlay ── */}
+      <StoryGeneratingAnimation isVisible={isGenerating} />
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}
@@ -111,10 +114,10 @@ export function BedtimeStoryGenerator({
           <div className="inline-flex p-4 bg-white rounded-full shadow-md mb-2">
             <Moon className="w-8 h-8 text-purple-500 fill-purple-500" />
           </div>
-          <h2 className="text-3xl font-black text-purple-900 tracking-tight">
+          <h2 className="text-4xl font-black text-purple-900 tracking-tight md:text-[2.7rem]">
             生成睡前故事
           </h2>
-          <p className="text-purple-700 font-medium">
+          <p className="text-lg text-purple-700 font-bold md:text-xl">
             為
             <span className="font-bold underline decoration-wavy decoration-purple-400">
               {childName}
@@ -125,7 +128,7 @@ export function BedtimeStoryGenerator({
 
         {/* Theme Selection Grid */}
         <div className="bg-white/60 backdrop-blur-md p-6 rounded-[32px] mx-4 mb-4">
-          <h3 className="text-sm font-black text-purple-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <h3 className="mb-4 flex items-center gap-2 text-xl font-black text-purple-900">
             <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
           <div className="grid grid-cols-3 gap-3">
@@ -141,14 +144,14 @@ export function BedtimeStoryGenerator({
                 )}
               >
                 <span className="text-2xl mb-1">{theme.emoji}</span>
-                <span className="text-xs font-bold">{theme.label}</span>
+                <span className="text-lg font-black">{theme.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Info Row */}
-        <div className="px-8 pb-4 flex justify-between text-xs font-bold text-purple-800 opacity-70">
+        <div className="px-8 pb-4 flex justify-between text-sm font-bold text-purple-800 opacity-70">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" /> 閱讀時間：5 分鐘
           </div>
@@ -163,7 +166,7 @@ export function BedtimeStoryGenerator({
             onClick={handleGenerateStory}
             disabled={isGenerating}
             className={cn(
-              "w-full h-16 rounded-full text-xl font-black text-white shadow-lg transition-all",
+              "w-full h-16 rounded-full text-3xl font-black text-white shadow-lg transition-all",
               isGenerating
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-[1.02] active:scale-95 shadow-purple-300/50",
@@ -215,12 +218,9 @@ function StoryCard({ story }: { story: GeneratedStory }) {
       <div className="pt-10 px-8 pb-8">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-2xl font-black text-slate-800 leading-tight mb-1">
+            <h3 className="text-3xl font-black text-slate-800 leading-tight mb-1 md:text-[2.4rem]">
               {story.title}
             </h3>
-            <p className="text-slate-400 font-bold text-sm">
-              {story.title_english}
-            </p>
           </div>
           <button className="p-2 bg-pink-50 rounded-full text-pink-500 hover:bg-pink-100 transition-colors">
             <Heart className="w-6 h-6" />
@@ -231,23 +231,23 @@ function StoryCard({ story }: { story: GeneratedStory }) {
           {story.featured_words.map((word) => (
             <Badge
               key={word}
-              className="bg-purple-100 text-purple-600 hover:bg-purple-200 border-none px-3 py-1 rounded-full"
+              className="bg-purple-100 text-purple-600 hover:bg-purple-200 border-none px-3 py-1 rounded-full text-sm font-black"
             >
               {word}
             </Badge>
           ))}
-          <Badge className="bg-slate-100 text-slate-500 border-none px-3 py-1 rounded-full">
+          <Badge className="bg-slate-100 text-slate-500 border-none px-3 py-1 rounded-full text-sm font-black">
             <Clock className="w-3 h-3 mr-1" /> {story.reading_time_minutes} 分鐘
           </Badge>
         </div>
 
         <div className="bg-slate-50 p-6 rounded-[24px] mb-6">
-          <p className="text-lg text-slate-600 leading-relaxed font-medium">
+          <p className="text-xl text-slate-600 leading-relaxed font-medium md:text-2xl">
             {story.content_cantonese}
           </p>
         </div>
 
-        <Button className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-lg shadow-lg hover:scale-[1.02] transition-transform">
+        <Button className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform">
           <BookOpen className="w-5 h-5 mr-2" />
           開始閱讀
         </Button>

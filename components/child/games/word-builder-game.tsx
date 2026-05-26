@@ -751,7 +751,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
         </div>
 
         {/* Hint indicator */}
-        {wrongAttempts > 0 && !showHint && (
+        {wrongAttempts > 0 && wrongAttempts < MAX_WRONG_BEFORE_HINT && !showHint && (
           <p className="text-base text-slate-500 font-bold flex items-center gap-1.5 bg-white/50 px-4 py-1.5 rounded-full">
             <HelpCircle className="w-4 h-4" />
             再試 {MAX_WRONG_BEFORE_HINT - wrongAttempts} 次就有拼音提示

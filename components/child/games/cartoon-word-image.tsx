@@ -3,6 +3,10 @@
 import { useState, useRef, useCallback } from "react";
 import { lookupEmojiOrFallback } from "@/lib/word-emoji";
 import { getAiCartoonImageUrl } from "@/lib/cartoon-image";
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
 
 interface CartoonWordImageProps {
   wordId: string;
@@ -53,11 +57,7 @@ export function CartoonWordImage({
   // relevant than re-generating on the fly. Only fall back to AI generation when
   // no stored URL is available.
   // Guard against emoji/non-URL values being stored in image_url (causes 404s).
-  const hasStoredImage =
-    !!existingImageUrl &&
-    (existingImageUrl.startsWith("http://") ||
-      existingImageUrl.startsWith("https://") ||
-      existingImageUrl.startsWith("/"));
+  const hasStoredImage = isBackendImageUrl(existingImageUrl);
 
   const imgUrl = hasStoredImage
     ? existingImageUrl!
@@ -108,7 +108,11 @@ export function CartoonWordImage({
       {!gaveUp && (
         <img
           key={imgKey}
-          src={hasStoredImage ? imgUrl : imgUrl + (imgKey > 0 ? `&_r=${imgKey}` : "")}
+          src={
+            hasStoredImage
+              ? resolveBackendAssetUrl(imgUrl)
+              : imgUrl + (imgKey > 0 ? `&_r=${imgKey}` : "")
+          }
           alt={label}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             realLoaded ? "opacity-100" : "opacity-0"

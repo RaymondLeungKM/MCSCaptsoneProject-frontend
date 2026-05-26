@@ -40,16 +40,16 @@ export function GameCard({ game, onPlay }: GameCardProps) {
       aria-label={`開始 ${game.name}`}
     >
       {/* Icon Box */}
-      <div className="w-20 h-20 rounded-[24px] bg-white flex items-center justify-center text-4xl shadow-sm group-hover:scale-110 transition-transform duration-300">
+      <div className="w-24 h-24 rounded-[24px] bg-white flex items-center justify-center text-6xl shadow-sm group-hover:scale-110 transition-transform duration-300">
         {game.icon}
       </div>
       
       {/* Text Content */}
       <div className="flex-1 min-w-0">
-        <h3 className="font-black text-slate-700 text-xl tracking-tight mb-1">
+        <h3 className="font-black text-slate-700 text-3xl tracking-tight mb-1">
           {game.name}
         </h3>
-        <p className="text-sm font-bold opacity-70 leading-tight line-clamp-2">
+        <p className="text-xl font-bold opacity-70 leading-tight line-clamp-2">
           {game.description}
         </p>
       </div>
@@ -88,10 +88,10 @@ export function GamesList({ games, onPlayGame, languagePreference = "cantonese" 
           <Gamepad2 className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-slate-700 tracking-tight">
+          <h2 className="text-3xl font-black text-slate-700 tracking-tight">
              好玩遊戲
           </h2>
-          <p className="text-sm font-bold text-slate-400">
+          <p className="text-base font-bold text-slate-400">
              邊玩邊學！
           </p>
         </div>

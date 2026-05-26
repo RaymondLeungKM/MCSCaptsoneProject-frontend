@@ -9,7 +9,6 @@ import {
   BookOpen,
   Star,
   Settings,
-  Languages,
   Type,
 } from "lucide-react";
 import {
@@ -48,9 +47,6 @@ export function BedtimeStoryReader({
 
   const [showJyutping, setShowJyutping] = useState(
     languagePreference !== "english",
-  );
-  const [showEnglish, setShowEnglish] = useState(
-    languagePreference === "bilingual",
   );
 
   const { speak, stop } = useSpeech();
@@ -206,9 +202,9 @@ export function BedtimeStoryReader({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full h-[90dvh] max-h-[90dvh] p-0 bg-transparent border-none shadow-none flex items-stretch justify-center overflow-hidden">
         <DialogHeader className="sr-only">
-          <DialogTitle>{story.title || "Bedtime story"}</DialogTitle>
+          <DialogTitle>{story.title || "睡前故事"}</DialogTitle>
           <DialogDescription>
-            {`Story reader dialog with ${totalPages} pages.`}
+            {`故事閱讀視窗，共 ${totalPages} 頁。`}
           </DialogDescription>
         </DialogHeader>
 
@@ -226,7 +222,7 @@ export function BedtimeStoryReader({
                 </h2>
                 <p className="text-[10px] opacity-80 uppercase tracking-widest font-bold">
                   {isStatsPage
-                    ? "完 (The End)"
+                    ? "完結"
                     : `第 ${currentPage + 1} 頁 / 共 ${totalPages} 頁`}
                 </p>
               </div>
@@ -278,20 +274,6 @@ export function BedtimeStoryReader({
                   onCheckedChange={setShowJyutping}
                 />
               </div>
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-[#D7CCC8]">
-                <Languages className="w-4 h-4 text-slate-400" />
-                <Label
-                  htmlFor="english"
-                  className="text-sm font-bold text-slate-600"
-                >
-                  英文 (English)
-                </Label>
-                <Switch
-                  id="english"
-                  checked={showEnglish}
-                  onCheckedChange={setShowEnglish}
-                />
-              </div>
             </div>
           </div>
 
@@ -335,21 +317,14 @@ export function BedtimeStoryReader({
                 {/* Text Area */}
                 <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4 overflow-y-auto pb-6">
                   {/* Cantonese */}
-                  <p className="text-xl md:text-3xl font-black text-slate-800 leading-relaxed tracking-tight">
+                  <p className="text-2xl md:text-[2.25rem] font-black text-slate-800 leading-relaxed tracking-tight">
                     {pages[currentPage]?.cantonese}
                   </p>
 
                   {/* Jyutping */}
                   {showJyutping && pages[currentPage]?.jyutping && (
-                    <p className="text-sm md:text-base font-mono text-purple-600 bg-purple-50 px-4 py-2 rounded-xl inline-block border border-purple-100">
+                    <p className="text-base md:text-lg font-mono text-purple-600 bg-purple-50 px-4 py-2 rounded-xl inline-block border border-purple-100">
                       {pages[currentPage].jyutping}
-                    </p>
-                  )}
-
-                  {/* English */}
-                  {showEnglish && pages[currentPage]?.english && (
-                    <p className="text-base md:text-lg font-medium text-slate-500 italic font-serif">
-                      &ldquo;{pages[currentPage].english}&rdquo;
                     </p>
                   )}
                 </div>
@@ -365,7 +340,7 @@ export function BedtimeStoryReader({
                     故事讀完了！
                   </h2>
                   <p className="text-slate-500 font-bold">
-                    做得好！ Great Job!
+                    做得好！
                   </p>
                 </div>
 

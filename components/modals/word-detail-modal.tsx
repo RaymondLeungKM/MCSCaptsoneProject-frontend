@@ -18,6 +18,11 @@ import { getWordText, getDefinition, getExample } from "@/lib/language-utils";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { AISentences } from "@/components/child/ai-sentences";
 import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
+import { toChildFriendlyList } from "@/lib/child-text";
+import {
   updateWordProgress,
   requestActiveVocabApproval,
 } from "@/lib/api/vocabulary";
@@ -28,15 +33,13 @@ interface WordDetailModalProps {
   onClose: () => void;
   languagePreference?: LanguagePreference;
   childId?: string;
+  footerAction?: React.ReactNode;
   onProgressUpdate?: (
     wordId: string,
     mastered: boolean,
     exposureCount: number,
   ) => void;
 }
-
-const isImageUrl = (value?: string) =>
-  !!value && (value.startsWith("http") || value.startsWith("/"));
 
 // Maps category.color (CSS class fragment) → a simple hex for a tinted hero bg
 const PASTEL_BG: Record<string, string> = {
@@ -127,6 +130,7 @@ export function WordDetailModal({
   onClose,
   languagePreference = "cantonese",
   childId,
+  footerAction,
   onProgressUpdate,
 }: WordDetailModalProps) {
   const { playWord, playSentence, isPlaying, isLoading } = useWordAudio();
@@ -219,6 +223,8 @@ export function WordDetailModal({
   const wordText = getWordText(word, languagePreference);
   const definition = getDefinition(word, languagePreference);
   const example = getExample(word, languagePreference);
+  const relatedWords = toChildFriendlyList(word.relatedWords);
+  const contexts = toChildFriendlyList(word.contexts);
 
   const colorKey = getColorKey(word.category ?? "");
   const heroBg = PASTEL_BG[colorKey] ?? PASTEL_BG.blue;
@@ -230,27 +236,15 @@ export function WordDetailModal({
   const exposureProgressPercent = (exposureProgress / EXPOSURE_GOAL) * 100;
   const reachedExposureGoal = exposureCount >= EXPOSURE_GOAL;
 
-  const exposureHeadline =
-    languagePreference === "english"
-      ? reachedExposureGoal
-        ? "Memory stars complete!"
-        : `Collected ${exposureProgress} of ${EXPOSURE_GOAL} memory stars`
-      : reachedExposureGoal
-        ? "記憶小星星集齊啦！"
-        : `已收集 ${exposureProgress} / ${EXPOSURE_GOAL} 粒記憶小星星`;
+  const exposureHeadline = reachedExposureGoal
+    ? "記憶小星星集齊啦！"
+    : `已收集 ${exposureProgress} / ${EXPOSURE_GOAL} 粒記憶小星星`;
 
-  const exposureEncouragement =
-    languagePreference === "english"
-      ? reachedExposureGoal
-        ? "Amazing! This word has passed the practice goal and is getting easier to remember."
-        : exposureCount === 0
-          ? "Tap Listen to light up the first memory star."
-          : `Just ${exposureRemaining} more star${exposureRemaining === 1 ? "" : "s"} to reach today's memory goal!`
-      : reachedExposureGoal
-        ? "太叻啦！這個詞語已超過練習目標，會更容易記住。"
-        : exposureCount === 0
-          ? "按一下聆聽發音，先點亮第一粒記憶小星星吧！"
-          : `再收集 ${exposureRemaining} 粒小星星，就到達今日記憶目標！`;
+  const exposureEncouragement = reachedExposureGoal
+    ? "太叻啦！這個詞語已超過練習目標，會更容易記住。"
+    : exposureCount === 0
+      ? "按一下聆聽發音，先點亮第一粒記憶小星星吧！"
+      : `再收集 ${exposureRemaining} 粒小星星，就到達今日記憶目標！`;
 
   const handlePlayWord = () => {
     void playWord(word, { languagePreference, speechRate: 0.8 });
@@ -268,31 +262,15 @@ export function WordDetailModal({
     });
   };
 
-  const showCantonese = languagePreference !== "english" && word.word_cantonese;
-  const showEnglishSub =
-    languagePreference === "bilingual" && word.word_cantonese;
-  const activeVocabularyLabel =
-    languagePreference === "english" ? "Active vocabulary" : "主動詞彙";
-  const requestParentApprovalLabel =
-    languagePreference === "english" ? "Ask parent to confirm" : "請家長確認";
-  const pendingApprovalLabel =
-    languagePreference === "english" ? "Waiting for parent" : "等待家長確認";
-  const activeVocabularyHint =
-    languagePreference === "english"
-      ? "Collect all 6 memory stars first. Then ask a parent to confirm it in the parent dashboard."
-      : "先集齊 6 粒記憶小星星，之後才可以在這裡送出請求，再由家長到家長中心確認。";
-  const activeVocabularyPendingHint =
-    languagePreference === "english"
-      ? "A request has been sent. The word will count as active vocabulary only after a parent approves it."
-      : "已送出確認請求。這個詞語要等家長在家長中心批准後，才會計入主動詞彙。";
-  const activeVocabularyCompleteHint =
-    languagePreference === "english"
-      ? "This word is already counted in active vocabulary."
-      : "這個詞語已經計入主動詞彙。";
-  const collectStarsFirstLabel =
-    languagePreference === "english"
-      ? `Collect ${EXPOSURE_GOAL} stars first`
-      : `先集齊 ${EXPOSURE_GOAL} 粒星`;
+  const showCantonese = Boolean(word.word_cantonese);
+  const showEnglishSub = false;
+  const activeVocabularyLabel = "主動詞彙";
+  const requestParentApprovalLabel = "請家長確認";
+  const pendingApprovalLabel = "等待家長確認";
+  const activeVocabularyHint = "先集齊 6 粒記憶小星星，之後才可以在這裡送出請求，再由家長到家長中心確認。";
+  const activeVocabularyPendingHint = "已送出確認請求。這個詞語要等家長在家長中心批准後，才會計入主動詞彙。";
+  const activeVocabularyCompleteHint = "這個詞語已經計入主動詞彙。";
+  const collectStarsFirstLabel = `先集齊 ${EXPOSURE_GOAL} 粒星`;
 
   const modal = (
     <div className="fixed inset-0 z-9999">
@@ -338,9 +316,9 @@ export function WordDetailModal({
               backgroundColor: heroBg,
             }}
           >
-            {isImageUrl(word.image) ? (
+            {isBackendImageUrl(word.image) ? (
               <img
-                src={word.image}
+                src={resolveBackendAssetUrl(word.image)}
                 alt={word.word}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -372,14 +350,9 @@ export function WordDetailModal({
             )}
 
             {/* Jyutping / Pronunciation */}
-            {languagePreference !== "english" && word.jyutping && (
+            {word.jyutping && (
               <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white/80 text-sm font-bold text-slate-500 border border-white/60 shadow-sm font-mono">
                 {word.jyutping}
-              </span>
-            )}
-            {languagePreference === "english" && word.pronunciation && (
-              <span className="inline-block mt-2 px-3 py-1 rounded-full bg-white/80 text-sm font-bold text-slate-500 border border-white/60 shadow-sm font-mono">
-                /{word.pronunciation}/
               </span>
             )}
           </div>
@@ -430,9 +403,7 @@ export function WordDetailModal({
 
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">
-                      {languagePreference === "english"
-                        ? "Memory Stars"
-                        : "記憶小星星"}
+                      記憶小星星
                     </p>
                     <p className="mt-1 text-sm font-black text-slate-700">
                       {exposureHeadline}
@@ -445,13 +416,7 @@ export function WordDetailModal({
                     {exposureCount}
                   </p>
                   <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                    {languagePreference === "english"
-                      ? reachedExposureGoal
-                        ? "stars+"
-                        : `of ${EXPOSURE_GOAL}`
-                      : reachedExposureGoal
-                        ? "星星+"
-                        : `目標 ${EXPOSURE_GOAL}`}
+                    {reachedExposureGoal ? "星星+" : `目標 ${EXPOSURE_GOAL}`}
                   </p>
                 </div>
               </div>
@@ -498,9 +463,7 @@ export function WordDetailModal({
 
                 {recordingExposure && (
                   <span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-black text-slate-400 shadow-sm">
-                    {languagePreference === "english"
-                      ? "Saving..."
-                      : "記錄中..."}
+                    記錄中...
                   </span>
                 )}
               </div>
@@ -526,9 +489,7 @@ export function WordDetailModal({
                 ? "準備中..."
                 : isPlaying
                   ? "播放中..."
-                  : languagePreference === "english"
-                    ? "Listen"
-                    : "聆聽發音"}
+                  : "聆聽發音"}
             </button>
 
             {childId &&
@@ -542,9 +503,7 @@ export function WordDetailModal({
                   )}
                 >
                   <Check className="w-5 h-5" />
-                  {languagePreference === "english"
-                    ? "In active vocab"
-                    : "已列入主動詞彙"}
+                  已列入主動詞彙
                 </div>
               ) : pendingParentApproval ? (
                 <div className="flex items-center gap-2 px-5 py-3 rounded-full font-black border-2 border-amber-300 bg-amber-50 text-amber-700 select-none">
@@ -585,9 +544,7 @@ export function WordDetailModal({
           {childId && (
             <div className="mt-3 space-y-1 text-center text-xs font-bold text-slate-500">
               <p>
-                {languagePreference === "english"
-                  ? "Each tap lights up a memory star when you listen or play the example."
-                  : "每次聽發音或播放例句，都會點亮一粒記憶小星星。"}
+                每次聽發音或播放例句，都會點亮一粒記憶小星星。
               </p>
               <p className="text-emerald-600">
                 {mastered
@@ -598,15 +555,21 @@ export function WordDetailModal({
               </p>
             </div>
           )}
+
+          {footerAction && (
+            <div className="mt-3 flex justify-center">
+              {footerAction}
+            </div>
+          )}
         </div>
 
         {/* ── SCROLLABLE BODY ─────────────────────────────────── */}
-        <div className="px-5 py-5 touch-pan-y">
+        <div className="custom-scrollbar px-5 py-5 touch-pan-y">
           <div className="space-y-4 pb-2">
           {/* Definition */}
           <Section
             icon={<BookOpen className="w-4 h-4" />}
-            title={languagePreference === "english" ? "Meaning" : "意思"}
+            title="意思"
             color="sky"
           >
             <p className="text-base font-bold text-slate-700 leading-relaxed">
@@ -617,18 +580,18 @@ export function WordDetailModal({
           {/* Example Sentence */}
           <Section
             icon={<span className="text-base">💬</span>}
-            title={languagePreference === "english" ? "Example" : "例句"}
+            title="例句"
             color="purple"
             action={
               <button
                 onClick={handlePlayExample}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 rounded-full text-purple-600 text-xs font-black transition-colors"
-                aria-label="Play example sentence"
+                aria-label="播放例句"
               >
                 <Volume2
                   className={cn("w-3.5 h-3.5", isPlaying && "animate-pulse")}
                 />
-                {languagePreference === "english" ? "Play" : "播放"}
+                播放
               </button>
             }
           >
@@ -637,25 +600,10 @@ export function WordDetailModal({
             </p>
           </Section>
 
-          {/* Physical Action — English DB field, only show in English mode */}
-          {word.physicalAction && languagePreference === "english" && (
-            <Section
-              icon={<Zap className="w-4 h-4" />}
-              title="Try This!"
-              color="orange"
-            >
-              <p className="text-base font-bold text-slate-700 leading-relaxed">
-                {word.physicalAction}
-              </p>
-            </Section>
-          )}
-
           {/* AI Sample Sentences */}
           <Section
             icon={<span className="text-base">✨</span>}
-            title={
-              languagePreference === "english" ? "More Sentences" : "更多例句"
-            }
+            title="更多例句"
             color="pink"
           >
             <AISentences
@@ -666,16 +614,14 @@ export function WordDetailModal({
           </Section>
 
           {/* Related Words */}
-          {word.relatedWords && word.relatedWords.length > 0 && (
+          {relatedWords.length > 0 && (
             <Section
               icon={<Link2 className="w-4 h-4" />}
-              title={
-                languagePreference === "english" ? "Related Words" : "相關詞語"
-              }
+              title="相關詞語"
               color="teal"
             >
               <div className="flex flex-wrap gap-2">
-                {word.relatedWords.map((rw) => (
+                {relatedWords.map((rw) => (
                   <span
                     key={rw}
                     className="px-3 py-1.5 bg-teal-50 border border-teal-200 text-teal-700 rounded-full text-sm font-bold"
@@ -688,25 +634,17 @@ export function WordDetailModal({
           )}
 
           {/* Contexts */}
-          {word.contexts && word.contexts.length > 0 && (
+          {contexts.length > 0 && (
             <Section
               icon={<span className="text-base">🗺️</span>}
-              title={
-                languagePreference === "english"
-                  ? "Where You'll Hear It"
-                  : "在哪裡聽到？"
-              }
+              title="在哪裡聽到？"
               color="green"
             >
               <ul className="space-y-1">
-                {word.contexts.map((ctx) => {
-                  const label =
-                    languagePreference !== "english"
-                      ? (CONTEXT_TRANSLATION[ctx] ?? ctx)
-                      : ctx;
+                {contexts.map((label) => {
                   return (
                     <li
-                      key={ctx}
+                      key={label}
                       className="flex items-center gap-2 text-sm font-bold text-slate-600"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />

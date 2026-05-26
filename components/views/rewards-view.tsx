@@ -180,18 +180,18 @@ function RewardStat({
   className: string;
 }) {
   return (
-    <div className="rounded-[28px] border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur-md">
+    <div className="rounded-[28px] border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md">
       <div
         className={cn(
-          "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl",
+          "mb-4 flex h-14 w-14 items-center justify-center rounded-2xl",
           className,
         )}
       >
-        <Icon className="h-6 w-6" />
+        <Icon className="h-7 w-7" />
       </div>
-      <p className="text-3xl font-black text-slate-800">{value}</p>
-      <p className="mt-1 text-sm font-black text-slate-600">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="text-4xl font-black text-slate-800">{value}</p>
+      <p className="mt-2 text-base font-black text-slate-600">{label}</p>
+      <p className="mt-2 text-base font-medium text-slate-500">{helper}</p>
     </div>
   );
 }
@@ -301,16 +301,16 @@ export function RewardsView({
                 <Trophy className="h-4 w-4" />
                 獎勵基地
               </div>
-              <h2 className="text-3xl font-black tracking-tight text-slate-800 md:text-4xl">
+              <h2 className="text-4xl font-black tracking-tight text-slate-800 md:text-5xl">
                 {profile.name} 的獎勵牆
               </h2>
-              <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-500 md:text-base">
+              <p className="mt-2 max-w-2xl text-base font-semibold text-slate-500 md:text-lg">
                 這裡會整理你已經獲得的徽章、最近的努力成果，和下一個快要解鎖的目標。
               </p>
             </div>
 
-            <div className="rounded-4xl border border-white/70 bg-white/75 p-5 shadow-sm backdrop-blur-md md:w-[320px]">
-              <div className="flex items-center justify-between text-sm font-black text-slate-500">
+            <div className="rounded-4xl border border-white/70 bg-white/75 p-6 shadow-sm backdrop-blur-md md:w-[360px]">
+              <div className="flex items-center justify-between text-base font-black text-slate-500">
                 <span>今日目標進度</span>
                 <span>
                   {profile.todayProgress}/{profile.dailyGoal}
@@ -325,10 +325,10 @@ export function RewardsView({
                       )
                     : 0
                 }
-                className="mt-3 h-3 rounded-full bg-slate-100"
+                className="mt-4 h-4 rounded-full bg-slate-100"
                 indicatorClassName="bg-linear-to-r from-emerald-400 to-sky-400"
               />
-              <div className="mt-4 flex items-center justify-between text-sm font-semibold text-slate-500">
+              <div className="mt-4 flex items-center justify-between text-base font-semibold text-slate-500">
                 <span>等級 {profile.level}</span>
                 <span>{profile.xp} XP</span>
               </div>
@@ -367,108 +367,86 @@ export function RewardsView({
           <Skeleton className="h-72 rounded-4xl" />
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            <section className="rounded-4xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md">
+        <div className="space-y-6">
+            <section className="rounded-4xl border border-white/60 bg-white/80 p-7 shadow-sm backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                  <Sparkles className="h-6 w-6" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                  <Sparkles className="h-7 w-7" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="text-2xl font-black text-slate-800">
                     下一個解鎖目標
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="text-base font-semibold text-slate-500">
                     再努力一點點，就可以拿到新的徽章。
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 space-y-4">
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
                 {nextTargets.length > 0 ? (
                   nextTargets.map((badge) => (
                     <div
                       key={badge.id}
-                      className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4"
+                      className="rounded-3xl border-2 border-slate-100 bg-slate-50/80 p-5 flex items-center gap-5"
                     >
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={cn(
-                            "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl",
-                            badge.accent,
-                          )}
-                        >
-                          {badge.icon}
+                      <div
+                        className={cn(
+                          "flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-5xl",
+                          badge.accent,
+                        )}
+                      >
+                        {badge.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xl font-black text-slate-800">{badge.name}</p>
+                          <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-4 py-1.5 text-base text-slate-600 shrink-0 font-bold">
+                            {badge.currentValue}/{badge.requirement}
+                          </Badge>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-lg font-black text-slate-800">
-                                {badge.name}
-                              </p>
-                              <p className="text-sm font-medium text-slate-500">
-                                {badge.description}
-                              </p>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className="rounded-full border-slate-200 bg-white px-3 py-1 text-slate-600"
-                            >
-                              {badge.currentValue}/{badge.requirement}
-                            </Badge>
-                          </div>
-                          <Progress
-                            value={badge.progress}
-                            className="mt-4 h-3 rounded-full bg-white"
-                            indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400"
-                          />
-                        </div>
+                        <p className="text-base font-medium text-slate-500 mt-1">{badge.description}</p>
+                        <Progress value={badge.progress} className="mt-3 h-5 rounded-full bg-white" indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400" />
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-5 text-center">
-                    <p className="text-lg font-black text-emerald-700">
-                      全部里程碑都解鎖了
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-emerald-600">
-                      目前這一批挑戰已經全部完成，做得很好。
-                    </p>
+                  <div className="rounded-3xl border-2 border-emerald-100 bg-emerald-50 p-6 text-center md:col-span-2">
+                    <p className="text-2xl font-black text-emerald-700">全部里程碑都解鎖了</p>
+                    <p className="mt-2 text-base font-semibold text-emerald-600">目前這一批挑戰已經全部完成，做得很好。</p>
                   </div>
                 )}
               </div>
             </section>
 
-            <section className="rounded-4xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md">
+            <section className="rounded-4xl border border-white/60 bg-white/80 p-7 shadow-sm backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
-                  <Check className="h-6 w-6" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                  <Check className="h-7 w-7" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
-                    已獲得的徽章
-                  </h3>
-                  <p className="text-sm font-semibold text-slate-500">
-                    每次練習、升級和連續打卡都會留下足跡。
+                  <h3 className="text-2xl font-black text-slate-800">已獲得的徽章</h3>
+                  <p className="text-base font-semibold text-slate-500">
+                    每次練習、升級和連續打卡都會留下趣軌。
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {achievements.map((achievement) => (
                   <div
                     key={`achievement-${achievement.achievement_id}`}
-                    className="rounded-3xl border border-emerald-100 bg-linear-to-br from-emerald-50 to-teal-50 p-4 shadow-sm"
+                    className="rounded-3xl border-2 border-emerald-100 bg-linear-to-br from-emerald-50 to-teal-50 p-5 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="text-4xl">
+                      <div className="text-5xl">
                         {achievement.achievement_icon}
                       </div>
-                      <Badge className="rounded-full bg-emerald-500 px-3 py-1 text-white hover:bg-emerald-500">
+                      <Badge className="rounded-full bg-emerald-500 px-4 py-1.5 text-white hover:bg-emerald-500 font-bold text-sm">
                         已解鎖
                       </Badge>
                     </div>
-                    <p className="mt-3 text-base font-black text-slate-800">
+                    <p className="mt-3 text-lg font-black text-slate-800">
                       {achievement.achievement_name}
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-500">
@@ -510,9 +488,7 @@ export function RewardsView({
                   )}
               </div>
             </section>
-          </div>
 
-          <div className="space-y-6">
             <section className="rounded-4xl border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur-md">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-500">
@@ -528,7 +504,7 @@ export function RewardsView({
                 </div>
               </div>
 
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                 {dailyStats.length > 0 ? (
                   dailyStats.map((day) => (
                     <div
@@ -628,7 +604,6 @@ export function RewardsView({
                 </Button>
               </div>
             </section>
-          </div>
         </div>
       )}
 

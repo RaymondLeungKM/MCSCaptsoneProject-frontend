@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   completeMission,
   getDailyMissions,
+  getOfflineMissions,
   type MissionContext,
   type MissionResponse,
 } from "@/lib/api/missions";
@@ -41,9 +42,41 @@ function isMissionCompleted(mission: MissionResponse): boolean {
   return mission.assignment?.status === "completed";
 }
 
+function pickVisibleMissions(
+  dailyMissions: MissionResponse[],
+  parentMissions: MissionResponse[],
+): Array<{ mission: MissionResponse; kind: "daily" | "offline" }> {
+  const preferredDaily = dailyMissions.slice(0, 2).map((mission) => ({
+    mission,
+    kind: "daily" as const,
+  }));
+  const preferredParent = parentMissions.slice(0, 1).map((mission) => ({
+    mission,
+    kind: "offline" as const,
+  }));
+
+  const visible = [...preferredDaily, ...preferredParent];
+
+  if (visible.length >= 3) {
+    return visible;
+  }
+
+  const extraDaily = dailyMissions.slice(preferredDaily.length).map((mission) => ({
+    mission,
+    kind: "daily" as const,
+  }));
+  const extraParent = parentMissions.slice(preferredParent.length).map((mission) => ({
+    mission,
+    kind: "offline" as const,
+  }));
+
+  return [...visible, ...extraDaily, ...extraParent].slice(0, 3);
+}
+
 export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
   const { toast } = useToast();
   const [missions, setMissions] = useState<MissionResponse[]>([]);
+  const [offlineMissions, setOfflineMissions] = useState<MissionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingMissionId, setSubmittingMissionId] = useState<string | null>(
@@ -56,8 +89,15 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
       setError(null);
 
       try {
-        const missionList = await getDailyMissions(childId);
-        setMissions(missionList);
+        const [missionList, offlineList] = await Promise.allSettled([
+          getDailyMissions(childId),
+          getOfflineMissions(childId),
+        ]);
+        if (missionList.status === "fulfilled") setMissions(missionList.value);
+        if (offlineList.status === "fulfilled") setOfflineMissions(offlineList.value);
+        if (missionList.status === "rejected" && offlineList.status === "rejected") {
+          setError("暫時未能載入今日任務，請稍後再試。");
+        }
       } catch (loadError) {
         console.error("Failed to load child missions:", loadError);
         setError("暫時未能載入今日任務，請稍後再試。");
@@ -71,9 +111,26 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
 
   async function handleCompleteMission(missionId: string) {
     const previousMissions = missions;
+    const previousOfflineMissions = offlineMissions;
     setSubmittingMissionId(missionId);
 
     setMissions((current) =>
+      current.map((mission) =>
+        mission.id === missionId
+          ? {
+              ...mission,
+              assignment: mission.assignment
+                ? {
+                    ...mission.assignment,
+                    status: "completed",
+                    completed_at: new Date().toISOString(),
+                  }
+                : mission.assignment,
+            }
+          : mission,
+      ),
+    );
+    setOfflineMissions((current) =>
       current.map((mission) =>
         mission.id === missionId
           ? {
@@ -99,6 +156,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
     } catch (completionError) {
       console.error("Failed to complete child mission:", completionError);
       setMissions(previousMissions);
+      setOfflineMissions(previousOfflineMissions);
       toast({
         title: "未能更新任務",
         description: "請稍後再試。",
@@ -109,9 +167,11 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
     }
   }
 
-  const completedCount = missions.filter(isMissionCompleted).length;
+  const visibleMissions = pickVisibleMissions(missions, offlineMissions);
+  const completedCount = visibleMissions.filter(({ mission }) => isMissionCompleted(mission)).length;
 
   return (
+    <>
     <section className="rounded-4xl border border-amber-200/70 bg-linear-to-br from-amber-50/95 via-white/95 to-orange-50/90 p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -119,17 +179,17 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             <Target className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-sm font-black text-amber-700">今日任務</p>
-            <p className="text-xs font-semibold text-slate-400">
+            <p className="text-xl font-black text-amber-700">今日任務</p>
+            <p className="text-base font-semibold text-slate-400">
               完成小挑戰，將今天的詞彙用出來
             </p>
           </div>
         </div>
 
-        {!loading && missions.length > 0 && (
+        {!loading && visibleMissions.length > 0 && (
           <div className="inline-flex items-center gap-2 self-start rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-slate-600 shadow-sm">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            {completedCount}/{missions.length} 已完成
+            {`${completedCount}/${visibleMissions.length} 已完成`}
           </div>
         )}
       </div>
@@ -158,7 +218,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             </div>
           ))}
         </div>
-      ) : missions.length === 0 ? (
+      ) : visibleMissions.length === 0 ? (
         <div className="mt-4 rounded-[28px] border border-dashed border-amber-200 bg-white/80 p-6 text-center shadow-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
             🌟
@@ -172,9 +232,10 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
         </div>
       ) : (
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {missions.map((mission) => {
+          {visibleMissions.map(({ mission, kind }) => {
             const completed = isMissionCompleted(mission);
             const isSubmitting = submittingMissionId === mission.id;
+            const isOffline = kind === "offline";
 
             return (
               <article
@@ -182,17 +243,30 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                 className={cn(
                   "rounded-[28px] border border-white/80 bg-white/85 p-4 shadow-sm transition-transform",
                   completed && "ring-2 ring-emerald-200/80",
+                  isOffline && "bg-emerald-50/70",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span
-                    className={cn(
-                      "inline-flex rounded-full border px-3 py-1 text-xs font-black",
-                      CONTEXT_STYLES[mission.context],
-                    )}
-                  >
-                    {CONTEXT_LABELS[mission.context]}
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        CONTEXT_STYLES[mission.context],
+                      )}
+                    >
+                      {CONTEXT_LABELS[mission.context]}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        isOffline
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                          : "border-amber-200 bg-amber-100 text-amber-700",
+                      )}
+                    >
+                      {isOffline ? "親子任務" : "今日任務"}
+                    </span>
+                  </div>
 
                   {completed && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-700">
@@ -202,10 +276,10 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                   )}
                 </div>
 
-                <h3 className="mt-3 text-xl font-black leading-tight text-slate-800">
+                <h3 className="mt-3 text-3xl font-black leading-tight text-slate-800">
                   {mission.title}
                 </h3>
-                <p className="mt-2 min-h-14 text-sm font-semibold leading-6 text-slate-500">
+                <p className="mt-2 min-h-14 text-xl font-semibold leading-6 text-slate-500">
                   {mission.description}
                 </p>
 
@@ -223,7 +297,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                 )}
 
                 {mission.conversation_prompts[0] && (
-                  <div className="mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold leading-6 text-slate-600">
+                  <div className="mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-base font-semibold leading-6 text-slate-600">
                     <span className="font-black text-amber-700">小提示：</span>
                     {mission.conversation_prompts[0]}
                   </div>
@@ -237,7 +311,9 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                     "mt-4 h-11 w-full rounded-full font-black text-white",
                     completed
                       ? "bg-emerald-400 hover:bg-emerald-400"
-                      : "bg-amber-400 hover:bg-amber-500",
+                      : isOffline
+                        ? "bg-emerald-400 hover:bg-emerald-500"
+                        : "bg-amber-400 hover:bg-amber-500",
                   )}
                 >
                   {isSubmitting ? (
@@ -249,6 +325,11 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                     <>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       已完成
+                    </>
+                  ) : isOffline ? (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      和家長完成了
                     </>
                   ) : (
                     <>
@@ -263,5 +344,6 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
         </div>
       )}
     </section>
+  </>
   );
 }

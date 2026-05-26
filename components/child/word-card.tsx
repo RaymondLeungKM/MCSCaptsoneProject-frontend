@@ -4,6 +4,10 @@ import React from "react";
 import { Word, LanguagePreference } from "@/lib/types";
 import { Volume2, CheckCircle, Sparkles, Activity, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
 
 interface WordCardProps {
   word: Word;
@@ -55,9 +59,9 @@ export function WordCard({
 
         {/* Image / Emoji */}
         <div className="transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-          {word.image && word.image.startsWith("http") ? (
+          {isBackendImageUrl(word.image) ? (
             <img
-              src={word.image}
+              src={resolveBackendAssetUrl(word.image)}
               alt={word.word}
               className="w-32 h-32 object-contain drop-shadow-md"
             />
@@ -93,11 +97,11 @@ export function WordCard({
         <div className="space-y-1 mb-6">
           {showCantonese && word.word_cantonese && (
             <div>
-              <h3 className="text-4xl font-black text-slate-800 tracking-tight">
+              <h3 className="text-5xl font-black text-slate-800 tracking-tight">
                 {word.word_cantonese}
               </h3>
               {word.jyutping && (
-                <p className="text-sm font-bold text-slate-400 bg-slate-100 inline-block px-3 py-0.5 rounded-full mt-1">
+                <p className="text-base font-bold text-slate-400 bg-slate-100 inline-block px-3 py-0.5 rounded-full mt-1">
                   {word.jyutping}
                 </p>
               )}
@@ -109,8 +113,8 @@ export function WordCard({
               className={cn(
                 "font-black tracking-tight",
                 languagePreference === "bilingual" 
-                  ? "text-xl text-slate-400 mt-1" 
-                  : "text-4xl text-slate-800"
+                  ? "text-2xl text-slate-400 mt-1" 
+                  : "text-5xl text-slate-800"
               )}
             >
               {word.word}
@@ -121,14 +125,14 @@ export function WordCard({
         {/* Definition Bubble */}
         <div className="bg-slate-50 rounded-2xl p-4 mb-4">
           {showCantonese && word.definition_cantonese && (
-            <p className="text-base font-bold text-slate-600 leading-relaxed">
+            <p className="text-xl font-bold text-slate-600 leading-relaxed">
               {word.definition_cantonese}
             </p>
           )}
           {showEnglish && (
             <p className={cn(
               "leading-relaxed",
-              languagePreference === "bilingual" ? "text-sm text-slate-400 font-medium mt-1" : "text-base font-bold text-slate-600"
+              languagePreference === "bilingual" ? "text-base text-slate-400 font-medium mt-1" : "text-xl font-bold text-slate-600"
             )}>
               {word.definition}
             </p>
@@ -140,18 +144,18 @@ export function WordCard({
           <div className="bg-orange-50 rounded-2xl p-4 text-left border border-orange-100 mb-4">
             <div className="flex items-center gap-2 mb-1.5">
               <Sparkles className="w-4 h-4 text-orange-500 fill-orange-500" />
-              <span className="text-[10px] font-black text-orange-400 uppercase tracking-wide">
+              <span className="text-sm font-black text-orange-400 uppercase tracking-wide">
                 {labels.example}
               </span>
             </div>
             {showCantonese && word.example_cantonese && (
-              <p className="text-sm font-bold text-slate-700">{word.example_cantonese}</p>
+              <p className="text-lg font-bold text-slate-700">{word.example_cantonese}</p>
             )}
             {showEnglish && (
               <p className={cn(
-                "text-sm",
+                "text-lg",
                 languagePreference === "bilingual" ? "text-slate-400 italic" : "font-bold text-slate-700"
-              )}>
+              )}>  
                 {word.example}
               </p>
             )}
@@ -163,11 +167,11 @@ export function WordCard({
           <div className="bg-blue-50 rounded-2xl p-4 text-left border border-blue-100 mb-4">
              <div className="flex items-center gap-2 mb-1.5">
               <Activity className="w-4 h-4 text-blue-500" />
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-wide">
+              <span className="text-sm font-black text-blue-400 uppercase tracking-wide">
                 {labels.action}
               </span>
             </div>
-            <p className="text-sm font-bold text-blue-700">
+            <p className="text-lg font-bold text-blue-700">
               {word.physicalAction}
             </p>
           </div>

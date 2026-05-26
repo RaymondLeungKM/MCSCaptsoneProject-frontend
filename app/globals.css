@@ -169,6 +169,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
 }
 
 @layer base {
@@ -179,6 +180,25 @@
   background-color: #FFF9E6; /* The Cozy Cream */
   color: #37474F;           /* The Warm Grey Text */
 }
+}
+
+/* ── Kid mode font scale (child pages only) ─────────────────────────────────
+   18pt on a 96dpi screen = 24px. We use 24px as the base so
+   every text-* class stays above the 18pt threshold for children.
+*/
+.kid-mode {
+  font-size: 24px;
+
+  /* Floor the two smallest Tailwind sizes at 24px */
+  --text-xs:   1rem;      /* 24px */
+  --text-sm:   1rem;      /* 24px */
+  --text-base: 1rem;      /* 24px */
+  --text-lg:   1.125rem;  /* 27px */
+  --text-xl:   1.25rem;   /* 30px */
+  --text-2xl:  1.5rem;    /* 36px */
+  --text-3xl:  1.875rem;  /* 45px */
+  --text-4xl:  2.25rem;   /* 54px */
+  --text-5xl:  3rem;      /* 72px */
 }
 
 /* Safelist category background colors to ensure they're included in build */
@@ -376,38 +396,51 @@
 /* Custom scrollbar styling for story reader and dialogs */
 .custom-scrollbar::-webkit-scrollbar,
 .scrollbar-thin::-webkit-scrollbar,
-[data-radix-scroll-area-viewport]::-webkit-scrollbar {
-  width: 10px;
+[data-radix-scroll-area-viewport]::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track,
 .scrollbar-thin::-webkit-scrollbar-track,
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
   background: linear-gradient(
     to right,
     rgba(243, 232, 255, 0.5),
     rgba(251, 207, 232, 0.5)
   );
-  border-radius: 10px;
-  margin: 4px;
+  border-radius: 999px;
+  margin: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb,
 .scrollbar-thin::-webkit-scrollbar-thumb,
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
     rgba(168, 85, 247, 0.8),
     rgba(236, 72, 153, 0.8)
   );
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
   transition: all 0.3s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 .scrollbar-thin::-webkit-scrollbar-thumb:hover,
-[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
+[data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
     rgba(147, 51, 234, 1),
@@ -419,7 +452,10 @@
 /* Dark mode scrollbar */
 .dark .custom-scrollbar::-webkit-scrollbar-track,
 .dark .scrollbar-thin::-webkit-scrollbar-track,
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-track,
+.dark html::-webkit-scrollbar-track,
+.dark body::-webkit-scrollbar-track,
+.dark *::-webkit-scrollbar-track {
   background: linear-gradient(
     to right,
     rgba(88, 28, 135, 0.3),
@@ -429,7 +465,10 @@
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb,
 .dark .scrollbar-thin::-webkit-scrollbar-thumb,
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb,
+.dark html::-webkit-scrollbar-thumb,
+.dark body::-webkit-scrollbar-thumb,
+.dark *::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
     rgba(168, 85, 247, 0.6),
@@ -440,7 +479,10 @@
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover,
-.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover {
+.dark [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb:hover,
+.dark html::-webkit-scrollbar-thumb:hover,
+.dark body::-webkit-scrollbar-thumb:hover,
+.dark *::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
     rgba(168, 85, 247, 0.9),
@@ -451,13 +493,19 @@
 
 /* Firefox scrollbar */
 .custom-scrollbar,
-.scrollbar-thin {
+.scrollbar-thin,
+html,
+body,
+* {
   scrollbar-width: thin;
   scrollbar-color: rgba(168, 85, 247, 0.8) rgba(243, 232, 255, 0.5);
 }
 
 .dark .custom-scrollbar,
-.dark .scrollbar-thin {
+.dark .scrollbar-thin,
+.dark html,
+.dark body,
+.dark * {
   scrollbar-color: rgba(168, 85, 247, 0.6) rgba(88, 28, 135, 0.3);
 }
 

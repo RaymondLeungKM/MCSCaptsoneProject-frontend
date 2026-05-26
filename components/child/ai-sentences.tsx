@@ -79,16 +79,12 @@ function sanitizeSentenceItem(
   const sentence = isUsefulSentence(item.sentence, word)
     ? item.sentence.trim()
     : fallback?.sentence ?? "";
-  const sentenceEnglish = isUsefulSentence(item.sentence_english, word)
-    ? (item.sentence_english || "").trim()
-    : fallback?.sentence_english ?? "";
-
-  if (!sentence || !sentenceEnglish) return null;
+  if (!sentence) return null;
 
   return {
     id: item.id ?? index + 1,
     sentence,
-    sentence_english: sentenceEnglish,
+    sentence_english: "",
     jyutping: item.jyutping || fallback?.jyutping || "",
     context: item.context || fallback?.context || "General",
     difficulty: item.difficulty || fallback?.difficulty || "easy",
@@ -131,10 +127,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
     isLoading: isAudioLoading,
   } = useWordAudio();
 
-  const showCantonese =
-    languagePreference === "cantonese" || languagePreference === "bilingual";
-  const showEnglish =
-    languagePreference === "english" || languagePreference === "bilingual";
+  const showCantonese = true;
 
   useEffect(() => {
     async function fetchSentences() {
@@ -201,10 +194,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
   }, [isPlaying, playingId]);
 
   const playSentence = async (sentence: GeneratedSentence) => {
-    const textToSpeak =
-      languagePreference === "english"
-        ? sentence.sentence_english || sentence.sentence
-        : sentence.sentence;
+    const textToSpeak = sentence.sentence;
 
     if (!textToSpeak?.trim()) {
       return;
@@ -312,13 +302,6 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
                     </p>
                   )}
                 </div>
-              )}
-
-              {/* English */}
-              {showEnglish && (
-                <p className="text-slate-500 font-medium italic mb-3">
-                  "{sent.sentence_english}"
-                </p>
               )}
 
               {/* Tags/Badges */}

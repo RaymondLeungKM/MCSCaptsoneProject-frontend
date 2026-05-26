@@ -234,12 +234,12 @@ export function GamesView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span className="text-3xl">🎮</span>
-        <h1 className="text-2xl font-bold text-foreground">Fun Games</h1>
+      <div className="flex items-center gap-3">
+        <span className="text-5xl">🎮</span>
+        <h1 className="text-3xl font-black text-foreground">Fun Games</h1>
       </div>
 
-      <p className="text-muted-foreground">
+      <p className="text-base font-semibold text-muted-foreground">
         Play games to practice your words!
       </p>
 

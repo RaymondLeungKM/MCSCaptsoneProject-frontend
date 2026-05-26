@@ -88,14 +88,14 @@ export function ProfileHeader({ childId, refreshKey }: ProfileHeaderProps) {
         {/* Info Section */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-black text-slate-700 tracking-tight truncate">
+            <h1 className="text-4xl font-black text-slate-700 tracking-tight truncate">
               你好，{profile.name}！
             </h1>
           </div>
 
           {/* XP Bar */}
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-1.5">
+            <div className="flex items-center justify-between text-base font-bold text-slate-400 mb-1.5">
               <span className="flex items-center gap-1 text-yellow-500">
                 <Star className="w-3.5 h-3.5 fill-yellow-500" />
                 {profile.xp} XP
@@ -172,8 +172,8 @@ function StatBox({
       className={`${color} rounded-[24px] p-3 flex flex-col items-center justify-center text-center border border-opacity-50`}
     >
       <div className="mb-1">{icon}</div>
-      <p className="text-xl font-black text-slate-700 leading-none">{value}</p>
-      <p className="text-[10px] font-bold opacity-60 uppercase tracking-wide mt-1">
+      <p className="text-2xl font-black text-slate-700 leading-none">{value}</p>
+      <p className="text-xs font-bold opacity-60 uppercase tracking-wide mt-1">
         {label}
       </p>
     </div>

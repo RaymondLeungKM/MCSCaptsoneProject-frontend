@@ -6,6 +6,10 @@ import type { Category, Word, LanguagePreference } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { getWordText, getCategoryName } from "@/lib/language-utils";
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
 
 interface LearnViewProps {
   categories: Category[];
@@ -51,9 +55,9 @@ export function LearnView({
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">{selectedCategory.icon}</span>
-            <h1 className="text-2xl font-bold text-foreground">
+          <div className="flex items-center gap-3">
+            <span className="text-5xl">{selectedCategory.icon}</span>
+            <h1 className="text-3xl font-black text-foreground">
               {categoryName}
             </h1>
           </div>
@@ -97,9 +101,9 @@ export function LearnView({
                     selectedCategory.color,
                   )}
                 >
-                  {word.image && word.image.startsWith("http") ? (
+                  {isBackendImageUrl(word.image) ? (
                     <img
-                      src={word.image}
+                      src={resolveBackendAssetUrl(word.image)}
                       alt={word.word}
                       className="w-full h-full object-cover"
                     />
@@ -168,12 +172,12 @@ export function LearnView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span className="text-3xl">📖</span>
-        <h1 className="text-2xl font-bold text-foreground">Learn New Words</h1>
+      <div className="flex items-center gap-3">
+        <span className="text-5xl">📖</span>
+        <h1 className="text-3xl font-black text-foreground">Learn New Words</h1>
       </div>
 
-      <p className="text-muted-foreground">
+      <p className="text-base font-semibold text-muted-foreground">
         Choose a topic you want to explore!
       </p>
 
@@ -192,20 +196,20 @@ export function LearnView({
                 "hover:border-foreground/20",
               )}
             >
-              <div className="w-14 h-14 rounded-2xl bg-card/50 flex items-center justify-center text-3xl shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-card/50 flex items-center justify-center text-4xl shadow-inner">
                 {category.icon}
               </div>
 
               <div className="flex-1">
-                <h3 className="font-bold text-foreground text-lg">
+                <h3 className="font-black text-foreground text-xl">
                   {categoryName}
                 </h3>
-                <p className="text-sm text-foreground/70">
+                <p className="text-base text-foreground/70 font-semibold">
                   {category.wordCount} words to learn
                 </p>
               </div>
 
-              <ChevronRight className="w-6 h-6 text-foreground/50" />
+              <ChevronRight className="w-7 h-7 text-foreground/50" />
             </button>
           );
         })}

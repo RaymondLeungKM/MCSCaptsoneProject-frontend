@@ -89,17 +89,17 @@ export function SpacedRepetitionCard({
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto select-none">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between w-full text-sm text-slate-500">
+      <div className="flex items-center justify-between w-full text-base text-slate-500">
         <span className="font-medium">
           {currentIndex + 1} / {totalCards}
         </span>
         {card.is_new && (
-          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-            新詞彙 New
+          <span className="bg-blue-100 text-blue-700 text-sm font-bold px-3 py-1 rounded-full">
+            新詞彙
           </span>
         )}
         {card.is_graduated && (
-          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-emerald-100 text-emerald-700 text-sm font-bold px-3 py-1 rounded-full">
             已畢業 🎓
           </span>
         )}
@@ -122,7 +122,7 @@ export function SpacedRepetitionCard({
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl flex flex-col items-center justify-center p-6 [backface-visibility:hidden]">
             {/* Cantonese word */}
             <p
-              className="text-white font-black text-center leading-tight text-4xl mb-2"
+              className="text-white font-black text-center leading-tight text-6xl mb-3"
               style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
             >
               {card.word_cantonese || card.word || "?"}
@@ -130,7 +130,7 @@ export function SpacedRepetitionCard({
 
             {/* Jyutping */}
             {card.jyutping && (
-              <p className="text-indigo-100 text-lg font-semibold mt-1">
+              <p className="text-indigo-100 text-2xl font-semibold mt-2">
                 {card.jyutping}
               </p>
             )}
@@ -139,15 +139,15 @@ export function SpacedRepetitionCard({
             {card.audio_url && (
               <button
                 onClick={handlePlayAudio}
-                className="mt-4 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 transition-colors"
+                className="mt-6 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-colors"
                 aria-label="播放發音"
               >
-                <Volume2 className="w-6 h-6" />
+                <Volume2 className="w-7 h-7" />
               </button>
             )}
 
-            <p className="text-indigo-200 text-xs mt-6 flex items-center gap-1">
-              <RotateCcw className="w-3 h-3" /> 點擊翻面
+            <p className="text-indigo-200 text-sm mt-8 flex items-center gap-1">
+              <RotateCcw className="w-4 h-4" /> 點擊翻面
             </p>
           </div>
 
@@ -159,34 +159,31 @@ export function SpacedRepetitionCard({
               <img
                 src={card.image_url}
                 alt={card.word_cantonese || card.word || ""}
-                className="w-24 h-24 object-cover rounded-2xl shadow mb-3"
+                className="w-32 h-32 object-cover rounded-3xl shadow mb-4"
               />
             ) : (
-              <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center text-4xl mb-3">
+              <div className="w-32 h-32 bg-slate-100 rounded-3xl flex items-center justify-center text-6xl mb-4">
                 📖
               </div>
             )}
 
             {/* Word & jyutping */}
             <p
-              className="text-4xl font-black text-slate-800 text-center"
+              className="text-5xl font-black text-slate-800 text-center"
               style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
             >
               {card.word_cantonese || card.word}
             </p>
             {card.jyutping && (
-              <p className="text-indigo-500 font-semibold text-base mt-0.5">
+              <p className="text-indigo-500 font-semibold text-lg mt-1">
                 {card.jyutping}
               </p>
-            )}
-            {card.word && card.word_cantonese && (
-              <p className="text-slate-400 text-sm mt-0.5">{card.word}</p>
             )}
 
             {/* Definition */}
             {card.definition_cantonese && (
               <p
-                className="text-slate-600 text-sm text-center mt-3 leading-relaxed"
+                className="text-slate-600 text-base text-center mt-4 leading-relaxed"
                 style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
               >
                 {card.definition_cantonese}
@@ -234,8 +231,8 @@ export function SpacedRepetitionCard({
 
       {/* Flip hint when not yet flipped */}
       {!isFlipped && (
-        <p className="text-slate-400 text-sm flex items-center gap-1">
-          點擊卡片翻面查看答案 <ChevronRight className="w-4 h-4" />
+        <p className="text-slate-400 text-base flex items-center gap-2">
+          點擊卡片翻面查看答案 <ChevronRight className="w-5 h-5" />
         </p>
       )}
     </div>

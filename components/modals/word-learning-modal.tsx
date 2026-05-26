@@ -22,6 +22,10 @@ import { updateWordProgress } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
 import { AISentences } from "@/components/child/ai-sentences";
 import { getWordText, getDefinition, getExample } from "@/lib/language-utils";
+import {
+  isBackendImageUrl,
+  resolveBackendAssetUrl,
+} from "@/lib/backend-assets";
 
 interface WordLearningModalProps {
   word: Word;
@@ -211,9 +215,9 @@ export function WordLearningModal({
           {currentStep === "intro" && (
             <div className="flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4">
               <div className="w-40 h-40 rounded-4xl bg-sky-50 flex items-center justify-center text-8xl mb-6 border-4 border-sky-100 shadow-sm overflow-hidden animate-bounce-slow">
-                {word.image?.startsWith("http") ? (
+                {isBackendImageUrl(word.image) ? (
                   <img
-                    src={word.image}
+                    src={resolveBackendAssetUrl(word.image)}
                     alt={wordText}
                     className="w-full h-full object-cover"
                   />
