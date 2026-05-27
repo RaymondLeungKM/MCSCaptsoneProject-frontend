@@ -1,4 +1,5 @@
 import type { Word, Category, LanguagePreference } from "./types";
+import { toChildFriendlyText } from "./child-text";
 
 function normalizeSentenceCandidate(value?: string | null): string {
   return (value ?? "").replace(/["'`]/g, "").trim();
@@ -37,11 +38,11 @@ export function getWordText(
 ): string {
   switch (language) {
     case "cantonese":
-      return word.word_cantonese || word.word;
+      return word.word_cantonese || toChildFriendlyText(word.word) || word.word;
     case "bilingual":
       return word.word_cantonese
-        ? `${word.word_cantonese} ${word.word}`
-        : word.word;
+        ? `${word.word_cantonese} ${toChildFriendlyText(word.word) || word.word}`
+        : toChildFriendlyText(word.word) || word.word;
     case "english":
     default:
       return word.word;
