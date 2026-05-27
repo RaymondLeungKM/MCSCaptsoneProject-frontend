@@ -12,32 +12,33 @@
 
 ## File Map
 
-| File | Action |
-|------|--------|
-| `MCSCaptsoneProject-backend/alembic/versions/e5f6a7b8c9d0_add_consent_fields_to_users.py` | CREATE |
-| `MCSCaptsoneProject-backend/alembic/versions/f6a7b8c9d0e1_add_community_sharing_to_children.py` | CREATE |
-| `MCSCaptsoneProject-backend/app/models/user.py` | EDIT — add 5 consent cols to User, 1 col to Child |
-| `MCSCaptsoneProject-backend/app/schemas/user.py` | EDIT — add `ConsentUpdate`; extend `UserResponse`, `ChildUpdate`, `ChildResponse` |
-| `MCSCaptsoneProject-backend/app/api/endpoints/users.py` | EDIT — add `PATCH /me/consent` |
-| `MCSCaptsoneProject-backend/app/api/endpoints/vocabulary.py` | EDIT — add `GET /community` |
-| `MCSCaptsoneProject-frontend/lib/api/auth.ts` | EDIT — add `consent_given` to `UserResponse` |
-| `MCSCaptsoneProject-frontend/lib/api/consent.ts` | CREATE |
-| `MCSCaptsoneProject-frontend/lib/api/vocabulary.ts` | EDIT — add `getCommunityWords`, `getChildCapturedWords` |
-| `MCSCaptsoneProject-frontend/lib/api/children.ts` | EDIT — add `community_sharing_enabled` to request/response/mapper |
-| `MCSCaptsoneProject-frontend/lib/types.ts` | EDIT — add `communityEnabled` to `ChildProfile` |
-| `MCSCaptsoneProject-frontend/lib/auth-context.tsx` | EDIT — add `consent_given` to `User` interface |
-| `MCSCaptsoneProject-frontend/components/modals/privacy-consent-modal.tsx` | CREATE |
-| `MCSCaptsoneProject-frontend/components/child/community-tab.tsx` | CREATE |
-| `MCSCaptsoneProject-frontend/components/child/navigation.tsx` | EDIT — add 社區 nav item |
-| `MCSCaptsoneProject-frontend/app/child/page.tsx` | EDIT — add community tab content block |
-| `MCSCaptsoneProject-frontend/app/parent/page.tsx` | EDIT — add consent modal gate |
-| `MCSCaptsoneProject-frontend/components/parent/settings-tab.tsx` | EDIT — add community sharing toggle |
+| File                                                                                            | Action                                                                            |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `MCSCaptsoneProject-backend/alembic/versions/e5f6a7b8c9d0_add_consent_fields_to_users.py`       | CREATE                                                                            |
+| `MCSCaptsoneProject-backend/alembic/versions/f6a7b8c9d0e1_add_community_sharing_to_children.py` | CREATE                                                                            |
+| `MCSCaptsoneProject-backend/app/models/user.py`                                                 | EDIT — add 5 consent cols to User, 1 col to Child                                 |
+| `MCSCaptsoneProject-backend/app/schemas/user.py`                                                | EDIT — add `ConsentUpdate`; extend `UserResponse`, `ChildUpdate`, `ChildResponse` |
+| `MCSCaptsoneProject-backend/app/api/endpoints/users.py`                                         | EDIT — add `PATCH /me/consent`                                                    |
+| `MCSCaptsoneProject-backend/app/api/endpoints/vocabulary.py`                                    | EDIT — add `GET /community`                                                       |
+| `MCSCaptsoneProject-frontend/lib/api/auth.ts`                                                   | EDIT — add `consent_given` to `UserResponse`                                      |
+| `MCSCaptsoneProject-frontend/lib/api/consent.ts`                                                | CREATE                                                                            |
+| `MCSCaptsoneProject-frontend/lib/api/vocabulary.ts`                                             | EDIT — add `getCommunityWords`, `getChildCapturedWords`                           |
+| `MCSCaptsoneProject-frontend/lib/api/children.ts`                                               | EDIT — add `community_sharing_enabled` to request/response/mapper                 |
+| `MCSCaptsoneProject-frontend/lib/types.ts`                                                      | EDIT — add `communityEnabled` to `ChildProfile`                                   |
+| `MCSCaptsoneProject-frontend/lib/auth-context.tsx`                                              | EDIT — add `consent_given` to `User` interface                                    |
+| `MCSCaptsoneProject-frontend/components/modals/privacy-consent-modal.tsx`                       | CREATE                                                                            |
+| `MCSCaptsoneProject-frontend/components/child/community-tab.tsx`                                | CREATE                                                                            |
+| `MCSCaptsoneProject-frontend/components/child/navigation.tsx`                                   | EDIT — add 社區 nav item                                                          |
+| `MCSCaptsoneProject-frontend/app/child/page.tsx`                                                | EDIT — add community tab content block                                            |
+| `MCSCaptsoneProject-frontend/app/parent/page.tsx`                                               | EDIT — add consent modal gate                                                     |
+| `MCSCaptsoneProject-frontend/components/parent/settings-tab.tsx`                                | EDIT — add community sharing toggle                                               |
 
 ---
 
 ## Task 1: Migration — consent fields on `users`
 
 **Files:**
+
 - Create: `MCSCaptsoneProject-backend/alembic/versions/e5f6a7b8c9d0_add_consent_fields_to_users.py`
 
 - [ ] **Step 1.1: Create migration file**
@@ -88,6 +89,7 @@ git commit -m "feat: migration — consent fields on users table"
 ## Task 2: Migration — `community_sharing_enabled` on `children`
 
 **Files:**
+
 - Create: `MCSCaptsoneProject-backend/alembic/versions/f6a7b8c9d0e1_add_community_sharing_to_children.py`
 
 - [ ] **Step 2.1: Create migration file**
@@ -129,6 +131,7 @@ git commit -m "feat: migration — community_sharing_enabled on children table"
 ## Task 3: Update SQLAlchemy models
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-backend/app/models/user.py`
 
 - [ ] **Step 3.1: Add consent columns to `User` model**
@@ -165,6 +168,7 @@ git commit -m "feat: add consent + community_sharing_enabled columns to models"
 ## Task 4: Update Pydantic schemas
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-backend/app/schemas/user.py`
 
 - [ ] **Step 4.1: Add `ConsentUpdate` schema**
@@ -191,7 +195,7 @@ class UserResponse(UserBase):
     created_at: datetime
     consent_given: bool = False
     consent_given_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 ```
@@ -199,11 +203,13 @@ class UserResponse(UserBase):
 - [ ] **Step 4.3: Extend `ChildUpdate` and `ChildResponse`**
 
 Add to `ChildUpdate`:
+
 ```python
     community_sharing_enabled: Optional[bool] = None
 ```
 
 Add to `ChildResponse` (after `last_active`):
+
 ```python
     community_sharing_enabled: bool = False
 ```
@@ -220,6 +226,7 @@ git commit -m "feat: add ConsentUpdate schema; extend UserResponse + ChildUpdate
 ## Task 5: Add `PATCH /users/me/consent` endpoint
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-backend/app/api/endpoints/users.py`
 
 - [ ] **Step 5.1: Add imports and endpoint**
@@ -318,6 +325,7 @@ git commit -m "feat: add PATCH /users/me/consent endpoint"
 ## Task 6: Add `GET /vocabulary/community` endpoint
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-backend/app/api/endpoints/vocabulary.py`
 
 - [ ] **Step 6.1: Add the endpoint**
@@ -396,6 +404,7 @@ alembic upgrade head
 ```
 
 Expected output ends with:
+
 ```
 Running upgrade d4e5f6a7b8c9 -> e5f6a7b8c9d0, add_consent_fields_to_users
 Running upgrade e5f6a7b8c9d0 -> f6a7b8c9d0e1, add_community_sharing_to_children
@@ -415,6 +424,7 @@ Expected: consent_given, consent_given_at, consent_camera, consent_microphone, c
 ## Task 8: Frontend — Update `UserResponse` and `ChildResponse` types
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/lib/api/auth.ts`
 - Modify: `MCSCaptsoneProject-frontend/lib/api/children.ts`
 - Modify: `MCSCaptsoneProject-frontend/lib/types.ts`
@@ -451,16 +461,19 @@ interface User {
 - [ ] **Step 8.3: Add `community_sharing_enabled` to `ChildCreateRequest` and `ChildResponse` in `lib/api/children.ts`**
 
 Add to `ChildCreateRequest`:
+
 ```typescript
   community_sharing_enabled?: boolean;
 ```
 
 Add to `ChildResponse`:
+
 ```typescript
   community_sharing_enabled?: boolean;
 ```
 
 Update `toChildProfile()` at the bottom of `lib/api/children.ts` — add one field to the returned object:
+
 ```typescript
     languagePreference: response.language_preference || "cantonese",
     communityEnabled: response.community_sharing_enabled ?? false,
@@ -469,6 +482,7 @@ Update `toChildProfile()` at the bottom of `lib/api/children.ts` — add one fie
 - [ ] **Step 8.4: Add `communityEnabled` to `ChildProfile` in `lib/types.ts`**
 
 Locate the `ChildProfile` interface and add after `languagePreference`:
+
 ```typescript
   communityEnabled?: boolean;
 ```
@@ -486,6 +500,7 @@ git commit -m "feat: add consent_given and communityEnabled to frontend type con
 ## Task 9: Create `lib/api/consent.ts`
 
 **Files:**
+
 - Create: `MCSCaptsoneProject-frontend/lib/api/consent.ts`
 
 - [ ] **Step 9.1: Create file**
@@ -509,7 +524,9 @@ export interface ConsentPayload {
  * Sets consent_given=true on the User and propagates community_sharing_enabled
  * to all children of this user.
  */
-export async function submitConsent(payload: ConsentPayload): Promise<UserResponse> {
+export async function submitConsent(
+  payload: ConsentPayload,
+): Promise<UserResponse> {
   return apiRequest<UserResponse>("/users/me/consent", {
     method: "PATCH",
     body: JSON.stringify(payload),
@@ -529,6 +546,7 @@ git commit -m "feat: add lib/api/consent.ts — submitConsent API function"
 ## Task 10: Update `lib/api/vocabulary.ts`
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/lib/api/vocabulary.ts`
 
 - [ ] **Step 10.1: Add `CommunityWordResponse` interface and two new functions**
@@ -551,8 +569,12 @@ export interface CommunityWordResponse {
 /**
  * Get anonymised community word cards from children whose parents opted in.
  */
-export async function getCommunityWords(limit = 50): Promise<CommunityWordResponse[]> {
-  return apiRequest<CommunityWordResponse[]>(`/vocabulary/community?limit=${limit}`);
+export async function getCommunityWords(
+  limit = 50,
+): Promise<CommunityWordResponse[]> {
+  return apiRequest<CommunityWordResponse[]>(
+    `/vocabulary/community?limit=${limit}`,
+  );
 }
 
 /**
@@ -580,6 +602,7 @@ git commit -m "feat: add getCommunityWords + getChildCapturedWords API functions
 ## Task 11: Create privacy consent modal
 
 **Files:**
+
 - Create: `MCSCaptsoneProject-frontend/components/modals/privacy-consent-modal.tsx`
 
 - [ ] **Step 11.1: Create the component**
@@ -735,6 +758,7 @@ git commit -m "feat: add PrivacyConsentModal component"
 ## Task 12: Create community tab component
 
 **Files:**
+
 - Create: `MCSCaptsoneProject-frontend/components/child/community-tab.tsx`
 
 - [ ] **Step 12.1: Create the component**
@@ -1017,18 +1041,29 @@ git commit -m "feat: add CommunityTab component with My Photos + Community sub-t
 ## Task 13: Update child navigation — add 社區 tab
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/components/child/navigation.tsx`
 
 - [ ] **Step 13.1: Add import and nav item**
 
 At the top of `components/child/navigation.tsx`, the import line for icons is:
+
 ```typescript
 import { Home, BookOpen, Gamepad2, Trophy, User, Moon } from "lucide-react";
 ```
 
 Change to:
+
 ```typescript
-import { Home, BookOpen, Gamepad2, Trophy, User, Moon, Users } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  Gamepad2,
+  Trophy,
+  User,
+  Moon,
+  Users,
+} from "lucide-react";
 ```
 
 In the `navItems` array, add the community entry after the `stories` item and before `rewards`:
@@ -1057,6 +1092,7 @@ git commit -m "feat: add 社區 (community) tab to child navigation"
 ## Task 14: Wire community tab into child dashboard
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/app/child/page.tsx`
 
 - [ ] **Step 14.1: Add import**
@@ -1094,6 +1130,7 @@ git commit -m "feat: wire CommunityTab into child dashboard page"
 ## Task 15: Add consent modal gate to parent dashboard
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/app/parent/page.tsx`
 
 - [ ] **Step 15.1: Add import**
@@ -1112,8 +1149,8 @@ import { useAuth } from "@/lib/auth-context";
 Inside `ParentDashboardContent` (the inner component), add:
 
 ```typescript
-  const { user, refreshUser } = useAuth();
-  const needsConsent = user !== null && user.consent_given === false;
+const { user, refreshUser } = useAuth();
+const needsConsent = user !== null && user.consent_given === false;
 ```
 
 Then at the very top of the JSX returned by `ParentDashboardContent`, before the `<CozyPageWrapper>`, add:
@@ -1144,6 +1181,7 @@ git commit -m "feat: add privacy consent modal gate to parent dashboard"
 ## Task 16: Add community sharing toggle to settings tab
 
 **Files:**
+
 - Modify: `MCSCaptsoneProject-frontend/components/parent/settings-tab.tsx`
 
 - [ ] **Step 16.1: Add state and handler**
@@ -1151,35 +1189,41 @@ git commit -m "feat: add privacy consent modal gate to parent dashboard"
 Inside the `SettingsTab` function (mock UI branch), after the existing `const [parentalControls, setParentalControls] = useState(true);` line, add:
 
 ```typescript
-  const [communitySharing, setCommunitySharing] = useState(false);
+const [communitySharing, setCommunitySharing] = useState(false);
 ```
 
 Also add the import at the top of the file (if not already present):
+
 ```typescript
 import { updateChild } from "@/lib/api/children";
 import { useToast } from "@/hooks/use-toast";
 ```
 
 Inside the function, add:
-```typescript
-  const { toast } = useToast();
 
-  const handleCommunitySharingToggle = async (enabled: boolean) => {
-    setCommunitySharing(enabled);
-    if (isMockData) return; // skip API call for mock data
-    try {
-      await updateChild(profile.id, { community_sharing_enabled: enabled });
-      toast({
-        title: enabled ? "已開啟社區分享" : "已關閉社區分享",
-        description: enabled
-          ? "小朋友的相片詞卡已可與社區分享"
-          : "小朋友的相片詞卡已設為私人",
-      });
-    } catch {
-      setCommunitySharing(!enabled); // revert on error
-      toast({ title: "儲存失敗", description: "請稍後再試。", variant: "destructive" });
-    }
-  };
+```typescript
+const { toast } = useToast();
+
+const handleCommunitySharingToggle = async (enabled: boolean) => {
+  setCommunitySharing(enabled);
+  if (isMockData) return; // skip API call for mock data
+  try {
+    await updateChild(profile.id, { community_sharing_enabled: enabled });
+    toast({
+      title: enabled ? "已開啟社區分享" : "已關閉社區分享",
+      description: enabled
+        ? "小朋友的相片詞卡已可與社區分享"
+        : "小朋友的相片詞卡已設為私人",
+    });
+  } catch {
+    setCommunitySharing(!enabled); // revert on error
+    toast({
+      title: "儲存失敗",
+      description: "請稍後再試。",
+      variant: "destructive",
+    });
+  }
+};
 ```
 
 - [ ] **Step 16.2: Add toggle row to the notification settings card**
@@ -1187,20 +1231,16 @@ Inside the function, add:
 Find the existing "Push notification" toggle row in the settings JSX. Add the community toggle row directly after it:
 
 ```tsx
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-slate-700 font-bold text-sm">
-                      👥 社區相片分享
-                    </Label>
-                    <p className="text-xs text-slate-400">
-                      允許其他小朋友睇到相片詞卡
-                    </p>
-                  </div>
-                  <Switch
-                    checked={communitySharing}
-                    onCheckedChange={(val) => void handleCommunitySharingToggle(val)}
-                  />
-                </div>
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label className="text-slate-700 font-bold text-sm">👥 社區相片分享</Label>
+    <p className="text-xs text-slate-400">允許其他小朋友睇到相片詞卡</p>
+  </div>
+  <Switch
+    checked={communitySharing}
+    onCheckedChange={(val) => void handleCommunitySharingToggle(val)}
+  />
+</div>
 ```
 
 - [ ] **Step 16.3: Commit**
@@ -1221,7 +1261,7 @@ git commit -m "feat: add community sharing toggle to parent settings tab"
 cd MCSCaptsoneProject-backend && uvicorn main:app --reload --port 8000
 
 # Terminal 2
-cd MCSCaptsoneProject-frontend && pnpm dev
+cd MCSCaptsoneProject-frontend && npm run dev
 ```
 
 - [ ] **Step 17.2: Test consent modal**

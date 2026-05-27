@@ -42,22 +42,29 @@ import {
   getPendingPosts,
   moderatePost,
   getFriends,
+  getFriendChallenges,
   sendFriendRequest,
   searchUserById,
   sendFriendRequestById,
   respondToFriendRequest,
+  respondToFriendChallenge,
   getFriendsProgress,
   getCommunityFeed,
   getChallenges,
   getChallengeLeaderboard,
+  createFriendChallenge,
   type CommunityPost,
   type Friendship,
   type FriendProgress,
   type UserSearchResult,
   type CommunityChallenge,
   type ChallengeParticipation,
+  type FriendChallenge,
+  type FriendChallengeMetric,
+  type FriendChallengeViewStatus,
 } from "@/lib/api/community";
 import { API_BASE_URL } from "@/lib/api/client";
+import { getChildren, type ChildResponse } from "@/lib/api/children";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +82,48 @@ function daysLeft(endAt: string): number {
     0,
     Math.ceil((new Date(endAt).getTime() - Date.now()) / 86_400_000),
   );
+}
+
+function resolveFriendIdentity(
+  friendship: Friendship,
+  currentUserId?: string | null,
+) {
+  return friendship.requester_id === currentUserId
+    ? { name: friendship.addressee_name ?? "好友", id: friendship.addressee_id }
+    : {
+        name: friendship.requester_name ?? "好友",
+        id: friendship.requester_id,
+      };
+}
+
+function friendChallengeMetricLabel(metricType: FriendChallengeMetric): string {
+  switch (metricType) {
+    case "practice_days":
+      return "練習天數";
+    case "new_words":
+      return "新學詞語";
+    case "active_words":
+      return "主動活用";
+  }
+}
+
+function friendChallengeTargetUnit(metricType: FriendChallengeMetric): string {
+  return metricType === "practice_days" ? "天" : "個";
+}
+
+function friendChallengeStatusLabel(status: FriendChallengeViewStatus): string {
+  switch (status) {
+    case "pending":
+      return "待回覆";
+    case "active":
+      return "進行中";
+    case "completed":
+      return "已完成";
+    case "expired":
+      return "已結束";
+    case "declined":
+      return "已拒絕";
+  }
 }
 
 // ===========================================================================
@@ -542,9 +591,7 @@ function FriendsPanel() {
 
   /** Derive the other person's display name and id from a friendship record */
   const getFriendInfo = (f: Friendship) =>
-    f.requester_id === currentUser?.id
-      ? { name: f.addressee_name ?? "好友", id: f.addressee_id }
-      : { name: f.requester_name ?? "好友", id: f.requester_id };
+    resolveFriendIdentity(f, currentUser?.id);
 
   useEffect(() => {
     void load();
@@ -970,45 +1017,233 @@ function FriendsPanel() {
 // ---------------------------------------------------------------------------
 
 function ChallengesPanel() {
-  const [challenges, setChallenges] = useState<CommunityChallenge[]>([]);
+  const { user: currentUser } = useAuth();
+  const [friendChallenges, setFriendChallenges] = useState<FriendChallenge[]>(
+    [],
+  );
+  const [friends, setFriends] = useState<Friendship[]>([]);
+  const [children, setChildren] = useState<ChildResponse[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createMessage, setCreateMessage] = useState<{
+    ok: boolean;
+    msg: string;
+  } | null>(null);
+  const [respondingChallengeId, setRespondingChallengeId] = useState<
+    string | null
+  >(null);
+  const [selectedChildId, setSelectedChildId] = useState("");
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [inviteChildSelections, setInviteChildSelections] = useState<
+    Record<string, string>
+  >({});
+  const [metricType, setMetricType] =
+    useState<FriendChallengeMetric>("practice_days");
+  const [targetCount, setTargetCount] = useState("5");
+  const [durationDays, setDurationDays] = useState("7");
+  const [communityChallenges, setCommunityChallenges] = useState<
+    CommunityChallenge[]
+  >([]);
   const [leaderboards, setLeaderboards] = useState<
     Record<string, ChallengeParticipation[]>
   >({});
-  const [loading, setLoading] = useState(true);
+  const [loadingFriendChallenges, setLoadingFriendChallenges] = useState(true);
+  const [loadingCommunityChallenges, setLoadingCommunityChallenges] =
+    useState(true);
+
+  const loadFriendChallenges = async () => {
+    if (!currentUser) {
+      setFriendChallenges([]);
+      setFriends([]);
+      setChildren([]);
+      setLoadingFriendChallenges(false);
+      return;
+    }
+
+    setLoadingFriendChallenges(true);
+    try {
+      const [challengeResult, friendsResult, childrenResult] =
+        await Promise.allSettled([
+          getFriendChallenges(),
+          getFriends(true),
+          getChildren(),
+        ]);
+
+      const nextChallenges =
+        challengeResult.status === "fulfilled" ? challengeResult.value : [];
+      const nextFriends =
+        friendsResult.status === "fulfilled"
+          ? friendsResult.value.filter((friend) => friend.status === "accepted")
+          : [];
+      const nextChildren =
+        childrenResult.status === "fulfilled" ? childrenResult.value : [];
+
+      setFriendChallenges(
+        nextChallenges.filter(
+          (challenge) => challenge.view_status !== "declined",
+        ),
+      );
+      setFriends(nextFriends);
+      setChildren(nextChildren);
+
+      const defaultChildId = nextChildren[0]?.id;
+      if (defaultChildId) {
+        setSelectedChildId((current) => current || defaultChildId);
+        setInviteChildSelections((current) => {
+          const next = { ...current };
+          for (const challenge of nextChallenges) {
+            if (challenge.view_status === "pending" && !next[challenge.id]) {
+              next[challenge.id] = defaultChildId;
+            }
+          }
+          return next;
+        });
+      }
+    } catch (err) {
+      console.warn("[FriendChallenges] Failed to load:", err);
+      setFriendChallenges([]);
+      setFriends([]);
+      setChildren([]);
+    } finally {
+      setLoadingFriendChallenges(false);
+    }
+  };
+
+  const loadCommunityChallenges = async () => {
+    setLoadingCommunityChallenges(true);
+    try {
+      const data = await getChallenges("active");
+      setCommunityChallenges(data);
+
+      const boards = await Promise.allSettled(
+        data.map((challenge) =>
+          getChallengeLeaderboard(challenge.id).then((board) => ({
+            id: challenge.id,
+            board,
+          })),
+        ),
+      );
+      const merged: Record<string, ChallengeParticipation[]> = {};
+      for (const result of boards) {
+        if (result.status === "fulfilled") {
+          merged[result.value.id] = result.value.board;
+        }
+      }
+      setLeaderboards(merged);
+    } catch (err) {
+      console.warn("[Challenges] Failed to load:", err);
+      setCommunityChallenges([]);
+      setLeaderboards({});
+    } finally {
+      setLoadingCommunityChallenges(false);
+    }
+  };
 
   useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      try {
-        const data = await getChallenges("active");
-        setChallenges(data);
+    void loadFriendChallenges();
+    void loadCommunityChallenges();
+  }, [currentUser?.id]);
 
-        // Load leaderboards for all challenges in parallel
-        const boards = await Promise.allSettled(
-          data.map((c) =>
-            getChallengeLeaderboard(c.id).then((board) => ({
-              id: c.id,
-              board,
-            })),
-          ),
-        );
-        const merged: Record<string, ChallengeParticipation[]> = {};
-        for (const r of boards) {
-          if (r.status === "fulfilled") {
-            merged[r.value.id] = r.value.board;
-          }
-        }
-        setLeaderboards(merged);
-      } catch (err) {
-        console.warn("[Challenges] Failed to load:", err);
-        setChallenges([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const acceptedFriends = friends.map((friendship) =>
+    resolveFriendIdentity(friendship, currentUser?.id),
+  );
+  const pendingInvites = friendChallenges.filter(
+    (challenge) => challenge.view_status === "pending",
+  );
+  const activeFriendChallenges = friendChallenges.filter(
+    (challenge) => challenge.view_status === "active",
+  );
+  const completedFriendChallenges = friendChallenges.filter(
+    (challenge) =>
+      challenge.view_status === "completed" ||
+      challenge.view_status === "expired",
+  );
 
-  if (loading) {
+  const toggleFriendSelection = (friendId: string) => {
+    setSelectedFriendIds((current) =>
+      current.includes(friendId)
+        ? current.filter((id) => id !== friendId)
+        : [...current, friendId],
+    );
+  };
+
+  const handleCreateChallenge = async () => {
+    const parsedTarget = Number(targetCount);
+    const parsedDuration = Number(durationDays);
+
+    if (!selectedChildId) {
+      setCreateMessage({ ok: false, msg: "請先選擇參加挑戰的小朋友。" });
+      return;
+    }
+    if (selectedFriendIds.length === 0) {
+      setCreateMessage({ ok: false, msg: "請至少選擇一位好友。" });
+      return;
+    }
+    if (
+      !Number.isFinite(parsedTarget) ||
+      parsedTarget < 1 ||
+      parsedTarget > 50
+    ) {
+      setCreateMessage({ ok: false, msg: "目標請輸入 1 至 50 之間的數字。" });
+      return;
+    }
+    if (
+      !Number.isFinite(parsedDuration) ||
+      parsedDuration < 3 ||
+      parsedDuration > 30
+    ) {
+      setCreateMessage({ ok: false, msg: "挑戰天數請輸入 3 至 30。" });
+      return;
+    }
+
+    setCreating(true);
+    setCreateMessage(null);
+    try {
+      await createFriendChallenge({
+        child_id: selectedChildId,
+        invited_parent_ids: selectedFriendIds,
+        metric_type: metricType,
+        target_count: parsedTarget,
+        duration_days: parsedDuration,
+      });
+      setCreateMessage({ ok: true, msg: "好友挑戰已發出！" });
+      setSelectedFriendIds([]);
+      setMetricType("practice_days");
+      setTargetCount("5");
+      setDurationDays("7");
+      setCreateOpen(false);
+      await loadFriendChallenges();
+    } catch (err: any) {
+      setCreateMessage({ ok: false, msg: err?.message ?? "建立挑戰失敗" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRespondToInvite = async (
+    challengeId: string,
+    inviteStatus: "accepted" | "declined",
+  ) => {
+    const selectedInviteChildId =
+      inviteChildSelections[challengeId] || children[0]?.id;
+    if (inviteStatus === "accepted" && !selectedInviteChildId) {
+      return;
+    }
+
+    setRespondingChallengeId(challengeId);
+    try {
+      await respondToFriendChallenge(challengeId, {
+        invite_status: inviteStatus,
+        child_id:
+          inviteStatus === "accepted" ? selectedInviteChildId : undefined,
+      });
+      await loadFriendChallenges();
+    } finally {
+      setRespondingChallengeId(null);
+    }
+  };
+
+  if (loadingFriendChallenges && loadingCommunityChallenges) {
     return (
       <div className="flex justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -1016,95 +1251,545 @@ function ChallengesPanel() {
     );
   }
 
-  if (challenges.length === 0) {
-    return (
-      <div className="text-center py-10 text-slate-400">
-        <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
-        <p className="font-bold text-sm">目前沒有進行中的挑戰，下次再來！</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-5">
-      {challenges.map((c) => {
-        const board = leaderboards[c.id] ?? [];
-        const top5 = board.slice(0, 5);
-        return (
-          <Card
-            key={c.id}
-            className="rounded-[20px] border-none shadow-sm overflow-hidden"
-          >
-            {/* Header strip */}
-            <div className="bg-linear-to-r from-yellow-400 to-orange-400 px-5 py-4 flex items-center justify-between">
-              <div>
-                <p className="text-xl font-black text-white">
-                  {c.emoji} {c.title_zh ?? c.title}
+    <div className="space-y-6">
+      <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
+        <button
+          onClick={() => setCreateOpen((open) => !open)}
+          className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+        >
+          <span className="font-black text-slate-700 flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-orange-500" />
+            發起好友挑戰
+          </span>
+          <ChevronDown
+            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+              createOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {createOpen && (
+          <div className="px-4 pb-4 pt-4 border-t border-slate-100 space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                  參加小朋友
                 </p>
-                {c.description_zh && (
-                  <p className="text-sm text-white/80 font-bold">
-                    {c.description_zh}
-                  </p>
-                )}
+                <select
+                  value={selectedChildId}
+                  onChange={(event) => setSelectedChildId(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  disabled={children.length === 0}
+                >
+                  {children.length === 0 && (
+                    <option value="">未找到小朋友資料</option>
+                  )}
+                  {children.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      {child.avatar} {child.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="text-right">
-                <p className="text-white font-black text-lg">
-                  {daysLeft(c.ends_at)}
+
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                  挑戰類型
                 </p>
-                <p className="text-white/70 text-xs font-bold">天後結束</p>
+                <select
+                  value={metricType}
+                  onChange={(event) =>
+                    setMetricType(event.target.value as FriendChallengeMetric)
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                >
+                  <option value="practice_days">練習天數</option>
+                  <option value="new_words">新學詞語</option>
+                  <option value="active_words">主動活用</option>
+                </select>
               </div>
             </div>
 
-            <CardContent className="p-4 space-y-3">
-              {/* Target */}
-              <p className="text-sm font-bold text-slate-500">
-                目標：
-                <span className="text-slate-700 font-black">
-                  {c.target_count}
-                </span>{" "}
-                次
-              </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                  目標
+                </p>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={targetCount}
+                  onChange={(event) => setTargetCount(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                />
+              </div>
 
-              {/* Leaderboard */}
-              {top5.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
-                    排行榜
-                  </p>
-                  {top5.map((p, idx) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2"
-                    >
-                      <span className="text-sm font-black text-slate-500 w-5 text-center">
-                        {idx + 1}
+              <div className="space-y-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                  挑戰天數
+                </p>
+                <input
+                  type="number"
+                  min={3}
+                  max={30}
+                  value={durationDays}
+                  onChange={(event) => setDurationDays(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                邀請好友
+              </p>
+              {acceptedFriends.length === 0 ? (
+                <p className="text-sm font-bold text-slate-400">
+                  先在「好友」分頁新增好友後，才可以開始私人挑戰。
+                </p>
+              ) : (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {acceptedFriends.map((friend) => {
+                    const selected = selectedFriendIds.includes(friend.id);
+                    return (
+                      <button
+                        key={friend.id}
+                        type="button"
+                        onClick={() => toggleFriendSelection(friend.id)}
+                        className={`rounded-2xl border px-3 py-3 text-left transition-colors ${
+                          selected
+                            ? "border-orange-200 bg-orange-50"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-black text-slate-700 text-sm">
+                              {friend.name}
+                            </p>
+                            <p className="text-xs font-bold text-slate-400">
+                              點擊{selected ? "取消" : "加入"}邀請名單
+                            </p>
+                          </div>
+                          {selected && (
+                            <CheckCircle className="w-4 h-4 text-orange-500 shrink-0" />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {createMessage && (
+              <p
+                className={`text-sm font-bold ${
+                  createMessage.ok ? "text-green-600" : "text-red-500"
+                }`}
+              >
+                {createMessage.msg}
+              </p>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => void handleCreateChallenge()}
+                disabled={
+                  creating ||
+                  children.length === 0 ||
+                  acceptedFriends.length === 0 ||
+                  selectedFriendIds.length === 0
+                }
+                className="bg-orange-500 hover:bg-orange-600 rounded-xl"
+              >
+                {creating ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Trophy className="w-4 h-4 mr-2" />
+                )}
+                發出挑戰
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {loadingFriendChallenges ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+        </div>
+      ) : (
+        <>
+          {pendingInvites.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                收到的挑戰邀請
+              </p>
+              {pendingInvites.map((challenge) => (
+                <Card
+                  key={challenge.id}
+                  className="rounded-[20px] border-none shadow-sm overflow-hidden"
+                >
+                  <div className="bg-linear-to-r from-orange-400 to-amber-400 px-5 py-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xl font-black text-white">
+                        {challenge.emoji} {challenge.title_zh}
+                      </p>
+                      <p className="text-sm font-bold text-white/85">
+                        {challenge.creator_name ?? "好友"} 邀請你一起參加
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white">
+                      {friendChallengeStatusLabel(challenge.view_status)}
+                    </span>
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                    <p className="text-sm font-bold text-slate-500">
+                      類型：
+                      <span className="text-slate-700 font-black">
+                        {friendChallengeMetricLabel(challenge.metric_type)}
                       </span>
-                      <div className="flex-1">
+                      <span className="mx-2 text-slate-300">•</span>
+                      目標：
+                      <span className="text-slate-700 font-black">
+                        {challenge.target_count}
+                        {friendChallengeTargetUnit(challenge.metric_type)}
+                      </span>
+                    </p>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                        選擇參加的小朋友
+                      </p>
+                      <select
+                        value={
+                          inviteChildSelections[challenge.id] ||
+                          children[0]?.id ||
+                          ""
+                        }
+                        onChange={(event) =>
+                          setInviteChildSelections((current) => ({
+                            ...current,
+                            [challenge.id]: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                      >
+                        {children.map((child) => (
+                          <option key={child.id} value={child.id}>
+                            {child.avatar} {child.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          void handleRespondToInvite(challenge.id, "declined")
+                        }
+                        disabled={respondingChallengeId === challenge.id}
+                        className="rounded-xl border-red-200 text-red-500 hover:bg-red-50"
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        拒絕
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          void handleRespondToInvite(challenge.id, "accepted")
+                        }
+                        disabled={
+                          respondingChallengeId === challenge.id ||
+                          children.length === 0
+                        }
+                        className="bg-green-500 hover:bg-green-600 text-white rounded-xl"
+                      >
+                        {respondingChallengeId === challenge.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        )}
+                        接受挑戰
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {activeFriendChallenges.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                好友挑戰進行中
+              </p>
+              {activeFriendChallenges.map((challenge) => {
+                const acceptedParticipants = [...challenge.participants]
+                  .filter(
+                    (participant) => participant.invite_status === "accepted",
+                  )
+                  .sort((left, right) => right.progress - left.progress);
+
+                return (
+                  <Card
+                    key={challenge.id}
+                    className="rounded-[20px] border-none shadow-sm overflow-hidden"
+                  >
+                    <div className="bg-linear-to-r from-orange-400 to-amber-400 px-5 py-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xl font-black text-white">
+                          {challenge.emoji} {challenge.title_zh}
+                        </p>
+                        <p className="text-sm text-white/85 font-bold">
+                          {challenge.creator_name ?? "好友"} 發起 · 還有{" "}
+                          {daysLeft(challenge.ends_at)} 天
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white">
+                        {friendChallengeStatusLabel(challenge.view_status)}
+                      </span>
+                    </div>
+
+                    <CardContent className="p-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl bg-orange-50 px-3 py-3 border border-orange-100">
+                          <p className="text-[10px] font-black text-orange-500 uppercase tracking-wide">
+                            類型
+                          </p>
+                          <p className="text-sm font-black text-slate-700 mt-1">
+                            {friendChallengeMetricLabel(challenge.metric_type)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-blue-50 px-3 py-3 border border-blue-100">
+                          <p className="text-[10px] font-black text-blue-500 uppercase tracking-wide">
+                            我的進度
+                          </p>
+                          <p className="text-sm font-black text-slate-700 mt-1">
+                            {challenge.my_progress}/{challenge.target_count}
+                            {friendChallengeTargetUnit(challenge.metric_type)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
                         <Progress
-                          value={(p.progress / (c.target_count || 1)) * 100}
+                          value={
+                            (challenge.my_progress /
+                              Math.max(challenge.target_count, 1)) *
+                            100
+                          }
                           className="h-2 rounded-full"
                         />
                       </div>
-                      <span className="text-sm font-black text-slate-600 w-12 text-right">
-                        {p.progress}/{c.target_count}
-                      </span>
-                      {p.is_completed && (
-                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
 
-              {top5.length === 0 && (
-                <p className="text-sm font-bold text-slate-400 text-center py-2">
-                  還沒有人參加，鼓勵孩子開始吧！
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                            好友排行榜
+                          </p>
+                          {challenge.pending_participant_count > 0 && (
+                            <p className="text-xs font-bold text-slate-400">
+                              還有 {challenge.pending_participant_count}{" "}
+                              位好友未回覆
+                            </p>
+                          )}
+                        </div>
+                        {acceptedParticipants.map((participant, index) => (
+                          <div
+                            key={participant.id}
+                            className="flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2"
+                          >
+                            <span className="w-5 text-center text-sm font-black text-slate-500">
+                              {index + 1}
+                            </span>
+                            <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-lg shrink-0">
+                              {participant.child_avatar ??
+                                participant.parent_name?.[0] ??
+                                "👧"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-black text-slate-700 truncate">
+                                {participant.child_name ??
+                                  participant.parent_name ??
+                                  "好友"}
+                              </p>
+                              <p className="text-xs font-bold text-slate-400 truncate">
+                                {participant.parent_name}
+                              </p>
+                            </div>
+                            <span className="text-sm font-black text-slate-600 shrink-0">
+                              {participant.progress}/{challenge.target_count}
+                            </span>
+                            {participant.is_completed && (
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {completedFriendChallenges.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                已完成或已結束
+              </p>
+              {completedFriendChallenges.map((challenge) => (
+                <Card
+                  key={challenge.id}
+                  className="rounded-[20px] border-none shadow-sm"
+                >
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-black text-slate-700">
+                        {challenge.emoji} {challenge.title_zh}
+                      </p>
+                      <p className="text-sm font-bold text-slate-400 mt-1">
+                        {friendChallengeStatusLabel(challenge.view_status)} ·
+                        我的成績 {challenge.my_progress}/
+                        {challenge.target_count}
+                        {friendChallengeTargetUnit(challenge.metric_type)}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${
+                        challenge.view_status === "completed"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {friendChallengeStatusLabel(challenge.view_status)}
+                    </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {pendingInvites.length === 0 &&
+            activeFriendChallenges.length === 0 &&
+            completedFriendChallenges.length === 0 && (
+              <div className="text-center py-8 text-slate-400">
+                <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="font-bold text-sm">
+                  還沒有好友挑戰，先邀請朋友一起開始吧！
                 </p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+              </div>
+            )}
+        </>
+      )}
+
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+              社群挑戰
+            </p>
+            <p className="text-sm font-bold text-slate-400 mt-1">
+              保留現有公開排行榜，讓家長也可以加入平台活動。
+            </p>
+          </div>
+        </div>
+
+        {loadingCommunityChallenges ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+          </div>
+        ) : communityChallenges.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
+            <p className="font-bold text-sm">目前沒有進行中的社群挑戰。</p>
+          </div>
+        ) : (
+          communityChallenges.map((challenge) => {
+            const board = leaderboards[challenge.id] ?? [];
+            const top5 = board.slice(0, 5);
+            return (
+              <Card
+                key={challenge.id}
+                className="rounded-[20px] border-none shadow-sm overflow-hidden"
+              >
+                <div className="bg-linear-to-r from-yellow-400 to-orange-400 px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-xl font-black text-white">
+                      {challenge.emoji} {challenge.title_zh ?? challenge.title}
+                    </p>
+                    {challenge.description_zh && (
+                      <p className="text-sm text-white/80 font-bold">
+                        {challenge.description_zh}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white font-black text-lg">
+                      {daysLeft(challenge.ends_at)}
+                    </p>
+                    <p className="text-white/70 text-xs font-bold">天後結束</p>
+                  </div>
+                </div>
+
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-bold text-slate-500">
+                    目標：
+                    <span className="text-slate-700 font-black">
+                      {challenge.target_count}
+                    </span>{" "}
+                    次
+                  </p>
+
+                  {top5.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                        排行榜
+                      </p>
+                      {top5.map((participant, index) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2"
+                        >
+                          <span className="text-sm font-black text-slate-500 w-5 text-center">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1">
+                            <Progress
+                              value={
+                                (participant.progress /
+                                  (challenge.target_count || 1)) *
+                                100
+                              }
+                              className="h-2 rounded-full"
+                            />
+                          </div>
+                          <span className="text-sm font-black text-slate-600 w-12 text-right">
+                            {participant.progress}/{challenge.target_count}
+                          </span>
+                          {participant.is_completed && (
+                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm font-bold text-slate-400 text-center py-2">
+                      還沒有人參加，鼓勵孩子開始吧！
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

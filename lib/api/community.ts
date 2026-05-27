@@ -14,6 +14,17 @@ import { apiRequest, getAuthToken, API_BASE_URL } from "./client";
 export type ModerationStatus = "pending" | "approved" | "rejected";
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
 export type ChallengeStatus = "active" | "completed" | "expired";
+export type FriendChallengeMetric =
+  | "practice_days"
+  | "new_words"
+  | "active_words";
+export type FriendChallengeInviteStatus = "pending" | "accepted" | "declined";
+export type FriendChallengeViewStatus =
+  | "pending"
+  | "active"
+  | "completed"
+  | "expired"
+  | "declined";
 
 export interface CommunityPost {
   id: string;
@@ -110,6 +121,41 @@ export interface ChallengeParticipation {
   challenge_title_zh: string | null;
   challenge_target: number | null;
   challenge_emoji: string | null;
+}
+
+export interface FriendChallengeParticipant {
+  id: string;
+  parent_id: string;
+  parent_name: string | null;
+  child_id: string | null;
+  child_name: string | null;
+  child_avatar: string | null;
+  invite_status: FriendChallengeInviteStatus;
+  progress: number;
+  is_completed: boolean;
+}
+
+export interface FriendChallenge {
+  id: string;
+  creator_id: string;
+  creator_name: string | null;
+  title: string;
+  title_zh: string;
+  metric_type: FriendChallengeMetric;
+  target_count: number;
+  duration_days: number;
+  emoji: string;
+  starts_at: string;
+  ends_at: string;
+  created_at: string;
+  accepted_participant_count: number;
+  pending_participant_count: number;
+  my_invite_status: FriendChallengeInviteStatus;
+  my_child_id: string | null;
+  my_progress: number;
+  my_completed: boolean;
+  view_status: FriendChallengeViewStatus;
+  participants: FriendChallengeParticipant[];
 }
 
 // ---------------------------------------------------------------------------
@@ -382,5 +428,41 @@ export async function getMyChallengeProgress(
 ): Promise<ChallengeParticipation> {
   return apiRequest<ChallengeParticipation>(
     `/social/challenges/${challengeId}/my-progress/${childId}`,
+  );
+}
+
+export async function getFriendChallenges(): Promise<FriendChallenge[]> {
+  return apiRequest<FriendChallenge[]>("/social/friend-challenges");
+}
+
+export async function createFriendChallenge(payload: {
+  child_id: string;
+  invited_parent_ids: string[];
+  metric_type: FriendChallengeMetric;
+  target_count: number;
+  duration_days: number;
+}): Promise<FriendChallenge> {
+  return apiRequest<FriendChallenge>("/social/friend-challenges", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function respondToFriendChallenge(
+  challengeId: string,
+  payload: {
+    invite_status: Extract<
+      FriendChallengeInviteStatus,
+      "accepted" | "declined"
+    >;
+    child_id?: string;
+  },
+): Promise<FriendChallenge> {
+  return apiRequest<FriendChallenge>(
+    `/social/friend-challenges/${challengeId}/respond`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   );
 }
