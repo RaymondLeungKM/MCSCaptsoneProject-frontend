@@ -1,5 +1,113 @@
-import type { Word, Category, LanguagePreference } from "./types";
-import { toChildFriendlyText } from "./child-text";
+import type { Category, LanguagePreference, Word } from "./types";
+
+const CHILD_TEXT_FALLBACKS: Record<string, string> = {
+  apple: "蘋果",
+  banana: "香蕉",
+  ball: "波",
+  bath: "洗澡",
+  "bath time": "洗澡時間",
+  bath_time: "洗澡時間",
+  bathroom: "浴室",
+  beach: "沙灘",
+  bedtime: "睡前",
+  bedroom: "睡房",
+  bird: "鳥",
+  big: "大",
+  bitter: "苦",
+  book: "書",
+  bus: "巴士",
+  car: "車",
+  cat: "貓",
+  chicken: "雞",
+  classroom: "課室",
+  cold: "凍",
+  cow: "牛",
+  crunchy: "脆",
+  dog: "狗",
+  dry: "乾",
+  duck: "鴨",
+  easy: "簡單",
+  family: "家庭",
+  farm: "農場",
+  fish: "魚",
+  food: "食物",
+  forest: "森林",
+  friend: "朋友",
+  fruit: "水果",
+  general: "一般",
+  glue: "膠水",
+  hard: "難",
+  home: "家",
+  horse: "馬",
+  hot: "熱",
+  indoor: "室內",
+  indoors: "室內",
+  kitchen: "廚房",
+  long: "長",
+  meal: "用餐",
+  "meal time": "用餐時間",
+  mealtime: "用餐時間",
+  meal_time: "用餐時間",
+  mirror: "鏡",
+  nature: "大自然",
+  ocean: "海洋",
+  outdoor: "戶外",
+  outdoors: "戶外",
+  panda: "熊貓",
+  park: "公園",
+  pencil: "鉛筆",
+  pig: "豬",
+  playground: "遊樂場",
+  rabbit: "兔仔",
+  round: "圓",
+  school: "學校",
+  shampoo: "洗頭水",
+  sheep: "羊",
+  shopping: "購物",
+  short: "短",
+  shower: "花灑",
+  sky: "天空",
+  small: "細",
+  smooth: "滑",
+  soft: "柔軟",
+  sour: "酸",
+  spicy: "辣",
+  street: "街道",
+  sweet: "甜",
+  teacher: "老師",
+  towel: "毛巾",
+  toy: "玩具",
+  toys: "玩具",
+  tropical: "熱帶",
+  warm: "暖",
+  water: "水",
+  wave: "波浪",
+  wet: "濕",
+  zoo: "動物園",
+};
+
+function normalizeChildText(value?: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/["'`]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function toChildFriendlyDisplayText(value?: string | null): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/[^\x00-\x7F]/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const normalized = normalizeChildText(trimmed);
+  return CHILD_TEXT_FALLBACKS[normalized] || null;
+}
 
 function normalizeSentenceCandidate(value?: string | null): string {
   return (value ?? "").replace(/["'`]/g, "").trim();
@@ -20,7 +128,8 @@ function isWordOnlySentence(candidate: string | undefined, word: Word): boolean 
 }
 
 function buildFallbackCantoneseExample(word: Word): string {
-  const displayWord = word.word_cantonese || word.word;
+  const displayWord =
+    word.word_cantonese || toChildFriendlyDisplayText(word.word) || word.word;
   return `我哋今日一齊學${displayWord}，再用佢講一個完整句子。`;
 }
 
@@ -29,29 +138,25 @@ function buildFallbackEnglishExample(word: Word): string {
   return `Today we are learning ${displayWord}, and we can use it in a full sentence.`;
 }
 
-/**
- * Get the appropriate word text based on language preference
- */
 export function getWordText(
   word: Word,
   language: LanguagePreference = "cantonese",
 ): string {
   switch (language) {
     case "cantonese":
-      return word.word_cantonese || toChildFriendlyText(word.word) || word.word;
+      return (
+        word.word_cantonese || toChildFriendlyDisplayText(word.word) || word.word
+      );
     case "bilingual":
       return word.word_cantonese
-        ? `${word.word_cantonese} ${toChildFriendlyText(word.word) || word.word}`
-        : toChildFriendlyText(word.word) || word.word;
+        ? `${word.word_cantonese} ${toChildFriendlyDisplayText(word.word) || word.word}`
+        : toChildFriendlyDisplayText(word.word) || word.word;
     case "english":
     default:
       return word.word;
   }
 }
 
-/**
- * Get the appropriate definition based on language preference
- */
 export function getDefinition(
   word: Word,
   language: LanguagePreference = "cantonese",
@@ -69,9 +174,6 @@ export function getDefinition(
   }
 }
 
-/**
- * Get the appropriate example based on language preference
- */
 export function getExample(
   word: Word,
   language: LanguagePreference = "cantonese",
@@ -94,29 +196,27 @@ export function getExample(
   }
 }
 
-/**
- * Get the appropriate category name based on language preference
- */
 export function getCategoryName(
   category: Category,
   language: LanguagePreference = "cantonese",
 ): string {
   switch (language) {
     case "cantonese":
-      return category.name_cantonese || category.name;
+      return (
+        category.name_cantonese ||
+        toChildFriendlyDisplayText(category.name) ||
+        category.name
+      );
     case "bilingual":
       return category.name_cantonese
-        ? `${category.name_cantonese} ${category.name}`
-        : category.name;
+        ? `${category.name_cantonese} ${toChildFriendlyDisplayText(category.name) || category.name}`
+        : toChildFriendlyDisplayText(category.name) || category.name;
     case "english":
     default:
       return category.name;
   }
 }
 
-/**
- * Get pronunciation text (Jyutping for Cantonese, IPA for English)
- */
 export function getPronunciation(
   word: Word,
   language: LanguagePreference = "cantonese",
@@ -134,12 +234,6 @@ export function getPronunciation(
   }
 }
 
-/**
- * Get the audio URL based on language preference.
- * For Cantonese, only returns the Cantonese audio_url — never falls back to the
- * English URL, since that would play English speech when Cantonese is expected.
- * Returning undefined lets the caller generate proper Cantonese TTS instead.
- */
 export function getAudioUrl(
   word: Word,
   language: LanguagePreference = "cantonese",
@@ -154,35 +248,31 @@ export function getAudioUrl(
   }
 }
 
-/**
- * Get the text to speak based on language preference
- */
 export function getSpeechText(
   word: Word,
   language: LanguagePreference = "cantonese",
 ): string {
-  // For speech, we typically want just the word, not bilingual format
   switch (language) {
     case "cantonese":
-      return word.word_cantonese || word.word;
+      return word.word_cantonese || toChildFriendlyDisplayText(word.word) || word.word;
     case "english":
       return word.word;
     case "bilingual":
-      // For bilingual, speak the Cantonese version first
-      return word.word_cantonese || word.word;
+      return word.word_cantonese || toChildFriendlyDisplayText(word.word) || word.word;
     default:
       return word.word;
   }
 }
 
-/**
- * Validate that a jyutping string is genuine Cantonese romanisation.
- * Real Jyutping always contains tone digits 1-6 (e.g. maau1, faai3 zi2).
- * Mandarin Pinyin uses diacritics (ā á ǎ à etc.) and no tone digits — reject those.
- */
 export function isValidJyutping(jyutping?: string): boolean {
-  if (!jyutping || jyutping.trim() === "") return false;
+  if (!jyutping || jyutping.trim() === "") {
+    return false;
+  }
+
   const hasToneDigit = /[1-6]/.test(jyutping);
-  const hasPinyinDiacritic = /[\u0101\u00e1\u01ce\u00e0\u014d\u00f3\u01d2\u016b\u00fa\u01d4\u00f9\u012b\u00ed\u01d0\u00ec\u0113\u00e9\u011b\u00e8\u01d6\u01d8\u01da\u01dc]/i.test(jyutping);
+  const hasPinyinDiacritic = /[\u0101\u00e1\u01ce\u00e0\u014d\u00f3\u01d2\u016b\u00fa\u01d4\u00f9\u012b\u00ed\u01d0\u00ec\u0113\u00e9\u011b\u00e8\u01d6\u01d8\u01da\u01dc]/i.test(
+    jyutping,
+  );
+
   return hasToneDigit && !hasPinyinDiacritic;
 }
