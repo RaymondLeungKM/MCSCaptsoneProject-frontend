@@ -84,6 +84,19 @@ export interface CommunityChallenge {
   created_at: string;
 }
 
+export interface CommunityChallengeMutationRequest {
+  title: string;
+  title_zh?: string | null;
+  description?: string | null;
+  description_zh?: string | null;
+  target_count: number;
+  category?: string | null;
+  emoji: string;
+  status: ChallengeStatus;
+  starts_at: string;
+  ends_at: string;
+}
+
 export interface ChallengeParticipation {
   id: string;
   challenge_id: string;
@@ -297,12 +310,45 @@ export async function getChallenges(
 
 /** Create a new community challenge */
 export async function createChallenge(
-  payload: Omit<CommunityChallenge, "id" | "status" | "created_at">,
+  payload: CommunityChallengeMutationRequest,
 ): Promise<CommunityChallenge> {
-  return apiRequest<CommunityChallenge>("/social/challenges", {
+  return createAdminChallenge(payload);
+}
+
+/** List public community challenges for admin management */
+export async function listAdminChallenges(
+  status?: ChallengeStatus,
+): Promise<CommunityChallenge[]> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+
+  return apiRequest<CommunityChallenge[]>(
+    `/social/admin/challenges${params.size > 0 ? `?${params.toString()}` : ""}`,
+  );
+}
+
+/** Create a public community challenge as an admin */
+export async function createAdminChallenge(
+  payload: CommunityChallengeMutationRequest,
+): Promise<CommunityChallenge> {
+  return apiRequest<CommunityChallenge>("/social/admin/challenges", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+/** Update a public community challenge as an admin */
+export async function updateAdminChallenge(
+  challengeId: string,
+  payload: Partial<CommunityChallengeMutationRequest>,
+): Promise<CommunityChallenge> {
+  return apiRequest<CommunityChallenge>(
+    `/social/admin/challenges/${challengeId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 /** Join / increment progress on a challenge */

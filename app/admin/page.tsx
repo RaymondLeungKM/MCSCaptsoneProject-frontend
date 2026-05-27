@@ -13,10 +13,12 @@ import {
   Sparkles,
   Tags,
   Target,
+  Trophy,
 } from "lucide-react";
 
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 import { CategoryManager } from "@/components/admin/category-manager";
+import { PublicChallengeManager } from "@/components/admin/public-challenge-manager";
 import { LoginCard } from "@/components/auth/login-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -423,7 +425,7 @@ export default function AdminPage() {
                     內容管理後台
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm font-medium text-slate-600 md:text-base">
-                    目前已可在同一後台管理任務目錄、共用詞彙與主題分類，後續再逐步加入更多內容編輯工具。
+                    目前已可在同一後台管理任務目錄、公共挑戰、共用詞彙與主題分類，後續再逐步加入更多內容編輯工具。
                   </p>
                 </div>
               </div>
@@ -504,7 +506,7 @@ export default function AdminPage() {
                 管理區塊
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                將任務、共用詞彙與主題分類分開管理；新增或編輯時會以彈出視窗顯示表單。
+                將任務、公共挑戰、共用詞彙與主題分類分開管理；新增或編輯時會以彈出視窗顯示表單。
               </p>
             </div>
 
@@ -516,6 +518,13 @@ export default function AdminPage() {
                 >
                   <Target className="h-4 w-4" />
                   <span className="font-black">任務目錄</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="challenges"
+                  className="justify-start gap-3 rounded-[24px] border border-amber-100 bg-white/80 px-4 py-3 text-left data-[state=active]:border-amber-200 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:shadow-none"
+                >
+                  <Trophy className="h-4 w-4" />
+                  <span className="font-black">公共挑戰</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="vocabulary"
@@ -652,6 +661,10 @@ export default function AdminPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="challenges" className="mt-0">
+            <PublicChallengeManager />
           </TabsContent>
 
           <TabsContent value="vocabulary" className="mt-0">
