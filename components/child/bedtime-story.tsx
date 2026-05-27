@@ -7,13 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { GeneratedStory, LanguagePreference } from "@/lib/types";
-import { generateStory } from "@/lib/api/bedtime-stories";
+import { generateStoryWithExternalProgram } from "@/lib/api/bedtime-stories";
 
 interface BedtimeStoryGeneratorProps {
   childId?: string;
   childName?: string;
   languagePreference?: LanguagePreference;
   onStoryGenerated?: (story: GeneratedStory) => void;
+  onReadStory?: (story: GeneratedStory) => void;
 }
 
 const themes = [
@@ -60,6 +61,7 @@ export function BedtimeStoryGenerator({
   childName = "小朋友",
   languagePreference = "cantonese",
   onStoryGenerated,
+  onReadStory,
 }: BedtimeStoryGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>("bedtime");
@@ -74,7 +76,7 @@ export function BedtimeStoryGenerator({
     setGeneratedStory(null);
 
     try {
-      const response = await generateStory({
+      const story = await generateStoryWithExternalProgram({
         child_id: childId,
         theme: selectedTheme as
           | "adventure"
@@ -89,8 +91,8 @@ export function BedtimeStoryGenerator({
         include_jyutping: true,
       });
 
-      setGeneratedStory(response.story);
-      if (onStoryGenerated) onStoryGenerated(response.story);
+      setGeneratedStory(story);
+      if (onStoryGenerated) onStoryGenerated(story);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -193,7 +195,10 @@ export function BedtimeStoryGenerator({
       {/* --- RESULT CARD (Displays when story is ready) --- */}
       {generatedStory && (
         <div className="animate-in slide-in-from-bottom-8 fade-in duration-700">
-          <StoryCard story={generatedStory} />
+          <StoryCard
+            story={generatedStory}
+            onRead={() => onReadStory?.(generatedStory)}
+          />
         </div>
       )}
     </div>
@@ -201,7 +206,13 @@ export function BedtimeStoryGenerator({
 }
 
 // --- SUB-COMPONENT: STORY CARD ---
-function StoryCard({ story }: { story: GeneratedStory }) {
+function StoryCard({
+  story,
+  onRead,
+}: {
+  story: GeneratedStory;
+  onRead?: () => void;
+}) {
   return (
     <Card className="relative overflow-hidden bg-white border-4 border-white rounded-[40px] shadow-xl">
       {/* Header Art */}
@@ -244,7 +255,11 @@ function StoryCard({ story }: { story: GeneratedStory }) {
           </p>
         </div>
 
-        <Button className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform">
+        <Button
+          onClick={onRead}
+          disabled={!onRead}
+    className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform disabled:cursor-not-allowed disabled:opacity-60"
+        >
           <BookOpen className="w-5 h-5 mr-2" />
           開始閱讀
         </Button>

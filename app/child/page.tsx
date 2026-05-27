@@ -589,6 +589,11 @@ function ChildDashboardContent() {
     setIsReaderOpen(true);
   };
 
+  const handleReadGeneratedStory = (story: GeneratedStory) => {
+    setSelectedStory(story);
+    setIsReaderOpen(true);
+  };
+
   const completedMinutes = learningControl
     ? Math.max(
         learningControl.todayMinutes - learningControl.activeSessionMinutes,
@@ -1095,6 +1100,7 @@ function ChildDashboardContent() {
                   childName={profile.name}
                   languagePreference="cantonese"
                   onStoryGenerated={handleStoryGenerated}
+                  onReadStory={handleReadGeneratedStory}
                 />
               </section>
 

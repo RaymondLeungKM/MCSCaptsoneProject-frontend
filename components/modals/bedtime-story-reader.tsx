@@ -51,6 +51,7 @@ export function BedtimeStoryReader({
 
   const { speak, stop } = useSpeech();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const STORY_PAGE_TARGET_CHARS = 120;
 
   // Thematic decorations shown when no AI image has been generated yet
   const PAGE_DECORATIONS = [
@@ -60,83 +61,170 @@ export function BedtimeStoryReader({
     { emoji: "🌙", gradient: "from-blue-100 via-sky-100 to-slate-50" },
   ] as const;
 
-  const stopAllAudio = () => {
+  const resetPlayback = () => {
     stop();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      audioRef.current = null;
     }
+    setIsPlaying(false);
+  };
+
+  const pausePlaybackForNavigation = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    } else {
+      stop();
+    }
+    setIsPlaying(false);
   };
 
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(0);
-      stopAllAudio();
+      resetPlayback();
       setShowSettings(false);
     }
     return () => {
-      stopAllAudio();
+      resetPlayback();
     };
   }, [isOpen, story]);
 
   if (!story) return null;
 
-  // --- CONTENT SPLITTING LOGIC (always exactly 4 story pages) ---
-  const NUM_STORY_PAGES = 4;
-
   const pages = useMemo(() => {
-    /** Split any text into exactly NUM_STORY_PAGES roughly equal parts */
-    const splitInto4 = (text: string): string[] => {
-      if (!text) return Array(NUM_STORY_PAGES).fill("");
+    const getNarrativeChunks = (text: string): { chunks: string[]; joiner: string } => {
+      if (!text.trim()) {
+        return { chunks: [], joiner: " " };
+      }
 
-      // Prefer paragraph-level splits first
-      const paras = text.split(/\n+/).filter((p) => p.trim());
-      const source =
-        paras.length >= NUM_STORY_PAGES
-          ? paras
-          : text.split(/(?<=[.!?。！？])\s+/).filter((s) => s.trim());
+      const paragraphs = text
+        .split(/\n+/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean);
 
-      if (source.length <= NUM_STORY_PAGES) {
-        // Fewer chunks than pages — pad the rest with empty string
+      if (paragraphs.length > 1) {
+        return { chunks: paragraphs, joiner: "\n\n" };
+      }
+
+      const sentences = text
+        .split(/(?<=[.!?。！？])\s+/)
+        .map((sentence) => sentence.trim())
+        .filter(Boolean);
+
+      return {
+        chunks: sentences.length > 0 ? sentences : [text.trim()],
+        joiner: " ",
+      };
+    };
+
+    const paginateNarrative = (text: string, targetChars: number): string[] => {
+      if (!text.trim()) {
+        return [""];
+      }
+
+      const { chunks, joiner } = getNarrativeChunks(text);
+      const storyPages: string[] = [];
+      let currentChunk = "";
+
+      for (const chunk of chunks) {
+        const candidate = currentChunk
+          ? `${currentChunk}${joiner}${chunk}`
+          : chunk;
+
+        if (currentChunk && candidate.length > targetChars) {
+          storyPages.push(currentChunk.trim());
+          currentChunk = chunk;
+        } else {
+          currentChunk = candidate;
+        }
+      }
+
+      if (currentChunk) {
+        storyPages.push(currentChunk.trim());
+      }
+
+      return storyPages.length > 0 ? storyPages : [text.trim()];
+    };
+
+    const splitNarrativeAcrossPageCount = (
+      text: string,
+      pageCount: number,
+    ): string[] => {
+      if (pageCount <= 0) {
+        return [];
+      }
+
+      if (!text.trim()) {
+        return Array(pageCount).fill("");
+      }
+
+      const { chunks, joiner } = getNarrativeChunks(text);
+      if (chunks.length <= pageCount) {
         return Array.from(
-          { length: NUM_STORY_PAGES },
-          (_, i) => source[i]?.trim() ?? "",
+          { length: pageCount },
+          (_, index) => chunks[index]?.trim() ?? "",
         );
       }
 
-      const partSize = Math.ceil(source.length / NUM_STORY_PAGES);
-      return Array.from({ length: NUM_STORY_PAGES }, (_, i) =>
-        source
-          .slice(i * partSize, (i + 1) * partSize)
-          .join(" ")
+      const partSize = Math.ceil(chunks.length / pageCount);
+      return Array.from({ length: pageCount }, (_, index) =>
+        chunks
+          .slice(index * partSize, (index + 1) * partSize)
+          .join(joiner)
           .trim(),
       );
     };
 
-    /** Split jyutping (newline-separated) into 4 parts */
-    const splitJyutInto4 = (text: string): string[] => {
-      if (!text) return Array(NUM_STORY_PAGES).fill("");
-      const lines = text.split("\n").filter((l) => l.trim());
-      if (lines.length <= NUM_STORY_PAGES) {
+    const splitLinesAcrossPageCount = (
+      text: string,
+      pageCount: number,
+    ): string[] => {
+      if (pageCount <= 0) {
+        return [];
+      }
+
+      if (!text.trim()) {
+        return Array(pageCount).fill("");
+      }
+
+      const lines = text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length <= pageCount) {
         return Array.from(
-          { length: NUM_STORY_PAGES },
-          (_, i) => lines[i]?.trim() ?? "",
+          { length: pageCount },
+          (_, index) => lines[index]?.trim() ?? "",
         );
       }
-      const partSize = Math.ceil(lines.length / NUM_STORY_PAGES);
-      return Array.from({ length: NUM_STORY_PAGES }, (_, i) =>
+
+      const partSize = Math.ceil(lines.length / pageCount);
+      return Array.from({ length: pageCount }, (_, index) =>
         lines
-          .slice(i * partSize, (i + 1) * partSize)
+          .slice(index * partSize, (index + 1) * partSize)
           .join(" ")
           .trim(),
       );
     };
 
-    const cantParts = splitInto4(story.content_cantonese ?? "");
-    const engParts = splitInto4(story.content_english ?? "");
-    const jyutParts = splitJyutInto4(story.jyutping ?? "");
+    const cantParts = paginateNarrative(
+      story.content_cantonese ?? "",
+      STORY_PAGE_TARGET_CHARS,
+    );
+    const storyPageCount = Math.max(cantParts.length, 1);
+    const engParts = splitNarrativeAcrossPageCount(
+      story.content_english ?? "",
+      storyPageCount,
+    );
+    const jyutParts = splitLinesAcrossPageCount(
+      story.jyutping ?? "",
+      storyPageCount,
+    );
 
-    return Array.from({ length: NUM_STORY_PAGES }, (_, i) => ({
+    return Array.from({ length: storyPageCount }, (_, i) => ({
       cantonese: cantParts[i] ?? "",
       english: engParts[i] ?? "",
       jyutping: jyutParts[i] ?? "",
@@ -144,23 +232,51 @@ export function BedtimeStoryReader({
     }));
   }, [story]);
 
-  const totalPages = NUM_STORY_PAGES + 1; // 4 story pages + 1 stats page
-  const isStatsPage = currentPage === NUM_STORY_PAGES;
+  const totalPages = pages.length + 1;
+  const isStatsPage = currentPage === pages.length;
+
+  const createStoryAudio = () => {
+    if (!story?.audio_url) {
+      return null;
+    }
+
+    const audio = new Audio(story.audio_url);
+    audioRef.current = audio;
+    audio.onplay = () => setIsPlaying(true);
+    audio.onpause = () => setIsPlaying(false);
+    audio.onended = () => {
+      setIsPlaying(false);
+      audio.currentTime = 0;
+    };
+    audio.onerror = () => setIsPlaying(false);
+    return audio;
+  };
 
   // --- AUDIO ---
-  const handlePlayPage = () => {
+  const handlePlayPage = async () => {
     if (isPlaying) {
-      stopAllAudio();
-      setIsPlaying(false);
+      pausePlaybackForNavigation();
     } else {
       if (story.audio_url) {
         try {
-          const audio = new Audio(story.audio_url);
-          audioRef.current = audio;
-          setIsPlaying(true);
-          audio.onended = () => setIsPlaying(false);
-          audio.onerror = () => setIsPlaying(false);
-          void audio.play();
+          let audio = audioRef.current;
+
+          if (!audio || audio.src !== story.audio_url) {
+            audio = createStoryAudio();
+          }
+
+          if (!audio) {
+            throw new Error("Story audio is not available");
+          }
+
+          if (
+            audio.duration &&
+            audio.currentTime >= Math.max(audio.duration - 0.25, 0)
+          ) {
+            audio.currentTime = 0;
+          }
+
+          await audio.play();
         } catch {
           const textToRead = pages[currentPage]?.cantonese || "故事結束";
           setIsPlaying(true);
@@ -182,8 +298,7 @@ export function BedtimeStoryReader({
 
   // --- NAVIGATION ---
   const handleNext = () => {
-    stopAllAudio();
-    setIsPlaying(false);
+    pausePlaybackForNavigation();
     if (currentPage < totalPages - 1) {
       setCurrentPage((prev) => prev + 1);
     } else {
@@ -193,8 +308,7 @@ export function BedtimeStoryReader({
   };
 
   const handlePrev = () => {
-    stopAllAudio();
-    setIsPlaying(false);
+    pausePlaybackForNavigation();
     setCurrentPage((prev) => Math.max(0, prev - 1));
   };
 
@@ -278,17 +392,16 @@ export function BedtimeStoryReader({
           </div>
 
           {/* MAIN PAGE AREA */}
-          <div className="flex-1 p-4 md:p-6 overflow-y-auto overscroll-contain min-h-0 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
+          <div className="flex-1 p-4 md:p-6 overflow-hidden overscroll-contain min-h-0 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
             {!isStatsPage ? (
               // --- STORY PAGES ---
               <div
                 key={currentPage}
-                className="flex flex-col h-full animate-in fade-in duration-500"
+                className="flex flex-col h-full min-h-0 animate-in fade-in duration-500"
               >
                 {/* Illustration Area */}
                 <div
-                  className="shrink-0 w-full rounded-2xl overflow-hidden relative mb-4 shadow-md"
-                  style={{ height: "210px" }}
+                  className="shrink-0 w-full rounded-2xl overflow-hidden relative mb-4 shadow-md h-36 sm:h-44 md:h-[210px]"
                 >
                   {pages[currentPage]?.imageUrl ? (
                     <img
@@ -300,11 +413,15 @@ export function BedtimeStoryReader({
                     <div
                       className={cn(
                         "w-full h-full flex items-center justify-center bg-linear-to-br",
-                        PAGE_DECORATIONS[currentPage]?.gradient,
+                        PAGE_DECORATIONS[currentPage % PAGE_DECORATIONS.length]
+                          ?.gradient,
                       )}
                     >
                       <span className="text-8xl select-none drop-shadow-sm">
-                        {PAGE_DECORATIONS[currentPage]?.emoji}
+                        {
+                          PAGE_DECORATIONS[currentPage % PAGE_DECORATIONS.length]
+                            ?.emoji
+                        }
                       </span>
                     </div>
                   )}
@@ -315,9 +432,9 @@ export function BedtimeStoryReader({
                 </div>
 
                 {/* Text Area */}
-                <div className="flex-1 flex flex-col justify-center items-center text-center space-y-4 overflow-y-auto pb-6">
+                <div className="flex-1 min-h-0 flex flex-col justify-start items-stretch md:items-center text-left md:text-center space-y-4 overflow-y-auto pt-2 pb-20 md:pb-8 px-1 md:px-0">
                   {/* Cantonese */}
-                  <p className="text-2xl md:text-[2.25rem] font-black text-slate-800 leading-relaxed tracking-tight">
+                  <p className="whitespace-pre-wrap text-2xl md:text-[2.25rem] font-black text-slate-800 leading-relaxed tracking-tight">
                     {pages[currentPage]?.cantonese}
                   </p>
 
@@ -331,7 +448,7 @@ export function BedtimeStoryReader({
               </div>
             ) : (
               // --- STATS / END PAGE ---
-              <div className="w-full space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="w-full h-full overflow-y-auto space-y-6 animate-in zoom-in-95 duration-500">
                 <div className="text-center mb-8">
                   <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
                     <Star className="w-10 h-10 text-yellow-500 fill-yellow-500" />

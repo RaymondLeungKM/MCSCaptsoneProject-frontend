@@ -9,6 +9,57 @@ import {
   StoryGenerationResponse,
 } from "../types";
 
+function toMediaProxyUrl(audioUrl: string): string {
+  if (!audioUrl) {
+    return audioUrl;
+  }
+
+  if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
+    return audioUrl;
+  }
+
+  const normalizedPath = audioUrl.startsWith("/") ? audioUrl : `/${audioUrl}`;
+  const proxyPath = `/api/media${normalizedPath}`;
+
+  if (typeof window !== "undefined") {
+    return new URL(proxyPath, window.location.origin).toString();
+  }
+
+  return proxyPath;
+}
+
+function normalizeGeneratedStory(story: GeneratedStory): GeneratedStory {
+  if (!story.audio_url) {
+    return story;
+  }
+
+  return {
+    ...story,
+    audio_url: toMediaProxyUrl(story.audio_url),
+  };
+}
+
+function normalizeStoryGenerationResponse(
+  response: StoryGenerationResponse,
+): StoryGenerationResponse {
+  return {
+    ...response,
+    story: normalizeGeneratedStory(response.story),
+  };
+}
+
+async function invokeExternalStory(
+  request: StoryGenerationRequest,
+): Promise<StoryGenerationResponse> {
+  return apiRequest<StoryGenerationResponse>(
+    "/bedtime-stories/external/invoke",
+    {
+      method: "POST",
+      body: JSON.stringify(request),
+    },
+  );
+}
+
 export interface TrackDailyWordRequest {
   child_id: string;
   word_id: string;
@@ -52,10 +103,25 @@ export async function getDailyWords(
 export async function generateStory(
   request: StoryGenerationRequest,
 ): Promise<StoryGenerationResponse> {
-  return apiRequest<StoryGenerationResponse>("/bedtime-stories/generate", {
-    method: "POST",
-    body: JSON.stringify(request),
-  });
+  const response = await apiRequest<StoryGenerationResponse>(
+    "/bedtime-stories/generate",
+    {
+      method: "POST",
+      body: JSON.stringify(request),
+    },
+  );
+
+  return normalizeStoryGenerationResponse(response);
+}
+
+/**
+ * Generate a bedtime story using the external story-generation program.
+ */
+export async function generateStoryWithExternalProgram(
+  request: StoryGenerationRequest,
+): Promise<GeneratedStory> {
+  const response = await invokeExternalStory(request);
+  return normalizeStoryGenerationResponse(response).story;
 }
 
 /**
@@ -65,9 +131,11 @@ export async function getChildStories(
   childId: string,
   limit: number = 10,
 ): Promise<GeneratedStory[]> {
-  return apiRequest<GeneratedStory[]>(
+  const stories = await apiRequest<GeneratedStory[]>(
     `/bedtime-stories/list/${childId}?limit=${limit}`,
   );
+
+  return stories.map(normalizeGeneratedStory);
 }
 
 /**
@@ -77,7 +145,11 @@ export async function getStory(
   childId: string,
   storyId: string,
 ): Promise<GeneratedStory> {
-  return apiRequest<GeneratedStory>(`/bedtime-stories/${childId}/${storyId}`);
+  const story = await apiRequest<GeneratedStory>(
+    `/bedtime-stories/${childId}/${storyId}`,
+  );
+
+  return normalizeGeneratedStory(story);
 }
 
 /**

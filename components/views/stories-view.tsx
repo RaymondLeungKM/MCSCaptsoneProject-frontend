@@ -51,7 +51,7 @@ export function StoriesView({
   };
 
   const handleStoryGenerated = (newStory: GeneratedStory) => {
-    setStories((prev) => [newStory, ...prev]);
+    setStories((prev) => [newStory, ...prev.filter((story) => story.id !== newStory.id)]);
     onReadStory(newStory);
   };
 
@@ -130,6 +130,7 @@ export function StoriesView({
         childName={childName}
         languagePreference={languagePreference}
         onStoryGenerated={handleStoryGenerated}
+        onReadStory={onReadStory}
       />
 
       {/* Story Library */}
