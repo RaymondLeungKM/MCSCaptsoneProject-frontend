@@ -112,6 +112,10 @@ export interface ChallengeParticipation {
   id: string;
   challenge_id: string;
   child_id: string;
+  child_name: string | null;
+  child_avatar: string | null;
+  parent_name: string | null;
+  participant_code: string | null;
   progress: number;
   is_completed: boolean;
   completed_at: string | null;

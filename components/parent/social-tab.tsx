@@ -1719,22 +1719,29 @@ function ChallengesPanel() {
                 key={challenge.id}
                 className="rounded-[20px] border-none shadow-sm overflow-hidden"
               >
-                <div className="bg-linear-to-r from-yellow-400 to-orange-400 px-5 py-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xl font-black text-white">
-                      {challenge.emoji} {challenge.title_zh ?? challenge.title}
-                    </p>
-                    {challenge.description_zh && (
-                      <p className="text-sm text-white/80 font-bold">
-                        {challenge.description_zh}
+                <div className="bg-linear-to-r from-amber-50 via-orange-50 to-yellow-50 border-b border-amber-100 px-5 py-4 flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-orange-400 to-amber-400 text-white flex items-center justify-center text-xl shadow-sm shrink-0">
+                      {challenge.emoji}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xl font-black text-slate-800 truncate">
+                        {challenge.title_zh ?? challenge.title}
                       </p>
-                    )}
+                      {challenge.description_zh && (
+                        <p className="text-sm text-slate-500 font-bold mt-0.5">
+                          {challenge.description_zh}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-white font-black text-lg">
+                  <div className="text-right rounded-2xl bg-white/90 border border-orange-100 px-3 py-2 shadow-xs shrink-0">
+                    <p className="text-orange-500 font-black text-lg leading-none">
                       {daysLeft(challenge.ends_at)}
                     </p>
-                    <p className="text-white/70 text-xs font-bold">天後結束</p>
+                    <p className="text-slate-400 text-xs font-bold mt-1">
+                      天後結束
+                    </p>
                   </div>
                 </div>
 
@@ -1755,12 +1762,28 @@ function ChallengesPanel() {
                       {top5.map((participant, index) => (
                         <div
                           key={participant.id}
-                          className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2"
+                          className="flex items-center gap-3 bg-slate-50/80 border border-slate-100 rounded-2xl px-3 py-3"
                         >
                           <span className="text-sm font-black text-slate-500 w-5 text-center">
                             {index + 1}
                           </span>
-                          <div className="flex-1">
+                          <div className="w-10 h-10 rounded-full bg-white border border-orange-100 flex items-center justify-center text-base shadow-xs shrink-0">
+                            {participant.child_avatar ??
+                              participant.child_name?.[0] ??
+                              "👧"}
+                          </div>
+                          <div className="w-28 sm:w-36 min-w-0">
+                            <p className="text-sm font-black text-slate-700 truncate">
+                              {participant.child_name ?? "參加者"}
+                            </p>
+                            <p className="text-[11px] font-bold text-slate-400 truncate mt-0.5">
+                              {(participant.parent_name ?? "家庭") +
+                                (participant.participant_code
+                                  ? ` · #${participant.participant_code}`
+                                  : "")}
+                            </p>
+                          </div>
+                          <div className="flex-1 min-w-0">
                             <Progress
                               value={
                                 (participant.progress /
