@@ -1539,7 +1539,7 @@ function ChallengesPanel() {
                 return (
                   <Card
                     key={challenge.id}
-                    className="rounded-[20px] border-none shadow-sm overflow-hidden"
+                    className="overflow-hidden rounded-[20px] border-none py-0 gap-0 shadow-sm"
                   >
                     <div className="bg-linear-to-r from-orange-400 to-amber-400 px-5 py-4 flex items-center justify-between gap-3">
                       <div>
@@ -1717,7 +1717,7 @@ function ChallengesPanel() {
             return (
               <Card
                 key={challenge.id}
-                className="rounded-[20px] border-none shadow-sm overflow-hidden"
+                className="overflow-hidden rounded-[20px] border-none py-0 gap-0 shadow-sm"
               >
                 <div className="bg-linear-to-r from-amber-50 via-orange-50 to-yellow-50 border-b border-amber-100 px-5 py-4 flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0">
