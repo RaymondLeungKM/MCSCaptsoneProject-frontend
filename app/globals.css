@@ -183,22 +183,41 @@
 }
 
 /* ── Kid mode font scale (child pages only) ─────────────────────────────────
-   18pt on a 96dpi screen = 24px. We use 24px as the base so
-   every text-* class stays above the 18pt threshold for children.
+   Mobile-first: a friendly 16px base on phones grows to a kid-comfortable
+   ~24px on large desktops. We do this with the root font-size only so
+   Tailwind's text-* tokens preserve a proper visual hierarchy at every size
+   (a `text-xs` badge stays smaller than `text-lg` body text).
 */
 .kid-mode {
-  font-size: 24px;
+  font-size: 16px;
+}
 
-  /* Floor the two smallest Tailwind sizes at 24px */
-  --text-xs:   1rem;      /* 24px */
-  --text-sm:   1rem;      /* 24px */
-  --text-base: 1rem;      /* 24px */
-  --text-lg:   1.125rem;  /* 27px */
-  --text-xl:   1.25rem;   /* 30px */
-  --text-2xl:  1.5rem;    /* 36px */
-  --text-3xl:  1.875rem;  /* 45px */
-  --text-4xl:  2.25rem;   /* 54px */
-  --text-5xl:  3rem;      /* 72px */
+/* sm — small tablets & large phones (landscape) */
+@media (min-width: 640px) {
+  .kid-mode { font-size: 18px; }
+}
+
+/* md — tablets */
+@media (min-width: 768px) {
+  .kid-mode { font-size: 19px; }
+}
+
+/* lg — small laptops / iPad Pro */
+@media (min-width: 1024px) {
+  .kid-mode { font-size: 21px; }
+}
+
+/* xl — desktops (the original 18pt kid-friendly target) */
+@media (min-width: 1280px) {
+  .kid-mode { font-size: 24px; }
+}
+
+/* Prevent horizontal page scroll caused by oversized children inside kid-mode.
+   Individual rows that intentionally scroll (carousels) should opt out with
+   `overflow-x-auto` on their own container. */
+.kid-mode {
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Safelist category background colors to ensure they're included in build */

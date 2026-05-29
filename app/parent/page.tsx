@@ -318,14 +318,13 @@ function ParentDashboardContent() {
 
               <button
                 onClick={() => router.push("/child")}
-                className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
+                className="group flex items-center gap-1.5 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-1.5 pr-2.5 py-1.5 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-xs md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0 whitespace-nowrap"
               >
-                <span className="flex items-center justify-center w-7 h-7 bg-white/25 rounded-full shrink-0">
-                  <Baby className="w-4 h-4" />
+                <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
+                  <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </span>
-                <span className="hidden sm:inline">兒童模式</span>
-                <span className="sm:hidden">童</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <span>兒童模式</span>
+                <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 

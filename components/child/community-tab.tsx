@@ -387,18 +387,18 @@ function SubTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex-1 flex items-center justify-between gap-2 py-4 px-4 rounded-xl transition-all duration-200",
+        "flex-1 flex items-center justify-between gap-2 py-3 px-3 rounded-xl transition-all duration-200 sm:py-4 sm:px-4",
         active ? `${activeColor} text-white shadow-sm` : "text-gray-500 hover:bg-gray-50",
       )}
     >
       <div className="flex items-center gap-2">
         {icon}
         <div className="text-left">
-          <p className={cn("text-base font-black leading-tight", active ? "text-white" : "text-gray-700")}>
+          <p className={cn("text-sm font-black leading-tight sm:text-base", active ? "text-white" : "text-gray-700")}>
             {label}
           </p>
           {description && (
-            <p className={cn("text-sm leading-tight mt-0.5 font-semibold", active ? "text-white/80" : "text-gray-400")}>
+            <p className={cn("mt-0.5 text-xs font-semibold leading-tight sm:text-sm", active ? "text-white/80" : "text-gray-400")}>
               {description}
             </p>
           )}
@@ -407,7 +407,7 @@ function SubTabButton({
 
       {count > 0 && (
         <span className={cn(
-          "text-xs font-black px-2 py-0.5 rounded-full min-w-[24px] text-center",
+          "min-w-[24px] rounded-full px-2 py-0.5 text-[10px] font-black text-center sm:text-xs",
           active ? "bg-white/30 text-white" : "bg-teal-100 text-teal-700",
         )}>
           {count}

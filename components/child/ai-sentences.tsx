@@ -257,7 +257,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
           <Sparkles className="w-6 h-6 text-purple-500 fill-purple-500" />
         </div>
         <div>
-          <h4 className="text-xl font-black text-purple-900 tracking-tight">
+          <h4 className="text-lg font-black text-purple-900 tracking-tight sm:text-xl">
             AI 魔法造句
           </h4>
         </div>
@@ -293,7 +293,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
               {/* Cantonese */}
               {showCantonese && (
                 <div className="mb-2">
-                  <p className="text-lg font-black text-slate-700 leading-relaxed">
+                  <p className="text-base font-black text-slate-700 leading-relaxed sm:text-lg">
                     {sent.sentence}
                   </p>
                   {sent.jyutping && (

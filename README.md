@@ -202,6 +202,78 @@ npm install
 npm run dev
 ```
 
+### Environment
+
+Copy `.env.example` to `.env.local` and fill in the image provider credentials you want to use.
+
+Local `next dev` now defaults to standard Next.js behavior. If you want binding-backed
+Cloudflare dev mode locally, set `OPENNEXT_ENABLE_CLOUDFLARE_DEV=1` in `.env.local`.
+Leave it unset for normal local page testing such as `/test-images`.
+
+For local `/test-images` usage with `google/nano-banana-2`, you can also set
+`CLOUDFLARE_PREVIEW_WORKER_URL` to a deployed preview worker URL. In standard
+`next dev`, the route will proxy test-mode Nano Banana requests there so the UI
+can show the binding-backed image without requiring the Cloudflare dev proxy.
+
+For Cloudflare AI binding with gateway tracking on Nano Banana 2, the route now
+prefers `env.AI.run("google/nano-banana-2", ..., { gateway: { id } })` whenever
+the app is running through the OpenNext Cloudflare adapter.
+
+Set at least:
+
+```bash
+CLOUDFLARE_AI_GATEWAY_ID=default
+GEMINI_IMAGE_MODEL=gemini-2.5-flash-image
+```
+
+`wrangler.jsonc` in the repo already declares an `AI` binding for Workers. Before
+deploying, update the Worker `name` there if you want a different Cloudflare
+Worker name than the checked-in default.
+
+If you want to test the binding-backed path locally in a Cloudflare runtime,
+copy `.dev.vars.example` to `.dev.vars` and use:
+
+```bash
+pnpm preview
+```
+
+For a live Cloudflare verification without deploying over the main Worker name,
+use the isolated preview environment:
+
+```bash
+pnpm deploy:preview
+```
+
+This deploys the built `.open-next/worker.js` directly with Wrangler. In this
+repo that path avoids the OpenNext remote proxy step that was failing against
+Cloudflare's `workers/subdomain/edge-preview` API.
+
+The deploy scripts prefer `CLOUDFLARE_DEPLOY_API_TOKEN` when it is set and fall
+back to `CLOUDFLARE_API_TOKEN` otherwise. The deploy token must include at least
+`Workers Scripts Edit` on the target Cloudflare account.
+
+Those scripts now source `.env.local` immediately before invoking Wrangler, so a
+`CLOUDFLARE_DEPLOY_API_TOKEN` stored there will be picked up for deploy and
+preview commands.
+
+For Gemini through Cloudflare AI Gateway, set:
+
+```bash
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_AI_API_TOKEN=your_cloudflare_ai_runtime_token
+CLOUDFLARE_AI_GATEWAY_ID=your_gateway_name_or_id
+# or CLOUDFLARE_AI_GATEWAY_NAME=your_gateway_name
+CLOUDFLARE_AI_GATEWAY_TOKEN=your_ai_gateway_token
+GEMINI_IMAGE_MODEL=gemini-2.5-flash-image
+```
+
+If your Google AI Studio key is not stored inside AI Gateway, also set `GEMINI_API_KEY` in `.env.local` and the app will forward it through the gateway.
+
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_AI_API_TOKEN` are used for the older
+HTTP-based Cloudflare model calls and as a fallback when the AI binding is not
+available. The route still accepts `CLOUDFLARE_API_TOKEN` for backward
+compatibility, but that name is better reserved for Wrangler deploy auth.
+
 ### Access Points
 
 - **Child Mode**: http://localhost:3000

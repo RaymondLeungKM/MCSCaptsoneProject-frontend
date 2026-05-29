@@ -172,7 +172,7 @@ export function getDefinition(
 ): string {
   switch (language) {
     case "cantonese":
-      return word.definition_cantonese || word.definition;
+      return (word.definition_cantonese || "").trim();
     case "bilingual":
       return word.definition_cantonese
         ? `${word.definition_cantonese} / ${word.definition}`

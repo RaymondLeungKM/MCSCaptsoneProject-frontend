@@ -228,9 +228,11 @@ export function WordLearningModal({
               <h2 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
                 {wordText}
               </h2>
-              <p className="text-lg font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-xl mb-4">
-                {definition}
-              </p>
+              {definition && (
+                <p className="text-lg font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-xl mb-4">
+                  {definition}
+                </p>
+              )}
 
               <div className="flex flex-wrap gap-2 justify-center">
                 <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full uppercase tracking-wide">

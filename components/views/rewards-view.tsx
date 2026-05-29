@@ -368,45 +368,45 @@ export function RewardsView({
         </div>
       ) : (
         <div className="space-y-6">
-            <section className="rounded-4xl border border-white/60 bg-white/80 p-7 shadow-sm backdrop-blur-md">
+            <section className="rounded-4xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur-md sm:p-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                  <Sparkles className="h-7 w-7" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 sm:h-14 sm:w-14">
+                  <Sparkles className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-800">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black text-slate-800 sm:text-2xl">
                     下一個解鎖目標
                   </h3>
-                  <p className="text-base font-semibold text-slate-500">
+                  <p className="text-sm font-semibold text-slate-500 sm:text-base">
                     再努力一點點，就可以拿到新的徽章。
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:mt-5 sm:gap-5 md:grid-cols-2">
                 {nextTargets.length > 0 ? (
                   nextTargets.map((badge) => (
                     <div
                       key={badge.id}
-                      className="rounded-3xl border-2 border-slate-100 bg-slate-50/80 p-5 flex items-center gap-5"
+                      className="rounded-3xl border-2 border-slate-100 bg-slate-50/80 p-3 flex items-center gap-3 sm:p-5 sm:gap-5"
                     >
                       <div
                         className={cn(
-                          "flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-5xl",
+                          "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl sm:h-20 sm:w-20 sm:text-5xl",
                           badge.accent,
                         )}
                       >
                         {badge.icon}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xl font-black text-slate-800">{badge.name}</p>
-                          <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-4 py-1.5 text-base text-slate-600 shrink-0 font-bold">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                          <p className="whitespace-nowrap text-base font-black text-slate-800 sm:text-xl">{badge.name}</p>
+                          <Badge variant="outline" className="self-start rounded-full border-slate-200 bg-white px-2.5 py-0.5 text-xs text-slate-600 shrink-0 font-bold sm:self-auto sm:px-4 sm:py-1.5 sm:text-base">
                             {badge.currentValue}/{badge.requirement}
                           </Badge>
                         </div>
-                        <p className="text-base font-medium text-slate-500 mt-1">{badge.description}</p>
-                        <Progress value={badge.progress} className="mt-3 h-5 rounded-full bg-white" indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400" />
+                        <p className="text-sm font-medium text-slate-500 mt-1 sm:text-base">{badge.description}</p>
+                        <Progress value={badge.progress} className="mt-2 h-3 rounded-full bg-white sm:mt-3 sm:h-5" indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400" />
                       </div>
                     </div>
                   ))

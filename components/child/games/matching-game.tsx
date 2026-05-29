@@ -351,9 +351,9 @@ export function MatchingGame({ childId, onClose }: MatchingGameProps) {
         翻開卡片，找出配對！
       </p>
 
-      {/* Card grid — 4 columns, 3 rows = 12 cards */}
-      <div className="flex-1 flex items-center justify-center px-4 pb-6">
-        <div className="grid grid-cols-4 gap-3 w-full max-w-md">
+      {/* Card grid — 3 cols on phones, 4 cols from sm up = 12 cards */}
+      <div className="flex-1 flex items-center justify-center px-3 sm:px-4 pb-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 w-full max-w-md">
           {cards.map((card) => {
             const isFlipped = card.matched || flipped.includes(card.id);
             const isWrong = wrongPair.includes(card.id);

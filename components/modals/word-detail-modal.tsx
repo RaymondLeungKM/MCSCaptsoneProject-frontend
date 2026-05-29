@@ -284,8 +284,8 @@ export function WordDetailModal({
         {/* Card */}
         <div
           className={cn(
-            "relative w-full max-w-lg bg-white",
-            "rounded-[40px]",
+            "relative w-full max-w-md sm:max-w-lg bg-white",
+            "rounded-3xl sm:rounded-[40px]",
             "border-4 border-white shadow-2xl",
             "max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain sm:max-h-[90dvh]",
             "animate-in zoom-in-95 fade-in duration-300",
@@ -567,15 +567,17 @@ export function WordDetailModal({
         <div className="custom-scrollbar px-5 py-5 touch-pan-y">
           <div className="space-y-4 pb-2">
           {/* Definition */}
-          <Section
-            icon={<BookOpen className="w-4 h-4" />}
-            title="意思"
-            color="sky"
-          >
-            <p className="text-base font-bold text-slate-700 leading-relaxed">
-              {definition}
-            </p>
-          </Section>
+          {definition && (
+            <Section
+              icon={<BookOpen className="w-4 h-4" />}
+              title="意思"
+              color="sky"
+            >
+              <p className="text-base font-bold text-slate-700 leading-relaxed">
+                {definition}
+              </p>
+            </Section>
+          )}
 
           {/* Example Sentence */}
           <Section

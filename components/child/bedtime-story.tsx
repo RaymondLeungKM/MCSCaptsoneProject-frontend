@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { GeneratedStory, LanguagePreference } from "@/lib/types";
 import { generateStoryWithExternalProgram } from "@/lib/api/bedtime-stories";
+import { StoryGeneratingAnimation } from "@/components/child/story-generating-animation";
 
 interface BedtimeStoryGeneratorProps {
   childId?: string;
@@ -106,6 +107,8 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
+      {/* ── Story generating overlay ── */}
+      <StoryGeneratingAnimation isVisible={isGenerating} />
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}
@@ -130,20 +133,20 @@ export function BedtimeStoryGenerator({
           <h3 className="mb-4 flex items-center gap-2 text-xl font-black text-purple-900">
             <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {themes.map((theme) => (
               <button
                 key={theme.value}
                 onClick={() => setSelectedTheme(theme.value)}
                 className={cn(
-                  "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-300",
+                  "flex flex-row items-center justify-center gap-1.5 p-2 rounded-2xl border-2 transition-all duration-300 sm:flex-col sm:gap-0 sm:p-3",
                   selectedTheme === theme.value
                     ? "bg-purple-600 border-purple-600 text-white shadow-lg scale-105"
                     : "bg-white border-transparent hover:border-purple-200 text-slate-600 hover:bg-purple-50",
                 )}
               >
-                <span className="text-2xl mb-1">{theme.emoji}</span>
-                <span className="text-lg font-black">{theme.label}</span>
+                <span className="text-base sm:mb-1 sm:text-2xl">{theme.emoji}</span>
+                <span className="whitespace-nowrap text-sm font-black tracking-tight sm:text-lg">{theme.label}</span>
               </button>
             ))}
           </div>

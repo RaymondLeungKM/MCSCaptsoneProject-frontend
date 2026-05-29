@@ -581,9 +581,9 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
   /* ── No words available ── */
   if (words.length === 0) {
     return (
-      <div className="fixed inset-0 z-[60] bg-gradient-to-b from-green-100 to-emerald-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[40px] p-8 text-center max-w-sm w-full shadow-2xl">
-          <div className="text-6xl mb-4">📚</div>
+      <div className="fixed inset-0 z-[60] bg-gradient-to-b from-green-100 to-emerald-100 flex items-center justify-center p-4 sm:p-6">
+        <div className="bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 text-center max-w-sm w-full shadow-2xl">
+          <div className="text-5xl sm:text-6xl mb-4">📚</div>
           <h2 className="text-2xl font-black text-slate-700 mb-2">
             未有足夠嘅詞語
           </h2>
@@ -609,9 +609,9 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
       stars === 2 ? "做得好！繼續加油唤！🌟" :
                    "唔緊要，繼續練習會得啓💪";
     return (
-      <div className="fixed inset-0 z-[60] bg-gradient-to-b from-green-100 to-emerald-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[40px] p-8 text-center max-w-sm w-full shadow-2xl">
-          <div className="text-7xl mb-3">
+      <div className="fixed inset-0 z-[60] bg-gradient-to-b from-green-100 to-emerald-100 flex items-center justify-center p-4 sm:p-6">
+        <div className="bg-white rounded-3xl sm:rounded-[40px] p-6 sm:p-8 text-center max-w-sm w-full shadow-2xl">
+          <div className="text-5xl sm:text-7xl mb-3">
             {stars === 3 ? "🏆" : stars === 2 ? "🌟" : "⭐"}
           </div>
           <h2 className="text-3xl font-black text-slate-700 mb-1">完成！</h2>
@@ -654,7 +654,10 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
     <div className="fixed inset-0 z-[60] bg-gradient-to-b from-green-100 to-emerald-100 flex flex-col">
       <Confetti active={showConfetti} />
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-16 pb-3">
+      <div
+        className="flex items-center justify-between px-4 pb-3"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
         <button
           onClick={onClose}
           className="w-10 h-10 bg-white/70 rounded-full flex items-center justify-center shadow-sm"
@@ -688,7 +691,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
             </p>
 
             {/* Cartoon image */}
-            <div className="w-48 h-48 rounded-3xl overflow-hidden shadow-lg border-4 border-white/70">
+            <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-3xl overflow-hidden shadow-lg border-4 border-white/70">
               <CartoonWordImage
                 wordId={currentWord.id}
                 word={currentWord.word}
@@ -696,7 +699,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
                 category={currentWord.category}
                 existingImageUrl={currentWord.image_url}
                 className="w-full h-full"
-                emojiSize="text-6xl"
+                emojiSize="text-5xl sm:text-6xl"
                 placeholderBg={`bg-gradient-to-br ${getFallbackBg(currentWord.id)}`}
                 showLabel={false}
               />
@@ -718,7 +721,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
 
         {/* Answer Slots */}
         <div
-          className={`flex gap-4 justify-center ${shaking ? "animate-shake" : ""}`}
+          className={`flex flex-wrap gap-2 sm:gap-4 justify-center ${shaking ? "animate-shake" : ""}`}
         >
           {targetChars.map((_, i) => {
             const filled = slots[i] !== null;
@@ -727,7 +730,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
               <div key={i} className="flex flex-col items-center gap-2">
                 <button
                   onClick={() => handleSlotTap(i)}
-                  className={`w-20 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-all duration-200 ${
+                  className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl font-black transition-all duration-200 ${
                     correctFlash
                       ? "bg-green-400 text-white border-4 border-green-500 scale-110 shadow-[0_4px_0_#15803d]"
                       : highlightedHintIndex === i && !filled
@@ -778,7 +781,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
         )}
 
         {/* Character Tiles */}
-        <div className="flex flex-wrap gap-4 justify-center max-w-md pt-4">
+        <div className="flex flex-wrap gap-2 sm:gap-4 justify-center max-w-md pt-4">
           {tiles.map((tile) => {
             const hintedChar =
               highlightedHintIndex !== null ? targetChars[highlightedHintIndex] : null;
@@ -789,7 +792,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
                 key={tile.id}
                 onClick={() => handleTileTap(tile.id)}
                 disabled={tile.used || correctFlash || shaking}
-                className={`w-20 h-20 rounded-2xl flex items-center justify-center text-4xl font-black transition-all duration-200 ${
+                className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl font-black transition-all duration-200 ${
                   tile.used
                     ? "bg-gray-100 text-gray-300 border-4 border-gray-200 scale-90"
                     : isHintedTile
