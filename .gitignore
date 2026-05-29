@@ -10,6 +10,7 @@
 
 # production
 /build
+/dist-validate/
 
 # debug
 npm-debug.log*
