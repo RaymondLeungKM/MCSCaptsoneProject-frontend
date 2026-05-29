@@ -126,9 +126,11 @@ export function WordOfTheDay({
           )}
 
           {/* Definition */}
-          <p className="text-slate-600 font-medium leading-relaxed line-clamp-2 bg-slate-50/50 rounded-xl p-2 sm:p-0 sm:bg-transparent">
-            {definition}
-          </p>
+          {definition && (
+            <p className="text-slate-600 font-medium leading-relaxed line-clamp-2 bg-slate-50/50 rounded-xl p-2 sm:p-0 sm:bg-transparent">
+              {definition}
+            </p>
+          )}
         </div>
       </div>
 
