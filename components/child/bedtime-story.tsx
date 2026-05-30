@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Moon, Sparkles, BookOpen, Clock, Heart } from "lucide-react";
+import { Moon, Sparkles, BookOpen, Clock, Heart, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

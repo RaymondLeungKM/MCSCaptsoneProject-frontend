@@ -392,7 +392,7 @@ export function CategoryGrid({
                 </div>
 
                 {/* Name */}
-                <span className="max-w-full truncate whitespace-nowrap text-base font-black tracking-tight text-center leading-tight sm:text-lg">
+                <span className="text-base font-black tracking-tight text-center leading-tight sm:text-lg">
                   {categoryName}
                 </span>
 

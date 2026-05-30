@@ -117,9 +117,9 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
               {/* 📝 The Label (Now sitting INSIDE the white box) */}
               <span
                 className={cn(
-                  "min-h-[0.8rem] max-w-full truncate whitespace-nowrap text-[10px] font-black leading-none tracking-tight transition-all duration-300 sm:min-h-[1rem] sm:text-xs sm:tracking-wide",
+                  "min-h-[0.72rem] max-w-full truncate text-[8px] font-black leading-none tracking-tight transition-all duration-300 sm:min-h-[1rem] sm:text-xs sm:tracking-wide",
                   isActive
-                    ? `${item.activeText} text-[11px] opacity-100 sm:-translate-y-1 sm:text-sm`
+                    ? `${item.activeText} text-[9px] opacity-100 sm:-translate-y-1 sm:text-sm`
                     : "text-slate-500 opacity-100",
                 )}
               >

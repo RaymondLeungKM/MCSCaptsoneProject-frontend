@@ -189,17 +189,17 @@
    (a `text-xs` badge stays smaller than `text-lg` body text).
 */
 .kid-mode {
-  font-size: 17px;
+  font-size: 16px;
 }
 
 /* sm — small tablets & large phones (landscape) */
 @media (min-width: 640px) {
-  .kid-mode { font-size: 18.5px; }
+  .kid-mode { font-size: 18px; }
 }
 
 /* md — tablets */
 @media (min-width: 768px) {
-  .kid-mode { font-size: 20px; }
+  .kid-mode { font-size: 19px; }
 }
 
 /* lg — small laptops / iPad Pro */
