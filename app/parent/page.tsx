@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Baby,
-  LayoutGrid,
-  PieChart,
-  Loader2,
-  Users,
-} from "lucide-react";
+import { Baby, LayoutGrid, PieChart, Loader2, Users } from "lucide-react";
 
 // --- UI IMPORTS ---
 import {
@@ -441,17 +435,12 @@ function ParentDashboardContent() {
               </div>
 
               <button
-<<<<<<< HEAD
-                onClick={() => router.push("/child")}
-                className="group flex items-center gap-1.5 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-1.5 pr-2.5 py-1.5 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-xs md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0 whitespace-nowrap"
-=======
                 onClick={() =>
                   router.push(
                     profile?.id ? `/child?childId=${profile.id}` : "/child",
                   )
                 }
                 className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
->>>>>>> 94e6e92 (feat: enhance parent missions tab with mission summary and recent completions)
               >
                 <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
                   <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
