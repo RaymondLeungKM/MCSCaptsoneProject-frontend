@@ -57,12 +57,11 @@ function MessageBubble({ message }: MessageBubbleProps) {
       {/* Bubble */}
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm font-semibold shadow-sm",
           isUser
             ? "bg-indigo-500 text-white rounded-br-sm"
             : "bg-white text-slate-800 rounded-bl-sm border border-slate-100",
         )}
-        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
       >
         {message.content}
       </div>
@@ -164,10 +163,7 @@ export function AITutorChat({
       <div className="flex items-center justify-between px-4 py-3 bg-amber-400 text-white">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
-          <span
-            className="font-bold text-base"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <span className="font-bold text-base">
             小博士 AI 助手
           </span>
         </div>
@@ -182,10 +178,7 @@ export function AITutorChat({
 
       {/* Safety notice */}
       <div className="px-4 py-2 bg-amber-50 border-b border-amber-100">
-        <p
-          className="text-xs text-amber-700"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-        >
+        <p className="child-tab-copy !text-xs !text-amber-700">
           🔒 家長監控模式 | 只回答廣東話詞彙問題
         </p>
       </div>
@@ -217,10 +210,7 @@ export function AITutorChat({
 
         {/* Error */}
         {error && (
-          <p
-            className="text-red-500 text-xs text-center"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <p className="child-tab-copy !text-xs !text-center !text-red-500">
             {error}
           </p>
         )}
@@ -236,7 +226,6 @@ export function AITutorChat({
               key={q}
               onClick={() => sendMessage(q)}
               className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-full px-3 py-1.5 transition-colors"
-              style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
             >
               {q}
             </button>
@@ -256,7 +245,6 @@ export function AITutorChat({
           placeholder="問小博士一個問題…"
           disabled={loading}
           className="flex-1 text-sm rounded-full border border-slate-200 px-4 py-2 focus:outline-none focus:border-amber-400 disabled:opacity-50 transition-colors"
-          style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
         />
         <button
           type="submit"

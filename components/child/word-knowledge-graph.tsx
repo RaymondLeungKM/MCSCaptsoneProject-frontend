@@ -198,13 +198,12 @@ export function WordKnowledgeGraph({
               "max-w-full wrap-break-word text-center font-black leading-[0.92] tracking-tight line-clamp-3",
               getWordTextClasses(centreLabel, "hero"),
             )}
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
           >
             {centreLabel}
           </p>
 
           {centreNode.jyutping && (
-            <p className="mt-2 text-sm font-semibold tracking-widest text-indigo-200 md:text-lg">
+            <p className="child-tab-copy !mt-2 !text-sm !tracking-widest !text-indigo-200 md:!text-lg">
               {centreNode.jyutping}
             </p>
           )}
@@ -227,10 +226,7 @@ export function WordKnowledgeGraph({
 
         {/* ── Section label ── */}
         {neighbours.length > 0 && (
-          <p
-            className="text-slate-500 font-bold text-sm text-center"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <p className="child-tab-card-title !mt-0 !text-center !text-sm !text-slate-500">
             ✨ 和它相關的詞語
           </p>
         )}
@@ -291,14 +287,13 @@ export function WordKnowledgeGraph({
                         "max-w-full wrap-break-word text-center font-black leading-[0.95] line-clamp-4",
                         getWordTextClasses(nodeLabel, "card"),
                       )}
-                      style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
                     >
                       {nodeLabel}
                     </span>
 
                     {/* Jyutping */}
                     {node.jyutping && (
-                      <span className="text-xs font-semibold tracking-widest text-white/80 md:text-sm">
+                      <span className="child-tab-copy !mt-0 !text-xs !tracking-widest !text-white/80 md:!text-sm">
                         {node.jyutping.split(" ")[0]}
                       </span>
                     )}
@@ -339,20 +334,14 @@ export function WordKnowledgeGraph({
             })}
           </div>
         ) : (
-          <p
-            className="text-slate-400 text-sm text-center py-4"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <p className="child-tab-card-copy !py-4 !text-center !text-sm !text-slate-400">
             暫無相關詞語
           </p>
         )}
 
         {/* ── Tap hint ── */}
         {neighbours.length > 0 && (
-          <p
-            className="text-slate-400 text-xs text-center"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <p className="child-tab-copy !text-center !text-xs !text-slate-400">
             點擊卡片查看詳情 · 點擊
             <Compass className="inline w-3 h-3 mx-0.5 align-middle" />
             探索相關詞語

@@ -46,10 +46,10 @@ export function GameCard({ game, onPlay }: GameCardProps) {
       
       {/* Text Content */}
       <div className="flex-1 min-w-0">
-        <h3 className="mb-0.5 text-base font-black tracking-tight text-slate-700 sm:mb-1 sm:text-3xl">
+        <h3 className="child-tab-compact-title mb-0.5 !text-base sm:mb-1">
           {game.name}
         </h3>
-        <p className="line-clamp-2 text-xs font-bold leading-tight opacity-70 sm:text-xl">
+        <p className="child-tab-compact-copy line-clamp-2 !text-xs !leading-tight opacity-70 sm:!text-xl">
           {game.description}
         </p>
       </div>
@@ -88,10 +88,10 @@ export function GamesList({ games, onPlayGame, languagePreference = "cantonese" 
           <Gamepad2 className="h-4 w-4 text-white sm:h-6 sm:w-6" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-lg font-black tracking-tight text-slate-700 sm:text-3xl">
+           <h2 className="child-tab-compact-title">
              好玩遊戲
           </h2>
-          <p className="text-xs font-bold text-slate-400 sm:text-base">
+           <p className="child-tab-compact-copy">
              邊玩邊學！
           </p>
         </div>

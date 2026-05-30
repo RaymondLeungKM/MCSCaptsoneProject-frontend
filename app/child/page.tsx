@@ -901,7 +901,10 @@ function ChildDashboardContent() {
     <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
       <CartoonKeyframes />
       <OwlCompanion level={profile.level} />
-      <div className="w-full min-h-screen pb-32 px-4">
+      <div
+        className="w-full min-h-screen px-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10.5rem)" }}
+      >
         {showDashboardHeader && (
           <header className="flex flex-row items-center gap-2 py-4">
             <ProfileHeader
@@ -955,16 +958,10 @@ function ChildDashboardContent() {
                       <Brain className="h-5 w-5" />
                     </div>
                     <div>
-                      <p
-                        className="text-sm font-black text-violet-700"
-                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                      >
+                        <p className="child-tab-section-title !text-sm !text-violet-700">
                         AI 今日推薦
                       </p>
-                      <p
-                        className="text-xs font-semibold text-slate-400"
-                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                      >
+                        <p className="child-tab-section-copy !text-xs !text-slate-400">
                         幫你揀好今日最值得先開始的內容
                       </p>
                     </div>
@@ -978,23 +975,13 @@ function ChildDashboardContent() {
                             <BookMarked className="h-4.5 w-4.5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p
-                              className="text-xs font-black tracking-[0.12em] text-slate-400"
-                              style={{
-                                fontFamily: "'Noto Sans TC', sans-serif",
-                              }}
-                            >
+                            <p className="child-tab-caption !tracking-[0.12em]">
                               今日重點詞彙
                             </p>
                             <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
                               {recommendedWordLabel}
                             </p>
-                            <p
-                              className="mt-2 text-sm font-semibold leading-6 text-slate-500"
-                              style={{
-                                fontFamily: "'Noto Sans TC', sans-serif",
-                              }}
-                            >
+                            <p className="child-tab-copy !mt-2 !leading-6">
                               {localizedWordReason}
                             </p>
                           </div>
@@ -1010,23 +997,13 @@ function ChildDashboardContent() {
                               <Zap className="h-4.5 w-4.5" />
                             </div>
                             <div className="min-w-0">
-                              <p
-                                className="text-xs font-black tracking-[0.12em] text-slate-400"
-                                style={{
-                                  fontFamily: "'Noto Sans TC', sans-serif",
-                                }}
-                              >
+                              <p className="child-tab-caption !tracking-[0.12em]">
                                 建議下一步
                               </p>
                               <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
                                 {nextStepLabel}
                               </p>
-                              <p
-                                className="mt-2 text-sm font-semibold leading-6 text-slate-500"
-                                style={{
-                                  fontFamily: "'Noto Sans TC', sans-serif",
-                                }}
-                              >
+                              <p className="child-tab-copy !mt-2 !leading-6">
                                 {localizedNextStepReason}
                               </p>
                             </div>
@@ -1044,7 +1021,6 @@ function ChildDashboardContent() {
                               )
                             }
                             className="shrink-0 rounded-full bg-amber-400 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-amber-500"
-                            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
                           >
                             {nextStepButtonLabel}
                           </button>

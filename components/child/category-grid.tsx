@@ -197,10 +197,10 @@ export function CategoryGrid({
             <div className="flex items-center gap-2 sm:gap-2.5">
               <span className="text-4xl sm:text-5xl">{selectedCategory.icon}</span>
               <div>
-                <h2 className="text-2xl font-black leading-tight tracking-tight text-slate-700 sm:text-4xl">
+                <h2 className="child-tab-hero-title !text-2xl sm:!text-4xl !text-slate-700">
                   {catName}
                 </h2>
-                <p className="text-sm font-bold text-slate-400 sm:text-base">
+                <p className="child-tab-hero-copy !mt-0 !max-w-none !text-sm !text-slate-400 sm:!text-base">
                   {isLoadingWords
                     ? "載入中…"
                     : `${categoryWords.length} 個詞語`}
@@ -225,7 +225,7 @@ export function CategoryGrid({
           {wordsError && !isLoadingWords && (
             <div className="text-center py-12">
               <p className="text-4xl mb-3">😕</p>
-              <p className="text-slate-500 font-bold text-sm">{wordsError}</p>
+              <p className="child-tab-card-copy !mt-0 !font-bold">{wordsError}</p>
             </div>
           )}
 
@@ -233,7 +233,7 @@ export function CategoryGrid({
           {!isLoadingWords && !wordsError && categoryWords.length === 0 && (
             <div className="text-center py-12">
               <p className="text-5xl mb-3">🔍</p>
-              <p className="text-slate-500 font-bold text-sm">暫時還沒有詞語</p>
+              <p className="child-tab-card-copy !mt-0 !font-bold">暫時還沒有詞語</p>
             </div>
           )}
 
@@ -292,7 +292,7 @@ export function CategoryGrid({
                     </div>
 
                     {/* Word Label */}
-                    <span className="text-base font-black leading-tight tracking-tight text-center sm:text-xl">
+                    <span className="child-tab-card-title !mt-0 !text-center !text-base !leading-tight sm:!text-xl">
                       {wordText}
                     </span>
 
@@ -356,10 +356,10 @@ export function CategoryGrid({
             <Sparkles className="h-5 w-5 fill-white text-white sm:h-6 sm:w-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-700 tracking-tight">
+            <h2 className="child-tab-compact-title">
               {headerText}
             </h2>
-            <p className="text-sm font-bold text-slate-400 sm:text-base">{subHeaderText}</p>
+            <p className="child-tab-compact-copy">{subHeaderText}</p>
           </div>
         </div>
 
@@ -392,12 +392,12 @@ export function CategoryGrid({
                 </div>
 
                 {/* Name */}
-                <span className="text-base font-black tracking-tight text-center leading-tight sm:text-lg">
+                <span className="child-tab-card-title !mt-0 !text-center !text-base !leading-tight sm:!text-lg">
                   {categoryName}
                 </span>
 
                 {/* Word Count Tag */}
-                <span className="mt-1.5 rounded-full bg-white/40 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide sm:mt-2 sm:px-3 sm:text-sm">
+                <span className="child-tab-caption mt-1.5 rounded-full bg-white/40 px-2.5 py-1 !text-[11px] sm:mt-2 sm:px-3 sm:!text-sm">
                   {category.wordCount} 詞語
                 </span>
 

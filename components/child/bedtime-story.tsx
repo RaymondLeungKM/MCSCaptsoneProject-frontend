@@ -113,10 +113,10 @@ export function BedtimeStoryGenerator({
           <div className="inline-flex p-4 bg-white rounded-full shadow-md mb-2">
             <Moon className="w-8 h-8 text-purple-500 fill-purple-500" />
           </div>
-          <h2 className="text-4xl font-black text-purple-900 tracking-tight md:text-[2.7rem]">
+          <h2 className="child-tab-hero-title text-purple-900">
             生成睡前故事
           </h2>
-          <p className="text-lg text-purple-700 font-bold md:text-xl">
+          <p className="child-tab-hero-copy !mt-0 !max-w-none !text-lg !font-bold !text-purple-700 md:!text-xl">
             為
             <span className="font-bold underline decoration-wavy decoration-purple-400">
               {childName}
@@ -127,7 +127,7 @@ export function BedtimeStoryGenerator({
 
         {/* Theme Selection Grid */}
         <div className="bg-white/60 backdrop-blur-md p-6 rounded-[32px] mx-4 mb-4">
-          <h3 className="mb-4 flex items-center gap-2 text-xl font-black text-purple-900">
+          <h3 className="child-tab-section-title mb-4 flex items-center gap-2 text-purple-900">
             <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -143,14 +143,14 @@ export function BedtimeStoryGenerator({
                 )}
               >
                 <span className="text-base sm:mb-1 sm:text-2xl">{theme.emoji}</span>
-                <span className="whitespace-nowrap text-sm font-black tracking-tight sm:text-lg">{theme.label}</span>
+                <span className="child-tab-card-title whitespace-nowrap !mt-0 !text-sm sm:!text-lg">{theme.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Info Row */}
-        <div className="px-8 pb-4 flex justify-between text-sm font-bold text-purple-800 opacity-70">
+        <div className="child-tab-copy px-8 pb-4 flex justify-between !text-sm !font-bold !text-purple-800 opacity-70">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" /> 閱讀時間：5 分鐘
           </div>
@@ -186,7 +186,7 @@ export function BedtimeStoryGenerator({
         </div>
 
         {error && (
-          <div className="px-6 pb-5 text-sm text-red-600 font-bold">
+          <div className="child-tab-copy px-6 pb-5 !text-sm !font-bold !text-red-600">
             {error}
           </div>
         )}
@@ -226,7 +226,7 @@ function StoryCard({
       <div className="pt-10 px-8 pb-8">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-3xl font-black text-slate-800 leading-tight mb-1 md:text-[2.4rem]">
+            <h3 className="child-tab-section-title mb-1 !text-3xl md:!text-[2.4rem]">
               {story.title}
             </h3>
           </div>
@@ -250,7 +250,7 @@ function StoryCard({
         </div>
 
         <div className="bg-slate-50 p-6 rounded-[24px] mb-6">
-          <p className="text-xl text-slate-600 leading-relaxed font-medium md:text-2xl">
+          <p className="child-tab-card-copy !mt-0 !text-xl !leading-relaxed !text-slate-600 md:!text-2xl">
             {story.content_cantonese}
           </p>
         </div>

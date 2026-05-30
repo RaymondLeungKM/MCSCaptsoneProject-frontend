@@ -1,5 +1,18 @@
+const isDevCommand = process.argv.includes("dev");
+const portFlagIndex = process.argv.findIndex(
+  (arg) => arg === "--port" || arg === "-p",
+);
+const requestedPort =
+  portFlagIndex >= 0 ? process.argv[portFlagIndex + 1] : process.env.PORT;
+const devDistDir =
+  process.env.NEXT_DIST_DIR ||
+  (isDevCommand && requestedPort && requestedPort !== "3000"
+    ? `.next-${requestedPort}`
+    : undefined);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  ...(devDistDir ? { distDir: devDistDir } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },

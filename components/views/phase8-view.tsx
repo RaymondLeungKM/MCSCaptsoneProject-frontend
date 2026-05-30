@@ -127,9 +127,9 @@ function SmartStatCard({
       >
         <Icon className="h-6 w-6" />
       </div>
-      <p className="text-3xl font-black text-slate-800">{value}</p>
-      <p className="mt-1 text-sm font-black text-slate-600">{label}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="child-tab-stat-value !mt-0">{value}</p>
+      <p className="child-tab-stat-label !mt-1 !text-slate-600">{label}</p>
+      <p className="child-tab-card-copy !mt-2">{helper}</p>
     </div>
   );
 }
@@ -159,8 +159,8 @@ function StatusPanel({
       >
         <Icon className="h-8 w-8" />
       </div>
-      <h3 className="mt-5 text-2xl font-black text-slate-800">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">
+      <h3 className="child-tab-section-title !mt-5 !text-2xl">{title}</h3>
+      <p className="child-tab-section-copy mx-auto !mt-2 max-w-md !text-sm">
         {description}
       </p>
       {actionLabel && onAction && (
@@ -265,40 +265,40 @@ function ReviewView({ childId, onPlayAudio }: ReviewViewProps) {
           <CheckCircle2 className="h-8 w-8" />
         </div>
         <div>
-          <h3 className="text-2xl font-black text-slate-800">
+          <h3 className="child-tab-section-title !text-2xl">
             今日複習全部完成
           </h3>
-          <p className="mt-2 text-sm font-semibold text-slate-500">
+          <p className="child-tab-section-copy !mt-2 !text-sm">
             你的記憶節奏很穩定，明天再回來系統會安排新的複習卡。
           </p>
         </div>
         {profile && (
           <div className="grid gap-3 rounded-3xl border border-indigo-100 bg-indigo-50/80 p-5 text-left sm:grid-cols-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500">
+              <p className="child-tab-stat-label !text-indigo-500">
                 總卡數
               </p>
-              <p className="mt-2 text-2xl font-black text-slate-800">
+              <p className="child-tab-stat-value">
                 {profile.total_cards}
               </p>
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500">
+              <p className="child-tab-stat-label !text-emerald-500">
                 畢業率
               </p>
-              <p className="mt-2 text-2xl font-black text-slate-800">
+              <p className="child-tab-stat-value">
                 {Math.round(profile.graduation_rate * 100)}%
               </p>
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-500">
+              <p className="child-tab-stat-label !text-amber-500">
                 平均間隔
               </p>
-              <p className="mt-2 text-2xl font-black text-slate-800">
+              <p className="child-tab-stat-value">
                 {profile.avg_interval.toFixed(1)}天
               </p>
             </div>
-            <p className="sm:col-span-3 text-sm font-medium text-slate-500">
+            <p className="child-tab-card-copy sm:col-span-3 !mt-0">
               {profile.assessment}
             </p>
           </div>
@@ -327,10 +327,7 @@ function ReviewView({ childId, onPlayAudio }: ReviewViewProps) {
       {/* Result feedback */}
       {lastResult && (
         <div className="bg-indigo-50 border border-indigo-200 rounded-2xl px-4 py-3 text-center animate-in fade-in duration-200">
-          <p
-            className="text-indigo-700 font-bold text-sm"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+          <p className="child-tab-copy !text-sm !font-bold !text-indigo-700">
             {lastResult.message}
           </p>
         </div>
@@ -437,10 +434,10 @@ function GraphView({ childId }: GraphViewProps) {
         </>
       ) : (
         <div className="rounded-4xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
-          <p className="text-lg font-black text-slate-700">
+          <p className="child-tab-card-title !text-lg !text-slate-700">
             繼續學習詞彙，詞彙圖譜會自動建立
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-500">
+          <p className="child-tab-card-copy">
             當你學的詞越多，這張圖會變得越完整。
           </p>
         </div>
@@ -449,7 +446,7 @@ function GraphView({ childId }: GraphViewProps) {
       {/* Graph-based recommendations */}
       {recommendations && recommendations.recommended_words.length > 0 && (
         <div className="mt-2 rounded-4xl border border-emerald-100 bg-emerald-50/70 p-5">
-          <p className="mb-3 text-center text-sm font-black text-emerald-700">
+          <p className="child-tab-card-title !mb-3 !text-center !text-sm !text-emerald-700">
             🌟 接下來可以學這些詞語！
           </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -458,13 +455,12 @@ function GraphView({ childId }: GraphViewProps) {
                 key={w.word_id}
                 onClick={() => handleNodeClick(w)}
                 className="flex flex-col items-center gap-0.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 border-2 border-emerald-200 text-emerald-800 rounded-2xl px-2 py-3 transition-all duration-150"
-                style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
               >
-                <span className="line-clamp-3 text-center text-lg font-black leading-tight sm:text-xl">
+                <span className="child-tab-card-title line-clamp-3 !mt-0 !text-center !text-lg !leading-tight !text-emerald-800 sm:!text-xl">
                   {w.word_cantonese || w.word}
                 </span>
                 {w.jyutping && (
-                  <span className="text-emerald-400 text-[11px] font-semibold">
+                  <span className="child-tab-copy !mt-0 !text-[11px] !text-emerald-400">
                     {w.jyutping.split(" ")[0]}
                   </span>
                 )}
@@ -505,15 +501,15 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
         >
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-3 md:space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-slate-700 shadow-sm md:px-4 md:py-2 md:text-sm">
+              <div className="child-tab-chip !px-3 !py-1.5 !text-xs text-slate-700 md:!px-4 md:!py-2 md:!text-sm">
                 <Brain className="h-4 w-4 text-violet-500" />
                 Brain Lab
               </div>
               <div>
-                <h2 className="text-2xl font-black tracking-tight text-slate-800 md:text-4xl">
+                <h2 className="child-tab-hero-title !text-2xl md:!text-4xl">
                   {profile.name} 的智能學習站
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-500 md:text-base">
+                <p className="child-tab-hero-copy !text-sm md:!text-base">
                   用 AI 複習、詞彙圖譜和即時問答，讓練習方式跟上你的學習節奏。
                 </p>
               </div>
@@ -531,26 +527,26 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
 
               <div className="grid grid-cols-3 gap-2 md:hidden">
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  <p className="child-tab-caption !text-[10px]">
                     XP
                   </p>
-                  <p className="mt-1 text-lg font-black text-slate-800">
+                  <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.xp}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  <p className="child-tab-caption !text-[10px]">
                     目標
                   </p>
-                  <p className="mt-1 text-lg font-black text-slate-800">
+                  <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.todayProgress}/{profile.dailyGoal}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  <p className="child-tab-caption !text-[10px]">
                     專注
                   </p>
-                  <p className="mt-1 text-lg font-black text-slate-800">
+                  <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.attentionSpan} 分
                   </p>
                 </div>
@@ -568,19 +564,19 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <ActiveIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                  <p className="child-tab-caption">
                     {activeTabMeta.labelEn}
                   </p>
-                  <h3 className="mt-1 text-2xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !mt-1 !text-2xl">
                     {activeTabMeta.label}
                   </h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !mt-1 !text-sm">
                     {activeTabMeta.description}
                   </p>
                 </div>
               </div>
               <div className="mt-4 rounded-3xl bg-white/80 p-4">
-                <p className="text-sm font-semibold text-slate-500">
+                <p className="child-tab-card-copy !mt-0 !text-sm">
                   {activeTabMeta.cta}
                 </p>
               </div>
@@ -620,10 +616,8 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <BookOpen className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
-                    智能工具
-                  </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <h3 className="child-tab-section-title !text-xl">智能工具</h3>
+                  <p className="child-tab-section-copy !text-sm">
                     選擇你現在想用的 AI 學習方式。
                   </p>
                 </div>
@@ -658,12 +652,10 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-lg font-black text-slate-800">
+                              <p className="child-tab-card-title !mt-0 !text-lg">
                                 {tab.label}
                               </p>
-                              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                                {tab.labelEn}
-                              </p>
+                              <p className="child-tab-caption">{tab.labelEn}</p>
                             </div>
                             {isActive && (
                               <Badge className="rounded-full bg-slate-800 px-3 py-1 text-white hover:bg-slate-800">
@@ -671,9 +663,7 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                               </Badge>
                             )}
                           </div>
-                          <p className="mt-2 text-sm font-semibold text-slate-500">
-                            {tab.description}
-                          </p>
+                          <p className="child-tab-card-copy">{tab.description}</p>
                         </div>
                       </div>
                     </button>
@@ -693,10 +683,8 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
-                    今日智能提示
-                  </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <h3 className="child-tab-section-title !text-xl">今日智能提示</h3>
+                  <p className="child-tab-section-copy !text-sm">
                     目前工具會根據你的進度這樣幫你。
                   </p>
                 </div>
@@ -708,12 +696,10 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   activeTabMeta.panelTone,
                 )}
               >
-                <p className="text-base font-black text-slate-800">
+                <p className="child-tab-card-title !mt-0 !text-base">
                   {activeTabMeta.label}
                 </p>
-                <p className="mt-2 text-sm font-semibold text-slate-500">
-                  {activeTabMeta.cta}
-                </p>
+                <p className="child-tab-card-copy">{activeTabMeta.cta}</p>
                 <div className="mt-4">
                   <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-500">
                     <span>今日智能學習進度</span>
@@ -729,6 +715,7 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                 </div>
               </div>
             </section>
+
           </div>
 
           <div className="order-1 space-y-4 md:order-2 md:space-y-6">
@@ -743,10 +730,10 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <ActiveIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     {activeTabMeta.label}
                   </h3>
-                  <p className="hidden text-sm font-semibold text-slate-500 md:block">
+                  <p className="child-tab-section-copy hidden md:block !text-sm">
                     {activeTabMeta.description}
                   </p>
                 </div>
@@ -763,7 +750,7 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "min-w-0 rounded-[28px] border px-2 py-3 text-center text-[13px] font-black leading-tight transition-all",
+                        "child-tab-card-title min-w-0 rounded-[28px] border px-2 py-3 !mt-0 !text-center !text-[13px] !leading-tight transition-all",
                         isActive
                           ? `${tab.panelTone} ${tab.activeTone} shadow-sm`
                           : "border-slate-200 bg-slate-50 text-slate-500",
@@ -784,10 +771,10 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   activeTabMeta.panelTone,
                 )}
               >
-                <p className="text-sm font-black text-slate-700">
+                <p className="child-tab-card-title !mt-0 !text-sm !text-slate-700">
                   {activeTabMeta.description}
                 </p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">
+                <p className="child-tab-card-copy !text-xs">
                   {activeTabMeta.cta}
                 </p>
                 <div className="mt-3">

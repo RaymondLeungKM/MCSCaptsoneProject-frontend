@@ -426,7 +426,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
     return (
       <div className="fixed inset-0 z-[60] bg-gradient-to-b from-purple-100 to-indigo-100 flex items-center justify-center">
         <div className="relative flex flex-col items-center gap-4">
-          <p className="text-slate-600 font-black text-lg">準備緊…</p>
+          <p className="child-tab-section-title !text-lg !text-slate-600">準備緊…</p>
           {loadProgress.total > 0 && (
             <div className="w-48 mt-3">
               <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
@@ -435,7 +435,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
                   style={{ width: `${Math.round((loadProgress.loaded / loadProgress.total) * 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-purple-400 text-center mt-1">
+              <p className="child-tab-copy !mt-1 !text-center !text-xs !text-purple-400">
                 載入圖片 {loadProgress.loaded}/{loadProgress.total}
               </p>
             </div>
@@ -471,8 +471,8 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
     return (
       <div className="fixed inset-0 z-[60] bg-gradient-to-b from-purple-100 to-indigo-100 flex items-center justify-center p-6">
         <div className="bg-white rounded-[40px] p-8 text-center max-w-sm w-full shadow-2xl">
-          <h2 className="text-3xl font-black text-slate-700 mb-4">完成！</h2>
-          <p className="text-lg font-bold text-slate-500 mb-3">{encouragement}</p>
+          <h2 className="child-tab-section-title !mb-4 !text-3xl !text-slate-700">完成！</h2>
+          <p className="child-tab-section-copy !mb-3 !text-lg !font-bold">{encouragement}</p>
           <div className="flex justify-center gap-2 mb-4">
             {Array.from({ length: 3 }, (_, i) => (
               <Star
@@ -482,11 +482,11 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
             ))}
           </div>
           {xpEarned != null && xpEarned > 0 && (
-            <div className="inline-flex items-center gap-1.5 bg-yellow-100 text-yellow-700 font-black px-4 py-1.5 rounded-full mb-4 text-base animate-pop-in">
+            <div className="child-tab-chip mb-4 !bg-yellow-100 !text-base !text-yellow-700 animate-pop-in">
               <Zap className="w-4 h-4" /> +{xpEarned} XP
             </div>
           )}
-          {saving && <p className="text-slate-400 text-sm mb-4">儲存中…</p>}
+          {saving && <p className="child-tab-copy !mb-4 !text-sm !text-slate-400">儲存中…</p>}
           <div className="flex gap-4">
             <button
               onClick={restart}
@@ -537,7 +537,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
       <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4 py-2 overflow-y-auto min-h-0">
         {/* Audio prompt */}
         <div className="flex flex-col items-center gap-2 shrink-0">
-          <p className="text-slate-700 font-black text-xl text-center bg-white/50 px-5 py-1.5 rounded-full border-2 border-purple-200 shadow-sm">
+          <p className="child-tab-section-title !mt-0 !text-xl !text-center !text-slate-700 bg-white/50 px-5 py-1.5 rounded-full border-2 border-purple-200 shadow-sm">
             聽聲音，選出正確的圖片！
           </p>
           <button
@@ -597,7 +597,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
         {/* Feedback text */}
         {selected && (
           <div
-            className={`text-2xl font-black py-1.5 px-6 rounded-full shadow-lg bg-white/90 border-2 animate-pop-in shrink-0 ${
+            className={`child-tab-section-title !mt-0 !text-2xl py-1.5 px-6 rounded-full shadow-lg bg-white/90 border-2 animate-pop-in shrink-0 ${
               selected === correctWord?.id 
                 ? "text-green-600 border-green-200" 
                 : "text-red-500 border-red-200"

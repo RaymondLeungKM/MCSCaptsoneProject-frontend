@@ -136,8 +136,8 @@ function QuickActionButton({
       <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
-      <p className="text-base font-black text-slate-800">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-500">{description}</p>
+      <p className="child-tab-card-title !mt-0 !text-base">{label}</p>
+      <p className="child-tab-card-copy">{description}</p>
     </button>
   );
 }
@@ -155,11 +155,11 @@ function StatCard({
 }) {
   return (
     <div className="rounded-[28px] border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur-md">
-      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+      <p className="child-tab-stat-label">
         {label}
       </p>
-      <p className={cn("mt-3 text-3xl font-black", accent)}>{value}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-500">{helper}</p>
+      <p className={cn("child-tab-stat-value !mt-3", accent)}>{value}</p>
+      <p className="child-tab-stat-copy">{helper}</p>
     </div>
   );
 }
@@ -230,13 +230,13 @@ export function ProfileView({
               <ProfileAvatar avatar={selectedAvatar} name={profile.name} />
               <div className="space-y-3">
                 <div>
-                  <p className="text-base font-black uppercase tracking-[0.25em] text-slate-400">
+                  <p className="child-tab-caption !text-slate-400">
                     我的檔案
                   </p>
-                  <h2 className="mt-1 text-4xl font-black tracking-tight text-slate-800 md:text-5xl">
+                  <h2 className="child-tab-hero-title !mt-1">
                     {profile.name}
                   </h2>
-                  <p className="mt-2 text-base font-semibold text-slate-500 md:text-lg">
+                  <p className="child-tab-hero-copy !max-w-none">
                     {profile.age} 歲 ・ Lv.{profile.level} ・ {profile.xp} XP
                   </p>
                 </div>
@@ -316,10 +316,10 @@ export function ProfileView({
                   <Brain className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     我的學習風格
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     {learningStyle.description}
                   </p>
                 </div>
@@ -395,10 +395,10 @@ export function ProfileView({
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     我喜歡的主題
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     系統會用這些興趣來安排更貼近你的內容。
                   </p>
                 </div>
@@ -425,10 +425,10 @@ export function ProfileView({
                   <Palette className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     換個新頭像
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     挑選你喜歡的角色，讓學習空間更像你自己。
                   </p>
                 </div>
@@ -477,10 +477,10 @@ export function ProfileView({
                   <Users className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     接下來想做什麼？
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     從你的個人檔案，直接跳到下一個活動。
                   </p>
                 </div>

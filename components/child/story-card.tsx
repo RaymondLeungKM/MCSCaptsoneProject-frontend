@@ -92,13 +92,13 @@ export function StoryCard({
 
       <div className="p-6 bg-white w-full text-left flex flex-col justify-between h-36">
         <div>
-          <h3 className="font-black text-slate-700 text-[1.9rem] leading-tight line-clamp-2 group-hover:text-purple-600 transition-colors">
+          <h3 className="child-tab-section-title !mt-0 !text-[1.9rem] !leading-tight !text-slate-700 line-clamp-2 group-hover:!text-purple-600 transition-colors">
             {story.title}
           </h3>
         </div>
 
         <div className="flex items-center justify-between mt-3">
-          <span className="flex items-center gap-2 text-lg font-black text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
+          <span className="child-tab-card-title flex items-center gap-2 !mt-0 !text-lg !text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
             <Clock className="w-4 h-4" />
             {story.duration}
           </span>
@@ -149,10 +149,10 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
           <BookOpen className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h2 className="text-3xl font-black text-slate-700 tracking-tight">
+          <h2 className="child-tab-compact-title !text-slate-700">
             故事時間
           </h2>
-          <p className="text-base font-bold text-slate-400">重溫你最愛的故事！</p>
+          <p className="child-tab-compact-copy">重溫你最愛的故事！</p>
         </div>
       </div>
 
@@ -170,7 +170,7 @@ export function StoriesList({ stories, onReadStory }: StoriesListProps) {
             <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
               <Star className="w-6 h-6 text-slate-400" />
             </div>
-            <p className="text-sm font-bold text-slate-400">
+            <p className="child-tab-compact-copy !text-sm">
               更多故事
               <br />
               即將推出

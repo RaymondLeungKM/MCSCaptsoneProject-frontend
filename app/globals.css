@@ -3,6 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "jf-openhuninn";
+  src: url("/fonts/jf-openhuninn-2.1.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Playful preschool color palette */
   --background: oklch(0.98 0.01 90);
@@ -60,21 +68,23 @@
   --ocean: oklch(0.7 0.15 240);
   --peach: oklch(0.85 0.12 50);
   --slate: oklch(0.7 0.05 250);
-  --font-title: var(--font-title);
-  --font-body: var(--font-body);
-  --font-zen: var(--font-zen);
+  --font-zen: "jf-openhuninn", sans-serif;
+  --child-tab-display-family: "jf-openhuninn", sans-serif;
+  --child-tab-body-family: "jf-openhuninn", sans-serif;
+  --font-title: "jf-openhuninn", sans-serif;
+  --font-body: "jf-openhuninn", sans-serif;
 }
 
 .font-title {
-  font-family: var(--font-title), "Microsoft JhengHei", sans-serif;
+  font-family: "jf-openhuninn", sans-serif;
 }
 
 .font-body {
-  font-family: var(--font-body), "Microsoft JhengHei", sans-serif;
+  font-family: "jf-openhuninn", sans-serif;
 }
 
 .font-zen {
-  font-family: var(--font-zen), "Microsoft JhengHei", "Heiti TC", sans-serif;
+  font-family: "jf-openhuninn", sans-serif;
 }
 
 .dark {
@@ -113,9 +123,7 @@
 }
 
 @theme inline {
-  --font-sans:
-    var(--font-nunito), "Nunito", var(--font-noto-sans-tc), "Noto Sans TC",
-    "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-sans: "jf-openhuninn", sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   /* Custom playful colors */
   --color-sunny: var(--sunny);
@@ -182,6 +190,78 @@
 }
 }
 
+@layer components {
+  .child-tab-chip {
+    @apply inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-sm font-black shadow-sm;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-hero-title {
+    @apply text-4xl font-black tracking-tight text-coral md:text-5xl;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-hero-copy {
+    @apply mt-2 max-w-2xl text-base font-semibold text-slate-600 md:text-lg;
+    font-family: var(--child-tab-body-family);
+  }
+
+  .child-tab-section-title {
+    @apply text-xl font-black text-emerald sm:text-2xl;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-section-copy {
+    @apply text-sm font-semibold text-slate-600 sm:text-base;
+    font-family: var(--child-tab-body-family);
+  }
+
+  .child-tab-card-title {
+    @apply text-base font-black text-coral sm:text-xl;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-card-copy {
+    @apply mt-1 text-sm font-medium text-slate-600 sm:text-base;
+    font-family: var(--child-tab-body-family);
+  }
+
+  .child-tab-stat-label {
+    @apply text-xs font-black uppercase tracking-[0.2em] text-slate-400;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-stat-value {
+    @apply mt-2 text-2xl font-black text-coral sm:text-3xl;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-stat-copy {
+    @apply mt-2 text-sm font-semibold text-slate-600 sm:text-base;
+    font-family: var(--child-tab-body-family);
+  }
+
+  .child-tab-caption {
+    @apply text-xs font-black uppercase tracking-[0.18em] text-slate-400;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-copy {
+    @apply text-sm font-semibold text-slate-600;
+    font-family: var(--child-tab-body-family);
+  }
+
+  .child-tab-compact-title {
+    @apply text-lg font-black tracking-tight text-emerald sm:text-3xl;
+    font-family: var(--child-tab-display-family);
+  }
+
+  .child-tab-compact-copy {
+    @apply text-xs font-bold text-slate-400 sm:text-base;
+    font-family: var(--child-tab-body-family);
+  }
+}
+
 /* ── Kid mode font scale (child pages only) ─────────────────────────────────
    Mobile-first: a friendly 16px base on phones grows to a kid-comfortable
    ~24px on large desktops. We do this with the root font-size only so
@@ -189,27 +269,28 @@
    (a `text-xs` badge stays smaller than `text-lg` body text).
 */
 .kid-mode {
-  font-size: 16px;
+  font-size: 19px;
+  font-weight: 700;
 }
 
 /* sm — small tablets & large phones (landscape) */
 @media (min-width: 640px) {
-  .kid-mode { font-size: 18px; }
+  .kid-mode { font-size: 22px; }
 }
 
 /* md — tablets */
 @media (min-width: 768px) {
-  .kid-mode { font-size: 19px; }
+  .kid-mode { font-size: 24px; }
 }
 
 /* lg — small laptops / iPad Pro */
 @media (min-width: 1024px) {
-  .kid-mode { font-size: 21px; }
+  .kid-mode { font-size: 26px; }
 }
 
 /* xl — desktops (the original 18pt kid-friendly target) */
 @media (min-width: 1280px) {
-  .kid-mode { font-size: 24px; }
+  .kid-mode { font-size: 30px; }
 }
 
 /* Prevent horizontal page scroll caused by oversized children inside kid-mode.

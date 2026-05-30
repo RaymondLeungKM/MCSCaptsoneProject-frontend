@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Zen_Maru_Gothic } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,13 +7,6 @@ import { Toaster } from "@/components/ui/toaster";
 // 👇 1. IMPORT AUTH PROVIDER
 // (Adjust path if your file is named differently, but error says lib/auth-context.tsx)
 import { AuthProvider } from "@/lib/auth-context";
-
-const font = Zen_Maru_Gothic({
-  weight: ["400", "500", "700", "900"],
-  subsets: ["latin"],
-  preload: false,
-  variable: "--font-zen",
-});
 
 export const metadata: Metadata = {
   title: "Vocab Journey",
@@ -34,10 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
       <body
         suppressHydrationWarning
-        className={`${font.className} antialiased min-h-screen bg-slate-50`}
+        className={`font-zen antialiased min-h-screen bg-slate-50`}
       >
         {/* Figma capture script — loaded after hydration to avoid DOM injection conflicts */}
         <Script

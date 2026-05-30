@@ -416,7 +416,7 @@ export function DailyWordsViewer({
           {/* Header Section */}
           <CardHeader className="pb-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <CardTitle className="flex min-w-0 items-center gap-3 text-2xl font-black text-slate-700 tracking-tight">
+              <CardTitle className="child-tab-section-title flex min-w-0 items-center gap-3 !text-2xl !text-slate-700 !tracking-tight">
                 <span className="bg-yellow-400 text-white p-2 rounded-2xl shadow-sm rotate-3">
                   <Sparkles className="w-6 h-6 fill-white" />
                 </span>
@@ -437,7 +437,7 @@ export function DailyWordsViewer({
                     setIsExpanded(false);
                   }}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
+                    "child-tab-card-title flex-1 flex items-center justify-center gap-2 py-3 rounded-full !mt-0 !text-sm transition-all duration-300 md:!text-base",
                     activeTab === "camera"
                       ? "bg-white text-purple-500 shadow-md scale-[1.02]"
                       : "text-slate-400 hover:text-slate-600",
@@ -452,7 +452,7 @@ export function DailyWordsViewer({
                     setIsExpanded(false);
                   }}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm md:text-base transition-all duration-300",
+                    "child-tab-card-title flex-1 flex items-center justify-center gap-2 py-3 rounded-full !mt-0 !text-sm transition-all duration-300 md:!text-base",
                     activeTab === "default"
                       ? "bg-white text-[#38BDF8] shadow-md scale-[1.02]"
                       : "text-slate-400 hover:text-slate-600",
@@ -469,13 +469,13 @@ export function DailyWordsViewer({
                     <Camera className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-black tracking-[0.14em] text-teal-500">
+                    <p className="child-tab-caption !tracking-[0.14em] !text-teal-500">
                       今日相機探索
                     </p>
-                    <p className="mt-1 text-base font-black text-slate-700">
+                    <p className="child-tab-card-title !text-base !text-slate-700">
                       這裡只顯示你今天用相機發現的新詞語。
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                    <p className="child-tab-section-copy !mt-1">
                       預設字庫已經放在學習頁，首頁只保留今日最即時的相機探索。
                     </p>
                   </div>
@@ -483,7 +483,7 @@ export function DailyWordsViewer({
               </div>
             )}
 
-            <p className="text-slate-500 font-bold text-center mb-6 text-sm">
+            <p className="child-tab-copy mb-6 text-center !font-bold">
               {showDefaultLibrary
                 ? currentTab === "default"
                   ? (graphReason ?? "這些詞語將會出現在你的睡前故事中！")
@@ -491,7 +491,7 @@ export function DailyWordsViewer({
                 : "把今天親自拍到的東西先放在首頁，再慢慢帶進學習和分享流程。"}
             </p>
 
-            <p className="-mt-3 mb-6 text-center text-xs font-bold text-emerald-600">
+            <p className="child-tab-copy !-mt-3 !mb-6 !text-center !text-xs !font-bold !text-emerald-600">
               {showDefaultLibrary
                 ? "點開詞語後按「請家長確認」，再由家長到家長中心批准，主動詞彙才會增加。"
                 : "點開相片卡後先請家長確認，批准後才會加入學習，再決定是否分享到社區。"}
@@ -563,7 +563,7 @@ export function DailyWordsViewer({
                                   {emojiVisual}
                                 </span>
                               </div>
-                              <p className="text-sm font-black leading-snug text-slate-500">
+                              <p className="child-tab-card-title !mt-0 !text-sm !leading-snug !text-slate-500">
                                 {currentTab === "camera"
                                   ? "相機找到的圖像"
                                   : "今日詞語圖示"}
@@ -578,7 +578,7 @@ export function DailyWordsViewer({
                                   <BookOpen className="h-8 w-8" />
                                 )}
                               </div>
-                              <p className="text-sm font-black leading-snug">
+                              <p className="child-tab-card-title !mt-0 !text-sm !leading-snug !text-slate-500">
                                 {currentTab === "camera"
                                   ? "相片準備中"
                                   : "插圖準備中"}
@@ -590,14 +590,14 @@ export function DailyWordsViewer({
                         <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 rounded-[28px] bg-slate-50/70 p-4 sm:p-5">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                              <p className="child-tab-caption !text-[11px] !tracking-[0.22em]">
                                 {showDefaultLibrary
                                   ? currentTab === "camera"
                                   ? "今日相機探索"
                                   : "今日故事詞語"
                                   : "今日相機探索"}
                               </p>
-                              <h3 className="mt-2 wrap-break-word text-[2.1rem] font-black leading-[0.95] tracking-tight text-slate-800 sm:text-[2.6rem]">
+                              <h3 className="child-tab-hero-title !mt-2 wrap-break-word !text-[2.1rem] !leading-[0.95] !text-slate-800 sm:!text-[2.6rem]">
                                 {word.word_cantonese || word.word}
                               </h3>
                               {word.jyutping && (
@@ -624,7 +624,7 @@ export function DailyWordsViewer({
                             </button>
                           </div>
 
-                          <p className="text-base font-bold leading-relaxed text-slate-500 sm:text-lg">
+                          <p className="child-tab-card-copy !mt-0 !text-base !font-bold !leading-relaxed sm:!text-lg">
                             {word.definition_cantonese ||
                               "點一下學習這個新詞語。"}
                           </p>
@@ -639,7 +639,7 @@ export function DailyWordsViewer({
                             <Badge className="rounded-full border-none bg-emerald-100 px-3 py-1.5 text-sm font-black text-emerald-700 hover:bg-emerald-100">
                               已練習 {word.exposure_count} 次
                             </Badge>
-                            <span className="text-xs font-black tracking-wide text-slate-400">
+                            <span className="child-tab-caption !tracking-wide">
                               點一下打開學習卡
                             </span>
                           </div>
@@ -658,14 +658,14 @@ export function DailyWordsViewer({
                     <Camera className="w-10 h-10 text-slate-300" />
                   )}
                 </div>
-                <p className="text-slate-500 font-bold text-lg">
+                <p className="child-tab-card-title !text-lg !text-slate-500">
                   {showDefaultLibrary
                     ? currentTab === "default"
                       ? "暫時未有今日詞語。"
                       : "尚未發現新詞語。"
                     : "今天暫時未有新發現。"}
                 </p>
-                <p className="text-slate-400 text-sm mt-1">
+                <p className="child-tab-card-copy !text-slate-400">
                   {showDefaultLibrary
                     ? currentTab === "default"
                       ? "開始學習後會自動產生建議。"
@@ -773,8 +773,8 @@ function StatBox({
       )}
     >
       <div className="mb-1 opacity-90">{icon}</div>
-      <div className="text-2xl font-black leading-none mb-1">{value}</div>
-      <div className="text-xs font-bold uppercase tracking-wide opacity-80">
+      <div className="child-tab-stat-value !mb-1 !mt-0 !text-2xl !leading-none">{value}</div>
+      <div className="child-tab-caption opacity-80">
         {label}
       </div>
     </div>

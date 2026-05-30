@@ -13,6 +13,7 @@ import {
   getAuthToken,
   setAuthToken,
 } from "@/lib/api";
+import { login as apiLogin } from "@/lib/api/auth";
 
 interface User {
   id: string;
@@ -49,6 +50,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const url = new URL(window.location.href);
+
+    // Dev shortcut: append ?dev to any page URL on localhost to skip login.
+    // Credentials come from NEXT_PUBLIC_DEV_EMAIL / NEXT_PUBLIC_DEV_PASSWORD
+    // in .env.local (never committed, never present in production builds).
+    const isLocalhost =
+      process.env.NODE_ENV === "development" &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+    if (isLocalhost && url.searchParams.has("dev")) {
+      url.searchParams.delete("dev");
+      window.history.replaceState({}, "", url.toString());
+      void devAutoLogin();
+      return;
+    }
+
     const sessionToken =
       url.searchParams.get("session_token") ||
       url.searchParams.get("token") ||
@@ -64,6 +79,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void checkAuth();
+  }
+
+  async function devAutoLogin() {
+    const email = process.env.NEXT_PUBLIC_DEV_EMAIL;
+    const password = process.env.NEXT_PUBLIC_DEV_PASSWORD;
+    if (!email || !password) {
+      console.warn("[dev] ?dev shortcut: set NEXT_PUBLIC_DEV_EMAIL and NEXT_PUBLIC_DEV_PASSWORD in .env.local");
+      setLoading(false);
+      return;
+    }
+    try {
+      await apiLogin({ email, password });
+      const userData = await getCurrentUser();
+      setUser(userData);
+    } catch (err) {
+      console.error("[dev] Auto-login failed:", err);
+    }
+    setLoading(false);
   }
 
   async function checkAuth() {
