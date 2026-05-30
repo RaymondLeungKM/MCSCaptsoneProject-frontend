@@ -554,7 +554,13 @@ function ParentDashboardContent() {
               value="insights"
               className="mt-0 animate-in fade-in-50 slide-in-from-bottom-4 duration-500"
             >
-              {profile && <InsightsTab childId={profile.id} stats={stats} />}
+              {profile && (
+                <InsightsTab
+                  childId={profile.id}
+                  stats={stats}
+                  isActive={activeTab === "insights"}
+                />
+              )}
             </TabsContent>
 
             <TabsContent

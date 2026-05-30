@@ -153,17 +153,6 @@ export function OverviewTab({
       : 0;
   const overallProgress =
     stats.totalWords > 0 ? (stats.masteredWords / stats.totalWords) * 100 : 0;
-  const averageExposureCount = stats.averageExposuresPerWord;
-  const averageExposureProgress = Math.min(
-    (averageExposureCount / 6) * 100,
-    100,
-  );
-  const averageExposureTitle =
-    averageExposureCount >= 6 ? "平均接觸已達穩定門檻" : "可再增加重複接觸";
-  const averageExposureDetail =
-    averageExposureCount >= 6
-      ? `平均每個詞已接觸 ${averageExposureCount.toFixed(1)} 次，可開始加入更多口說輸出任務。`
-      : `平均每個詞目前接觸 ${averageExposureCount.toFixed(1)} 次，建議集中重複少量重點詞，把平均拉近 6 次。`;
   const remaining = Math.max(0, profile.dailyGoal - profile.todayProgress);
   const days = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
   const weeklySeries = days.map((_, index) => stats.weeklyProgress[index] ?? 0);
@@ -214,9 +203,9 @@ export function OverviewTab({
           focusCategory
             ? `本週先複習「${getTranslatedCategory(focusCategory.category)}」，把較弱的主題拉回穩定。`
             : `今天可安排在${timeOfDayLabel[profile.preferredTimeOfDay]}做一段 10 分鐘短練習。`,
-          averageExposureCount >= 6
-            ? `平均每個詞已接觸 ${averageExposureCount.toFixed(1)} 次，可加入更多口語輸出，讓孩子把已認得的詞彙說出來。`
-            : `平均每個詞目前接觸 ${averageExposureCount.toFixed(1)} 次，建議集中重複少量重點詞，把平均拉近 6 次。`,
+          stats.multiSensoryEngagement >= 80
+            ? "可加入更多口語輸出，讓孩子把已認得的詞彙說出來。"
+            : "建議在同一輪練習中加入圖片、動作和實物配對。",
         ];
   const weeklyChangeSummary = spotlightInsight
     ? {
@@ -261,8 +250,14 @@ export function OverviewTab({
           {
             id: "engagement",
             eyebrow: "參與模式",
-            title: averageExposureTitle,
-            detail: averageExposureDetail,
+            title:
+              stats.multiSensoryEngagement >= 80
+                ? "多感官參與表現穩定"
+                : "可再增加多感官提示",
+            detail:
+              stats.multiSensoryEngagement >= 80
+                ? "可加入更多口說輸出任務，幫助孩子把已認得的詞彙說出來。"
+                : "建議多用動作、圖片或實物配對，提升多感官參與度。",
           },
           {
             id: "focus",
@@ -366,8 +361,8 @@ export function OverviewTab({
               />
               <MiniMetric
                 icon={<Clock3 className="h-4 w-4 text-emerald-500" />}
-                label="平均接觸次數"
-                value={`${averageExposureCount.toFixed(1)} 次`}
+                label="平均輸入次數"
+                value={`${stats.averageExposuresPerWord.toFixed(1)} 次`}
               />
               <MiniMetric
                 icon={<Activity className="h-4 w-4 text-violet-500" />}
@@ -527,8 +522,8 @@ export function OverviewTab({
                 />
                 <MiniMetric
                   icon={<Activity className="h-4 w-4 text-emerald-300" />}
-                  label="平均接觸"
-                  value={`${averageExposureCount.toFixed(1)} 次`}
+                  label="多感官參與"
+                  value={`${stats.multiSensoryEngagement}%`}
                   className="bg-white/8 text-white ring-1 ring-white/10"
                   labelClassName="text-slate-400"
                   valueClassName="text-white"
@@ -657,9 +652,9 @@ export function OverviewTab({
                 indicatorClassName="bg-violet-400"
               />
               <MetricRow
-                label="平均接觸次數"
-                value={`${averageExposureCount.toFixed(1)} 次`}
-                progress={averageExposureProgress}
+                label="多感官參與度"
+                value={`${stats.multiSensoryEngagement}%`}
+                progress={stats.multiSensoryEngagement}
                 indicatorClassName="bg-amber-400"
               />
             </div>

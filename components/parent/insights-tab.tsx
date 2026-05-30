@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -12,7 +12,6 @@ import {
   Zap,
   Sparkles,
   ArrowRight,
-  RefreshCw,
   Star,
   CheckCircle2,
 } from "lucide-react";
@@ -39,6 +38,7 @@ import { getChild } from "@/lib/api/children";
 interface InsightsTabProps {
   childId?: string;
   stats?: ProgressStats;
+  isActive?: boolean;
 }
 
 interface InsightsRecommendation {
@@ -151,18 +151,6 @@ function shiftDateByDays(value: Date, days: number): Date {
 
 function formatDayLabel(value: Date): string {
   return new Intl.DateTimeFormat("zh-HK", { weekday: "narrow" }).format(value);
-}
-
-function formatRefreshTime(value: Date | null): string {
-  if (!value) {
-    return "等待首次更新";
-  }
-
-  return value.toLocaleTimeString("zh-HK", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }
 
 function getWordDisplayLabel(word: Word): string {
@@ -404,7 +392,11 @@ function buildApiRecommendation(
   };
 }
 
-export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
+export function InsightsTab({
+  childId,
+  stats,
+  isActive = false,
+}: InsightsTabProps = {}) {
   const router = useRouter();
 
   const isMockData =
@@ -426,9 +418,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     useState<InsightsRecommendation | null>(() =>
       isMockData ? buildLocalRecommendation(mockWords, mockChildProfile) : null,
     );
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(() =>
-    isMockData ? new Date() : null,
-  );
+  const wasActiveRef = useRef(isActive);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -443,7 +433,6 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
         setRecommendation(
           buildLocalRecommendation(mockWords, mockChildProfile),
         );
-        setLastUpdatedAt(new Date());
         setLoading(false);
         setRefreshing(false);
         return;
@@ -467,7 +456,6 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
           console.log("No auth token, using mock data");
           setDailyStats([]);
           setRecommendation(null);
-          setLastUpdatedAt(new Date());
           return;
         }
 
@@ -548,7 +536,6 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
         }
 
         setRecommendation(resolvedRecommendation);
-        setLastUpdatedAt(new Date());
       } catch (error) {
         console.error("Failed to load data for insights:", error);
       } finally {
@@ -581,6 +568,19 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
       window.removeEventListener("focus", handleWindowFocus);
     };
   }, [isMockData, loadRealData]);
+
+  useEffect(() => {
+    if (isMockData) {
+      wasActiveRef.current = isActive;
+      return;
+    }
+
+    if (isActive && !wasActiveRef.current) {
+      void loadRealData({ background: true });
+    }
+
+    wasActiveRef.current = isActive;
+  }, [isActive, isMockData, loadRealData]);
 
   const activeVocab =
     stats?.activeVocabulary ?? words.filter((w) => w.mastered).length;
@@ -914,6 +914,33 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     recommendation.suggestedActivities.length > 0
       ? recommendation.suggestedActivities
       : getRecommendedActivities(profile.learningStyle);
+  const headerHighlights = [
+    {
+      label: "本週活躍",
+      value: `${activeDaysThisWeek} 天`,
+      detail:
+        goalHitDaysThisWeek > 0
+          ? `${goalHitDaysThisWeek} 天達到目標`
+          : "先從一次短練習開始累積",
+    },
+    {
+      label: "優先主題",
+      value: weakestCategoryLabel || "等待更多數據",
+      detail:
+        weakestCategoryRemaining !== null
+          ? `仍有 ${weakestCategoryRemaining} 個詞待穩定`
+          : "完成更多練習後會自動顯示",
+    },
+    {
+      label: "下一步",
+      value: getActivityLabel(
+        recommendation?.recommendedActivity || learningStyleActivities[0],
+      ),
+      detail: recommendation
+        ? `建議安排 ${recommendation.estimatedDuration} 分鐘`
+        : "依目前學習風格整理",
+    },
+  ];
 
   if (loading) {
     return (
@@ -930,41 +957,64 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
 
   return (
     <div className="space-y-8 w-full rounded-4xl bg-white/50 p-4 backdrop-blur-sm md:p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-sky-100 to-cyan-100 px-4 py-1.5 text-sm font-black text-sky-700 shadow-sm">
-            <Sparkles className="h-4 w-4" />
-            每次練習後都會更新
-          </div>
-          <div className="space-y-2">
-            <div className="inline-flex items-center justify-center rounded-2xl bg-linear-to-br from-violet-100 to-fuchsia-100 p-3 shadow-sm">
-              <Brain className="h-8 w-8 animate-pulse text-violet-500" />
+      <div className="relative overflow-hidden rounded-4xl border border-white/70 bg-linear-to-br from-white via-sky-50/90 to-violet-50/80 p-6 shadow-[0_24px_60px_-36px_rgba(56,189,248,0.55)] md:p-7">
+        <div className="absolute -left-10 top-6 h-32 w-32 rounded-full bg-sky-100/60 blur-3xl" />
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-violet-100/70 blur-3xl" />
+
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-5">
+            <div className="inline-flex items-center gap-3 rounded-full bg-white/85 px-4 py-2 shadow-sm ring-1 ring-white/80">
+              <span
+                className={cn(
+                  "h-2.5 w-2.5 rounded-full",
+                  refreshing ? "bg-sky-400 animate-pulse" : "bg-emerald-400",
+                )}
+              />
+              <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                學習洞察
+              </span>
             </div>
-            <h2 className="text-3xl font-black tracking-tight text-slate-800">
-              學習動態雷達
-            </h2>
-            <p className="max-w-2xl text-slate-500">
-              這一頁改用最近兩週的練習、接觸頻率和家長跟進訊號，讓重點會隨孩子的行為變動，而不是只顯示幾條固定建議。
-            </p>
-            <p className="text-sm font-semibold text-slate-400">
-              最近更新：{formatRefreshTime(lastUpdatedAt)}
-            </p>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <div className="inline-flex items-center justify-center rounded-[1.75rem] bg-linear-to-br from-violet-100 via-fuchsia-100 to-sky-100 p-4 shadow-sm ring-1 ring-white/80">
+                <Brain
+                  className={cn(
+                    "h-10 w-10 text-violet-500",
+                    refreshing && "animate-pulse",
+                  )}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <h2 className="text-4xl font-black tracking-tight text-slate-800 sm:text-[3rem]">
+                  學習動態雷達
+                </h2>
+                <p className="max-w-2xl text-base leading-8 text-slate-500">
+                  集中查看孩子最近的學習節奏、重點詞和下一步建議。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-107.5">
+            {headerHighlights.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-[1.6rem] bg-white/80 p-4 shadow-sm ring-1 ring-white/90 backdrop-blur-sm"
+              >
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-xl font-black text-slate-800">
+                  {item.value}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
-
-        {!isMockData && (
-          <Button
-            type="button"
-            onClick={() => void loadRealData({ background: true })}
-            disabled={refreshing}
-            className="rounded-full bg-slate-900 px-5 py-2.5 font-black text-white hover:bg-slate-800"
-          >
-            <RefreshCw
-              className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
-            />
-            更新數據
-          </Button>
-        )}
       </div>
 
       <Card className="overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-900 via-slate-800 to-sky-900 text-white shadow-lg">
