@@ -179,15 +179,15 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             <Target className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xl font-black text-amber-700">今日任務</p>
-            <p className="text-base font-semibold text-slate-400">
+            <p className="child-tab-section-title !text-xl !text-amber-700">今日任務</p>
+            <p className="child-tab-section-copy !text-base !text-slate-400">
               完成小挑戰，將今天的詞彙用出來
             </p>
           </div>
         </div>
 
         {!loading && visibleMissions.length > 0 && (
-          <div className="inline-flex items-center gap-2 self-start rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-slate-600 shadow-sm">
+          <div className="child-tab-chip self-start !px-3 !py-1.5 text-slate-600">
             <Sparkles className="h-4 w-4 text-amber-500" />
             {`${completedCount}/${visibleMissions.length} 已完成`}
           </div>
@@ -223,10 +223,10 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
             🌟
           </div>
-          <p className="mt-3 text-lg font-black text-slate-700">
+          <p className="child-tab-card-title !mt-3 !text-lg !text-slate-700">
             今天暫時沒有新任務
           </p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
+          <p className="child-tab-card-copy">
             先去學習、玩遊戲或讀故事，稍後再回來看看。
           </p>
         </div>
@@ -276,10 +276,10 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                   )}
                 </div>
 
-                <h3 className="mt-3 text-3xl font-black leading-tight text-slate-800">
+                <h3 className="child-tab-section-title !mt-3 !text-3xl !leading-tight">
                   {mission.title}
                 </h3>
-                <p className="mt-2 min-h-14 text-xl font-semibold leading-6 text-slate-500">
+                <p className="child-tab-card-copy !mt-2 !min-h-14 !text-xl !leading-6">
                   {mission.description}
                 </p>
 
@@ -297,7 +297,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                 )}
 
                 {mission.conversation_prompts[0] && (
-                  <div className="mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-base font-semibold leading-6 text-slate-600">
+                  <div className="child-tab-card-copy mt-4 rounded-2xl bg-amber-50 px-3 py-2 !text-base !leading-6 !text-slate-600">
                     <span className="font-black text-amber-700">小提示：</span>
                     {mission.conversation_prompts[0]}
                   </div>

@@ -88,19 +88,21 @@ export function ProfileHeader({ childId, refreshKey }: ProfileHeaderProps) {
         {/* Info Section */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-4xl font-black text-slate-700 tracking-tight truncate">
+            <h1 className="child-tab-hero-title !text-2xl !text-slate-700">
               你好，{profile.name}！
             </h1>
           </div>
 
           {/* XP Bar */}
           <div>
-            <div className="flex items-center justify-between text-base font-bold text-slate-400 mb-1.5">
-              <span className="flex items-center gap-1 text-yellow-500">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="child-tab-copy flex items-center gap-1 !mt-0 !text-base !font-bold !text-yellow-500">
                 <Star className="w-3.5 h-3.5 fill-yellow-500" />
                 {profile.xp} XP
               </span>
-              <span>距離下一級 {xpToNextLevel} XP</span>
+              <span className="child-tab-copy !mt-0 !text-base !font-bold !text-slate-400">
+                距離下一級 {xpToNextLevel} XP
+              </span>
             </div>
             <Progress
               value={xpProgress}
@@ -172,8 +174,8 @@ function StatBox({
       className={`${color} rounded-[24px] p-3 flex flex-col items-center justify-center text-center border border-opacity-50`}
     >
       <div className="mb-1">{icon}</div>
-      <p className="text-2xl font-black text-slate-700 leading-none">{value}</p>
-      <p className="text-xs font-bold opacity-60 uppercase tracking-wide mt-1">
+      <p className="child-tab-stat-value !mt-0 !text-2xl !leading-none !text-slate-700">{value}</p>
+      <p className="child-tab-caption !mt-1 !text-[10px] !tracking-normal whitespace-nowrap opacity-60">
         {label}
       </p>
     </div>

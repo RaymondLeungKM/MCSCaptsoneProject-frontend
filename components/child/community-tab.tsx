@@ -162,8 +162,8 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-white font-black text-2xl leading-tight">詞彙圖庫</h2>
-                <p className="text-white/85 text-sm font-bold mt-1">點一下你的相片，再交畀家長審核分享！</p>
+                <h2 className="child-tab-section-title !text-2xl !leading-tight !text-white">詞彙圖庫</h2>
+                <p className="child-tab-section-copy !mt-1 !text-sm !font-bold !text-white/85">點一下你的相片，再交畀家長審核分享！</p>
               </div>
             </div>
           </div>
@@ -174,14 +174,14 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
       {shareSuccess && (
         <div className="mx-4 mt-3 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-          <p className="text-emerald-700 font-bold text-base">
+          <p className="child-tab-card-copy !mt-0 !text-base !font-bold !text-emerald-700">
             🎉 相片已提交！等家長審核後就會出現囉！
           </p>
         </div>
       )}
       {shareError && (
         <div className="mx-4 mt-3 rounded-2xl bg-rose-50 border border-rose-200 px-4 py-3">
-          <p className="text-rose-600 font-bold text-base">{shareError}</p>
+          <p className="child-tab-card-copy !mt-0 !text-base !font-bold !text-rose-600">{shareError}</p>
         </div>
       )}
 
@@ -224,7 +224,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                   <div className="w-8 h-8 bg-pink-100 rounded-xl flex items-center justify-center">
                     <GalleryHorizontalEnd className="w-4 h-4 text-pink-500" />
                   </div>
-                  <h3 className="text-lg font-black text-slate-700">我的分享</h3>
+                  <h3 className="child-tab-section-title !text-lg !text-slate-700">我的分享</h3>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
                   {pendingPosts.map((post) => (
@@ -244,7 +244,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                         )}
                       </div>
                       <div className="pt-3 text-center">
-                        <p className="text-base font-black text-slate-700 truncate">
+                        <p className="child-tab-card-title !mt-0 !text-base !text-slate-700 truncate">
                           {getCommunityTitle(post)}
                         </p>
                         <span className="mt-2 inline-block text-sm font-black text-amber-600 bg-white rounded-full px-3 py-1 border border-amber-200">
@@ -271,7 +271,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                         )}
                       </div>
                       <div className="pt-3 text-center">
-                        <p className="text-base font-black text-slate-700 truncate">
+                        <p className="child-tab-card-title !mt-0 !text-base !text-slate-700 truncate">
                           {getCommunityTitle(post)}
                         </p>
                         <span className="mt-2 inline-block text-sm font-black text-emerald-600 bg-white rounded-full px-3 py-1 border border-emerald-200">
@@ -290,7 +290,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                 <div className="w-16 h-16 bg-teal-50 rounded-3xl flex items-center justify-center">
                   <RefreshCw className="w-8 h-8 animate-spin" />
                 </div>
-                <p className="text-base font-semibold text-teal-600">載入中…</p>
+                <p className="child-tab-section-copy !text-base !text-teal-600">載入中…</p>
               </div>
             )}
 
@@ -299,7 +299,7 @@ export function CommunityTab({ childId, languagePreference = "cantonese" }: Comm
                 <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center">
                   <ImageOff className="w-8 h-8 text-rose-400" />
                 </div>
-                <p className="text-sm font-semibold text-rose-500 text-center">{error}</p>
+                <p className="child-tab-section-copy !text-center !text-sm !text-rose-500">{error}</p>
               </div>
             )}
 
@@ -387,18 +387,18 @@ function SubTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex-1 flex items-center justify-between gap-2 py-4 px-4 rounded-xl transition-all duration-200",
+        "flex-1 flex items-center justify-between gap-2 py-3 px-3 rounded-xl transition-all duration-200 sm:py-4 sm:px-4",
         active ? `${activeColor} text-white shadow-sm` : "text-gray-500 hover:bg-gray-50",
       )}
     >
       <div className="flex items-center gap-2">
         {icon}
         <div className="text-left">
-          <p className={cn("text-base font-black leading-tight", active ? "text-white" : "text-gray-700")}>
+          <p className={cn("child-tab-card-title !mt-0 !text-sm !leading-tight sm:!text-base", active ? "!text-white" : "!text-gray-700")}>
             {label}
           </p>
           {description && (
-            <p className={cn("text-sm leading-tight mt-0.5 font-semibold", active ? "text-white/80" : "text-gray-400")}>
+            <p className={cn("child-tab-copy !mt-0.5 !text-xs !leading-tight sm:!text-sm", active ? "!text-white/80" : "!text-gray-400")}>
               {description}
             </p>
           )}
@@ -407,7 +407,7 @@ function SubTabButton({
 
       {count > 0 && (
         <span className={cn(
-          "text-xs font-black px-2 py-0.5 rounded-full min-w-[24px] text-center",
+          "child-tab-caption min-w-[24px] rounded-full px-2 py-0.5 !text-[10px] text-center sm:!text-xs",
           active ? "bg-white/30 text-white" : "bg-teal-100 text-teal-700",
         )}>
           {count}
@@ -500,16 +500,16 @@ function WordTile({
       </div>
 
       <div className="px-5 py-4 space-y-1">
-        <p className="font-black text-teal-900 text-2xl leading-tight truncate">
+        <p className="child-tab-section-title !mt-0 !text-2xl !leading-tight !text-teal-900 truncate">
           {primary}
         </p>
 
         {word.jyutping && (
-          <p className="text-teal-600 text-sm font-semibold truncate">{word.jyutping}</p>
+          <p className="child-tab-copy !mt-0 !text-sm !text-teal-600 truncate">{word.jyutping}</p>
         )}
 
         {word.definition_cantonese && (
-          <p className="text-gray-500 text-sm leading-snug line-clamp-2 pt-0.5">
+          <p className="child-tab-card-copy !mt-0 !text-sm !leading-snug !text-gray-500 line-clamp-2 pt-0.5">
             {word.definition_cantonese}
           </p>
         )}
@@ -529,9 +529,9 @@ function EmptyState() {
         <Camera className="w-14 h-14 text-white" />
       </div>
       <div className="max-w-sm">
-        <p className="font-black text-white text-3xl drop-shadow-md">未有相片卡</p>
+        <p className="child-tab-section-title !text-3xl !text-white drop-shadow-md">未有相片卡</p>
         <div className="bg-white/95 rounded-[28px] p-6 mt-4 shadow-xl border-2 border-teal-400">
-          <p className="text-teal-950 font-black text-xl leading-relaxed">
+          <p className="child-tab-section-title !text-xl !leading-relaxed !text-teal-950">
             先用相機拍低身邊嘅物件
             <br />
             有自己嘅相片卡之後，再點開卡片交畀家長審核分享。

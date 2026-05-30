@@ -228,9 +228,11 @@ export function WordLearningModal({
               <h2 className="text-4xl font-black text-slate-800 mb-2 tracking-tight">
                 {wordText}
               </h2>
-              <p className="text-lg font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-xl mb-4">
-                {definition}
-              </p>
+              {definition && (
+                <p className="text-lg font-medium text-slate-500 bg-slate-100 px-4 py-2 rounded-xl mb-4">
+                  {definition}
+                </p>
+              )}
 
               <div className="flex flex-wrap gap-2 justify-center">
                 <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full uppercase tracking-wide">
@@ -363,7 +365,7 @@ export function WordLearningModal({
             <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-8">
               <div className="text-center mb-4">
                 <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-500 px-4 py-2 rounded-full font-black text-sm mb-2">
-                  <Bot className="w-4 h-4" /> AI 魔法
+                  <Bot className="w-4 h-4" /> 魔法
                 </div>
                 <h2 className="text-2xl font-black text-slate-800">更多例句</h2>
               </div>

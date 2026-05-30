@@ -33,35 +33,35 @@ export function GameCard({ game, onPlay }: GameCardProps) {
       onClick={() => onPlay(game)}
       className={cn(
         "group relative w-full text-left transition-all duration-300",
-        "flex items-center gap-5 p-5 rounded-[32px] border-4",
+        "flex items-center gap-2.5 p-3 rounded-2xl border-2 sm:gap-5 sm:p-5 sm:rounded-[32px] sm:border-4",
         "hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md",
         styles // Apply dynamic color styles
       )}
       aria-label={`開始 ${game.name}`}
     >
       {/* Icon Box */}
-      <div className="w-24 h-24 rounded-[24px] bg-white flex items-center justify-center text-6xl shadow-sm group-hover:scale-110 transition-transform duration-300">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-24 sm:w-24 sm:rounded-[24px] sm:text-6xl">
         {game.icon}
       </div>
       
       {/* Text Content */}
       <div className="flex-1 min-w-0">
-        <h3 className="font-black text-slate-700 text-3xl tracking-tight mb-1">
+        <h3 className="child-tab-compact-title mb-0.5 !text-base !text-slate-800 sm:mb-1">
           {game.name}
         </h3>
-        <p className="text-xl font-bold opacity-70 leading-tight line-clamp-2">
+        <p className="child-tab-compact-copy line-clamp-2 !text-xs !leading-tight !text-slate-600 sm:!text-xl">
           {game.description}
         </p>
       </div>
 
       {/* Play Button (Right Arrow) */}
-      <div className="w-12 h-12 rounded-full bg-white/60 flex items-center justify-center shadow-sm group-hover:bg-white group-hover:text-[#38BDF8] transition-colors">
-        <Play className="w-6 h-6 fill-current ml-1" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/60 shadow-sm transition-colors group-hover:bg-white group-hover:text-[#38BDF8] sm:h-12 sm:w-12">
+        <Play className="ml-0.5 h-4 w-4 fill-current sm:ml-1 sm:h-6 sm:w-6" />
       </div>
 
       {/* Decorative Badge (Optional - shows "New" or "Hot") */}
       {game.id === 'quiz' && (
-         <div className="absolute -top-3 -right-2 bg-yellow-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm rotate-6">
+        <div className="absolute -top-2 -right-1 rounded-full bg-yellow-400 px-2.5 py-0.5 text-[9px] font-black text-white shadow-sm rotate-6 sm:-top-3 sm:-right-2 sm:px-3 sm:py-1 sm:text-[10px]">
             熱門
          </div>
       )}
@@ -80,25 +80,25 @@ interface GamesListProps {
 export function GamesList({ games, onPlayGame, languagePreference = "cantonese" }: GamesListProps) {
   return (
     // Wrapped in the white glass card to ensure visibility on dark backgrounds
-    <div className="bg-white/80 backdrop-blur-md rounded-[40px] p-6 md:p-8 shadow-sm border border-white/50 w-full">
+    <div className="w-full rounded-3xl border border-white/50 bg-white/80 p-3 shadow-sm backdrop-blur-md sm:rounded-[40px] sm:p-6 md:p-8">
       
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-blue-400 p-2.5 rounded-2xl shadow-sm -rotate-3">
-          <Gamepad2 className="w-6 h-6 text-white" />
+      <div className="mb-3 flex items-center gap-2 sm:mb-6 sm:gap-3">
+        <div className="-rotate-3 rounded-lg bg-blue-400 p-1.5 shadow-sm sm:rounded-2xl sm:p-2.5">
+          <Gamepad2 className="h-4 w-4 text-white sm:h-6 sm:w-6" />
         </div>
-        <div>
-          <h2 className="text-3xl font-black text-slate-700 tracking-tight">
+        <div className="min-w-0">
+           <h2 className="child-tab-compact-title">
              好玩遊戲
           </h2>
-          <p className="text-base font-bold text-slate-400">
+           <p className="child-tab-compact-copy">
              邊玩邊學！
           </p>
         </div>
       </div>
       
       {/* Game List Grid */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         {games.map((game) => (
           <GameCard 
             key={game.id} 

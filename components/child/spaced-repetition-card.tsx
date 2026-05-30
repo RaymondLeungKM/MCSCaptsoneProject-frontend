@@ -89,8 +89,8 @@ export function SpacedRepetitionCard({
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto select-none">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between w-full text-base text-slate-500">
-        <span className="font-medium">
+      <div className="child-tab-copy flex items-center justify-between w-full !text-base !text-slate-500">
+        <span className="!mt-0 font-medium">
           {currentIndex + 1} / {totalCards}
         </span>
         {card.is_new && (
@@ -121,16 +121,13 @@ export function SpacedRepetitionCard({
           {/* ---- FRONT ---- */}
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl flex flex-col items-center justify-center p-6 [backface-visibility:hidden]">
             {/* Cantonese word */}
-            <p
-              className="text-white font-black text-center leading-tight text-6xl mb-3"
-              style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-            >
+            <p className="child-tab-hero-title !mb-3 !text-center !text-6xl !leading-tight !text-white">
               {card.word_cantonese || card.word || "?"}
             </p>
 
             {/* Jyutping */}
             {card.jyutping && (
-              <p className="text-indigo-100 text-2xl font-semibold mt-2">
+              <p className="child-tab-section-copy !mt-2 !text-2xl !text-indigo-100">
                 {card.jyutping}
               </p>
             )}
@@ -146,7 +143,7 @@ export function SpacedRepetitionCard({
               </button>
             )}
 
-            <p className="text-indigo-200 text-sm mt-8 flex items-center gap-1">
+            <p className="child-tab-copy !mt-8 !text-sm !text-indigo-200 flex items-center gap-1">
               <RotateCcw className="w-4 h-4" /> 點擊翻面
             </p>
           </div>
@@ -168,24 +165,18 @@ export function SpacedRepetitionCard({
             )}
 
             {/* Word & jyutping */}
-            <p
-              className="text-5xl font-black text-slate-800 text-center"
-              style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-            >
+            <p className="child-tab-hero-title !mt-0 !text-5xl !text-center">
               {card.word_cantonese || card.word}
             </p>
             {card.jyutping && (
-              <p className="text-indigo-500 font-semibold text-lg mt-1">
+              <p className="child-tab-section-copy !mt-1 !text-lg !text-indigo-500">
                 {card.jyutping}
               </p>
             )}
 
             {/* Definition */}
             {card.definition_cantonese && (
-              <p
-                className="text-slate-600 text-base text-center mt-4 leading-relaxed"
-                style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-              >
+              <p className="child-tab-card-copy !text-center !text-base !leading-relaxed">
                 {card.definition_cantonese}
               </p>
             )}
@@ -195,11 +186,8 @@ export function SpacedRepetitionCard({
 
       {/* Quality rating buttons (only when flipped) */}
       {isFlipped && (
-        <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <p
-            className="text-center text-sm text-slate-500 mb-2 font-medium"
-            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-          >
+        <div className="w-full">
+          <p className="child-tab-copy !mb-2 !text-center !text-sm">
             你記得幾好？
           </p>
           <div className="grid grid-cols-5 gap-1.5">
@@ -213,17 +201,14 @@ export function SpacedRepetitionCard({
                 )}
               >
                 <span className="text-lg">{emoji}</span>
-                <span
-                  className="text-[10px] leading-tight mt-0.5 text-center"
-                  style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                >
+                  <span className="text-[10px] leading-tight mt-0.5 text-center">
                   {label}
                 </span>
               </button>
             ))}
           </div>
 
-          <p className="text-center text-xs text-slate-400 mt-2">
+          <p className="child-tab-copy !mt-2 !text-center !text-xs !text-slate-400">
             根據你的評分，系統會幫你安排最佳複習時間
           </p>
         </div>
@@ -231,7 +216,7 @@ export function SpacedRepetitionCard({
 
       {/* Flip hint when not yet flipped */}
       {!isFlipped && (
-        <p className="text-slate-400 text-base flex items-center gap-2">
+        <p className="child-tab-copy !text-base !text-slate-400 flex items-center gap-2">
           點擊卡片翻面查看答案 <ChevronRight className="w-5 h-5" />
         </p>
       )}

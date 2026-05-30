@@ -106,6 +106,23 @@ const GAMES_DATA: Game[] = [
 
 const IDLE_TIMEOUT_MS = 60_000;
 const IDLE_CHECK_INTERVAL_MS = 15_000;
+const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
+
+function getStoredSelectedChildId(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(SELECTED_CHILD_STORAGE_KEY);
+}
+
+function persistSelectedChildId(childId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SELECTED_CHILD_STORAGE_KEY, childId);
+}
 
 function getLocalDateString(value: Date = new Date()): string {
   const year = value.getFullYear();
@@ -233,6 +250,8 @@ function localizeAdaptiveReason(reason?: string | null): string {
 function ChildDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const requestedChildId = searchParams.get("childId");
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("home");
@@ -276,8 +295,6 @@ function ChildDashboardContent() {
   const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
-    const requestedTab = searchParams.get("tab");
-
     if (
       requestedTab === "home" ||
       requestedTab === "learn" ||
@@ -290,7 +307,7 @@ function ChildDashboardContent() {
     ) {
       setActiveTab(requestedTab);
     }
-  }, [searchParams]);
+  }, [requestedTab]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -300,7 +317,7 @@ function ChildDashboardContent() {
       }
       void loadDashboardData();
     }
-  }, [authLoading, user]);
+  }, [authLoading, requestedChildId, user]);
 
   const startActiveSession = (
     childId: string,
@@ -415,7 +432,13 @@ function ChildDashboardContent() {
         return;
       }
 
-      const selectedChild = toChildProfile(children[0]);
+      const storedChildId = getStoredSelectedChildId();
+      const selectedChildRecord =
+        children.find((child) => child.id === requestedChildId) ||
+        children.find((child) => child.id === storedChildId) ||
+        children[0];
+      const selectedChild = toChildProfile(selectedChildRecord);
+      persistSelectedChildId(selectedChild.id);
       setProfile(selectedChild);
       lastInteractionAtRef.current = Date.now();
       setIsIdle(true);
@@ -815,7 +838,7 @@ function ChildDashboardContent() {
   const proceedToParentDashboard = async () => {
     setShowPinModal(false);
     await endActiveSession(new Date());
-    router.push("/parent");
+    router.push(profile?.id ? `/parent?childId=${profile.id}` : "/parent");
   };
 
   const handleOpenParentDashboard = () => {
@@ -828,6 +851,7 @@ function ChildDashboardContent() {
   ) => {
     try {
       const refreshedChild = toChildProfile(await getChild(childId));
+      persistSelectedChildId(childId);
       setProfile(refreshedChild);
 
       if (options?.incrementRefreshKey) {
@@ -871,7 +895,11 @@ function ChildDashboardContent() {
 
   if (authLoading || loading) {
     return (
-      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
+      <CozyPageWrapper
+        type="dashboard"
+        hideThemeToggle={!!activeGame}
+        hideFloatingStar
+      >
         <div className="w-full px-4 py-8 space-y-6">
           <Skeleton className="h-44 w-full rounded-4xl" />
           <Skeleton className="h-72 w-full rounded-[40px]" />
@@ -882,7 +910,11 @@ function ChildDashboardContent() {
 
   if (!profile) {
     return (
-      <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
+      <CozyPageWrapper
+        type="dashboard"
+        hideThemeToggle={!!activeGame}
+        hideFloatingStar
+      >
         <div className="w-full px-4 py-8">
           <Alert variant="destructive" className="rounded-2xl">
             <AlertDescription>
@@ -903,10 +935,17 @@ function ChildDashboardContent() {
   }
 
   return (
-    <CozyPageWrapper type="dashboard" hideThemeToggle={!!activeGame} hideFloatingStar>
+    <CozyPageWrapper
+      type="dashboard"
+      hideThemeToggle={!!activeGame}
+      hideFloatingStar
+    >
       <CartoonKeyframes />
       <OwlCompanion level={profile.level} />
-      <div className="w-full min-h-screen pb-32 px-4">
+      <div
+        className="w-full min-h-screen px-4"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10.5rem)" }}
+      >
         {showDashboardHeader && (
           <header className="flex flex-row items-center gap-2 py-4">
             <ProfileHeader
@@ -960,16 +999,10 @@ function ChildDashboardContent() {
                       <Brain className="h-5 w-5" />
                     </div>
                     <div>
-                      <p
-                        className="text-sm font-black text-violet-700"
-                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                      >
+                        <p className="child-tab-section-title !text-sm !text-violet-700">
                         AI 今日推薦
                       </p>
-                      <p
-                        className="text-xs font-semibold text-slate-400"
-                        style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
-                      >
+                        <p className="child-tab-section-copy !text-xs !text-slate-400">
                         幫你揀好今日最值得先開始的內容
                       </p>
                     </div>
@@ -983,23 +1016,13 @@ function ChildDashboardContent() {
                             <BookMarked className="h-4.5 w-4.5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p
-                              className="text-xs font-black tracking-[0.12em] text-slate-400"
-                              style={{
-                                fontFamily: "'Noto Sans TC', sans-serif",
-                              }}
-                            >
+                            <p className="child-tab-caption !tracking-[0.12em]">
                               今日重點詞彙
                             </p>
                             <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
                               {recommendedWordLabel}
                             </p>
-                            <p
-                              className="mt-2 text-sm font-semibold leading-6 text-slate-500"
-                              style={{
-                                fontFamily: "'Noto Sans TC', sans-serif",
-                              }}
-                            >
+                            <p className="child-tab-copy !mt-2 !leading-6">
                               {localizedWordReason}
                             </p>
                           </div>
@@ -1015,23 +1038,13 @@ function ChildDashboardContent() {
                               <Zap className="h-4.5 w-4.5" />
                             </div>
                             <div className="min-w-0">
-                              <p
-                                className="text-xs font-black tracking-[0.12em] text-slate-400"
-                                style={{
-                                  fontFamily: "'Noto Sans TC', sans-serif",
-                                }}
-                              >
+                              <p className="child-tab-caption !tracking-[0.12em]">
                                 建議下一步
                               </p>
                               <p className="mt-1 text-2xl font-black leading-tight text-slate-800">
                                 {nextStepLabel}
                               </p>
-                              <p
-                                className="mt-2 text-sm font-semibold leading-6 text-slate-500"
-                                style={{
-                                  fontFamily: "'Noto Sans TC', sans-serif",
-                                }}
-                              >
+                              <p className="child-tab-copy !mt-2 !leading-6">
                                 {localizedNextStepReason}
                               </p>
                             </div>
@@ -1049,7 +1062,6 @@ function ChildDashboardContent() {
                               )
                             }
                             className="shrink-0 rounded-full bg-amber-400 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-amber-500"
-                            style={{ fontFamily: "'Noto Sans TC', sans-serif" }}
                           >
                             {nextStepButtonLabel}
                           </button>
@@ -1143,7 +1155,9 @@ function ChildDashboardContent() {
                   {!storiesLoading && stories.length === 0 && (
                     <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
                       <Sparkles className="w-10 h-10 mb-3 opacity-50" />
-                      <span className="font-bold text-base">生成第一個故事</span>
+                      <span className="font-bold text-base">
+                        生成第一個故事
+                      </span>
                     </div>
                   )}
 

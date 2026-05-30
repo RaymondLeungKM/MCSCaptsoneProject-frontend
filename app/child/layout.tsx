@@ -1,18 +1,23 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Child Dashboard | Vocab Journey",
-  description: "Fun learning zone for kids",
-};
+import type { Metadata } from "next";
+import { useEffect } from "react";
 
 export default function ChildLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Add a class on <html> so that rem-based Tailwind text-* classes scale up.
+  // Removing on unmount restores normal sizes for other pages.
+  useEffect(() => {
+    document.documentElement.classList.add("kid-font-scale");
+    return () => {
+      document.documentElement.classList.remove("kid-font-scale");
+    };
+  }, []);
+
   return (
-    // We just pass through the children because the Page wrapper 
-    // handles the background and styling.
     <div className="kid-mode w-full min-h-screen" suppressHydrationWarning>
       {children}
     </div>

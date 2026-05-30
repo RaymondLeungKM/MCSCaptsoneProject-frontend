@@ -1,4 +1,5 @@
 # Complete UI Interaction Flowchart
+
 > Generated: April 2026 | Covers: Frontend `/app` + Backend `/api/v1` endpoints
 
 ---
@@ -183,10 +184,12 @@ flowchart TD
         P_TABS -->|"Click 概覽 (Overview)"| TAB_OV
         TAB_OV["`**概覽 (Overview) Tab**
         **GET** /api/v1/parent-dashboard/{childId}/summary
-        ↳ Today's words learned
-        ↳ Total XP, current streak
-        ↳ Daily goal progress bar
-        ↳ Recent word cards`"]
+        **GET** /api/v1/progress/{childId}/stats
+        **GET** /api/v1/vocabulary/child/{childId}/active-vocab/pending
+        ↳ Daily goal progress, streak, level, and mastered-word snapshot
+        ↳ Weekly rhythm view and current-vs-last-week delta summary
+        ↳ Topic focus, parent tips, and live weekly change spotlight
+        ↳ Pending active-vocabulary approvals for parent follow-up`"]
 
         %% Tab: Progress
         P_TABS -->|"Click 進度 (Progress)"| TAB_PR
@@ -222,19 +225,14 @@ flowchart TD
         %% Tab: Insights
         P_TABS -->|"Click 分析 (Insights)"| TAB_IN
         TAB_IN["`**分析 (Insights) Tab**
-        **GET** /api/v1/parent-dashboard/{childId}/insights
-        ↳ AI-generated learning recommendations
-        ↳ Alerts (missed goals, categories to review)`"]
-
-        TAB_IN -->|"Click 'Mark as Read'"| MARK_READ
-        MARK_READ["`**PATCH** /api/v1/parent-dashboard/{childId}/insights/{insightId}
-        Body: { is_read: true, is_dismissed: false }
-        → Removes from list`"]
-
-        TAB_IN -->|"Click 'Dismiss'"| DISMISS_INS
-        DISMISS_INS["`**PATCH** /api/v1/parent-dashboard/{childId}/insights/{insightId}
-        Body: { is_dismissed: true }
-        → Hides insight permanently`"]
+        **GET** /api/v1/children/{childId}
+        **GET** /api/v1/vocabulary/child/{childId}
+        **GET** /api/v1/analytics/{childId}/daily?days=14
+        **GET** /api/v1/adaptive/{childId}/recommendations
+        ↳ Weekly learning pulse from recent daily activity
+        ↳ Focus-word queue ranked by exposure, recency, and pending approval
+        ↳ Adaptive next-step activity suggestions and learning-style guidance
+        ↳ Active vs passive vocabulary balance and exposure-conversion signals`"]
 
         %% Tab: Settings
         P_TABS -->|"Click 設定 (Settings)"| TAB_SE
@@ -543,7 +541,7 @@ flowchart TD
     classDef coming fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px,color:#475569
 
     class LOGIN_PAGE,REGISTER_PAGE,PARENT_DASHBOARD,CHILD_DASHBOARD,CREATE_CHILD_PAGE page
-    class LOGIN_API,REGISTER_API,CONSENT_API,CC_API,VERIFY_USER,MARK_READ,DISMISS_INS,EDIT_CHILD,DEL_CHILD,Q_END,WB_END,SPK_END,ST_GEN_API,ST_READ,MOB_UPLOAD api
+    class LOGIN_API,REGISTER_API,CONSENT_API,CC_API,VERIFY_USER,EDIT_CHILD,DEL_CHILD,Q_END,WB_END,SPK_END,ST_GEN_API,ST_READ,MOB_UPLOAD api
     class LOGIN_BTN,REGISTER_BTN,CC_SUBMIT,ST_GEN_BTN,H_WORD_CLICK action
     class LOGIN_FAIL,REGISTER_FAIL,CC_FAIL,ST_GEN_FAIL error
     class WORD_MODAL,STORY_READER,PRIVACY_MODAL modal
@@ -554,35 +552,35 @@ flowchart TD
 
 ## Quick Reference: API Endpoints by Flow
 
-| User Action | HTTP Method | Endpoint | Auth |
-|---|---|---|---|
-| Register parent | POST | `/api/v1/auth/register` | ❌ |
-| Login parent | POST | `/api/v1/auth/login` | ❌ |
-| Verify session | GET | `/api/v1/users/me` | ✅ |
-| Submit consent | PATCH | `/api/v1/users/me/consent` | ✅ |
-| Create child | POST | `/api/v1/children/` | ✅ |
-| List children | GET | `/api/v1/children/` | ✅ |
-| Get child profile | GET | `/api/v1/children/{id}` | ✅ |
-| Update child | PATCH | `/api/v1/children/{id}` | ✅ |
-| Delete child | DELETE | `/api/v1/children/{id}` | ✅ |
-| Dashboard summary | GET | `/api/v1/parent-dashboard/{id}/summary` | ✅ |
-| Progress stats | GET | `/api/v1/progress/{id}/stats` | ✅ |
-| Analytics charts | GET | `/api/v1/parent-dashboard/{id}/charts` | ✅ |
-| Daily missions | GET | `/api/v1/missions/daily/{id}` | ✅ |
-| Offline missions | GET | `/api/v1/missions/offline/{id}` | ✅ |
-| Learning insights | GET | `/api/v1/parent-dashboard/{id}/insights` | ✅ |
-| Mark insight read | PATCH | `/api/v1/parent-dashboard/{id}/insights/{insightId}` | ✅ |
-| List categories | GET | `/api/v1/categories/` | ✅ |
-| Get vocabulary | GET | `/api/v1/vocabulary/` | ✅ |
-| Get daily words | GET | `/api/v1/bedtime-stories/daily-words/{id}` | ✅ |
-| Update word progress | POST | `/api/v1/vocabulary/{wordId}/progress/{childId}` | ✅ |
-| Start game session | GET | `/api/v1/games/` | ✅ |
-| Record game result | POST | `/api/v1/games/{gameId}/play` | ✅ |
-| Generate AI story | POST | `/api/v1/bedtime-stories/generate` | ✅ |
-| List stories | GET | `/api/v1/bedtime-stories/list/{id}` | ✅ |
-| Read full story | GET | `/api/v1/bedtime-stories/{id}/{storyId}` | ✅ |
-| My captured words | GET | `/api/v1/vocabulary/captured/{id}` | ✅ |
-| Community words | GET | `/api/v1/vocabulary/community` | ✅ |
-| Start learning session | POST | `/api/v1/progress/session` | ✅ |
-| End learning session | PATCH | `/api/v1/progress/session/{sessionId}` | ✅ |
-| Mobile word capture | POST | `/api/v1/vocabulary/external/word-learned` | ❌ |
+| User Action            | HTTP Method | Endpoint                                             | Auth |
+| ---------------------- | ----------- | ---------------------------------------------------- | ---- |
+| Register parent        | POST        | `/api/v1/auth/register`                              | ❌   |
+| Login parent           | POST        | `/api/v1/auth/login`                                 | ❌   |
+| Verify session         | GET         | `/api/v1/users/me`                                   | ✅   |
+| Submit consent         | PATCH       | `/api/v1/users/me/consent`                           | ✅   |
+| Create child           | POST        | `/api/v1/children/`                                  | ✅   |
+| List children          | GET         | `/api/v1/children/`                                  | ✅   |
+| Get child profile      | GET         | `/api/v1/children/{id}`                              | ✅   |
+| Update child           | PATCH       | `/api/v1/children/{id}`                              | ✅   |
+| Delete child           | DELETE      | `/api/v1/children/{id}`                              | ✅   |
+| Dashboard summary      | GET         | `/api/v1/parent-dashboard/{id}/summary`              | ✅   |
+| Progress stats         | GET         | `/api/v1/progress/{id}/stats`                        | ✅   |
+| Analytics charts       | GET         | `/api/v1/parent-dashboard/{id}/charts`               | ✅   |
+| Daily missions         | GET         | `/api/v1/missions/daily/{id}`                        | ✅   |
+| Offline missions       | GET         | `/api/v1/missions/offline/{id}`                      | ✅   |
+| Learning insights      | GET         | `/api/v1/parent-dashboard/{id}/insights`             | ✅   |
+| Mark insight read      | PATCH       | `/api/v1/parent-dashboard/{id}/insights/{insightId}` | ✅   |
+| List categories        | GET         | `/api/v1/categories/`                                | ✅   |
+| Get vocabulary         | GET         | `/api/v1/vocabulary/`                                | ✅   |
+| Get daily words        | GET         | `/api/v1/bedtime-stories/daily-words/{id}`           | ✅   |
+| Update word progress   | POST        | `/api/v1/vocabulary/{wordId}/progress/{childId}`     | ✅   |
+| Start game session     | GET         | `/api/v1/games/`                                     | ✅   |
+| Record game result     | POST        | `/api/v1/games/{gameId}/play`                        | ✅   |
+| Generate AI story      | POST        | `/api/v1/bedtime-stories/generate`                   | ✅   |
+| List stories           | GET         | `/api/v1/bedtime-stories/list/{id}`                  | ✅   |
+| Read full story        | GET         | `/api/v1/bedtime-stories/{id}/{storyId}`             | ✅   |
+| My captured words      | GET         | `/api/v1/vocabulary/captured/{id}`                   | ✅   |
+| Community words        | GET         | `/api/v1/vocabulary/community`                       | ✅   |
+| Start learning session | POST        | `/api/v1/progress/session`                           | ✅   |
+| End learning session   | PATCH       | `/api/v1/progress/session/{sessionId}`               | ✅   |
+| Mobile word capture    | POST        | `/api/v1/vocabulary/external/word-learned`           | ❌   |

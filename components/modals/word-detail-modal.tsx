@@ -284,8 +284,8 @@ export function WordDetailModal({
         {/* Card */}
         <div
           className={cn(
-            "relative w-full max-w-lg bg-white",
-            "rounded-[40px]",
+            "relative w-full max-w-md sm:max-w-lg bg-white",
+            "rounded-3xl sm:rounded-[40px]",
             "border-4 border-white shadow-2xl",
             "max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain sm:max-h-[90dvh]",
             "animate-in zoom-in-95 fade-in duration-300",
@@ -471,12 +471,12 @@ export function WordDetailModal({
           )}
 
           {/* Play Button + Mastery Toggle */}
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-col gap-2">
             <button
               onClick={handlePlayWord}
               className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-full font-black text-white shadow-md transition-all",
-                "duration-200 hover:scale-105 active:scale-95",
+                "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full font-black text-white shadow-md whitespace-nowrap transition-all",
+                "duration-200 active:scale-95",
                 isPlaying
                   ? "bg-blue-400 scale-105"
                   : "bg-[#38BDF8] hover:bg-[#0EA5E9]",
@@ -497,7 +497,7 @@ export function WordDetailModal({
                 // Non-interactive celebration badge — mastery cannot be reverted
                 <div
                   className={cn(
-                    "flex items-center gap-2 px-5 py-3 rounded-full font-black border-2 select-none",
+                    "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full font-black border-2 select-none whitespace-nowrap",
                     "bg-green-100 text-green-700 border-green-300",
                     "transition-all duration-500",
                   )}
@@ -506,7 +506,7 @@ export function WordDetailModal({
                   已列入主動詞彙
                 </div>
               ) : pendingParentApproval ? (
-                <div className="flex items-center gap-2 px-5 py-3 rounded-full font-black border-2 border-amber-300 bg-amber-50 text-amber-700 select-none">
+                <div className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full font-black border-2 border-amber-300 bg-amber-50 text-amber-700 whitespace-nowrap select-none">
                   <PartyPopper className="w-5 h-5" />
                   {pendingApprovalLabel}
                 </div>
@@ -516,8 +516,8 @@ export function WordDetailModal({
                   onClick={handleRequestParentApproval}
                   disabled={requestingParentApproval || !reachedExposureGoal}
                   className={cn(
-                    "flex items-center gap-2 px-5 py-3 rounded-full font-black shadow-md transition-all",
-                    "duration-200 hover:scale-105 active:scale-95 border-2",
+                    "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full font-black shadow-md whitespace-nowrap transition-all",
+                    "duration-200 active:scale-95 border-2",
                     requestingParentApproval
                       ? "bg-yellow-100 text-yellow-600 border-yellow-300 opacity-70"
                       : !reachedExposureGoal
@@ -567,15 +567,17 @@ export function WordDetailModal({
         <div className="custom-scrollbar px-5 py-5 touch-pan-y">
           <div className="space-y-4 pb-2">
           {/* Definition */}
-          <Section
-            icon={<BookOpen className="w-4 h-4" />}
-            title="意思"
-            color="sky"
-          >
-            <p className="text-base font-bold text-slate-700 leading-relaxed">
-              {definition}
-            </p>
-          </Section>
+          {definition && (
+            <Section
+              icon={<BookOpen className="w-4 h-4" />}
+              title="意思"
+              color="sky"
+            >
+              <p className="text-base font-bold text-slate-700 leading-relaxed">
+                {definition}
+              </p>
+            </Section>
+          )}
 
           {/* Example Sentence */}
           <Section

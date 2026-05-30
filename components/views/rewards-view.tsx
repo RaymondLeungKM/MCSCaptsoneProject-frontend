@@ -189,9 +189,9 @@ function RewardStat({
       >
         <Icon className="h-7 w-7" />
       </div>
-      <p className="text-4xl font-black text-slate-800">{value}</p>
-      <p className="mt-2 text-base font-black text-slate-600">{label}</p>
-      <p className="mt-2 text-base font-medium text-slate-500">{helper}</p>
+      <p className="child-tab-stat-value !mt-0 !text-4xl">{value}</p>
+      <p className="child-tab-stat-label !mt-2 !text-slate-600">{label}</p>
+      <p className="child-tab-stat-copy !text-base">{helper}</p>
     </div>
   );
 }
@@ -297,14 +297,14 @@ export function RewardsView({
         <div className="bg-linear-to-r from-yellow-100/80 via-orange-100/70 to-sky-100/70 px-6 py-8 md:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-sm font-black text-amber-600 shadow-sm">
+              <div className="child-tab-chip mb-3 text-amber-600">
                 <Trophy className="h-4 w-4" />
                 獎勵基地
               </div>
-              <h2 className="text-4xl font-black tracking-tight text-slate-800 md:text-5xl">
+              <h2 className="child-tab-hero-title">
                 {profile.name} 的獎勵牆
               </h2>
-              <p className="mt-2 max-w-2xl text-base font-semibold text-slate-500 md:text-lg">
+              <p className="child-tab-hero-copy">
                 這裡會整理你已經獲得的徽章、最近的努力成果，和下一個快要解鎖的目標。
               </p>
             </div>
@@ -368,52 +368,52 @@ export function RewardsView({
         </div>
       ) : (
         <div className="space-y-6">
-            <section className="rounded-4xl border border-white/60 bg-white/80 p-7 shadow-sm backdrop-blur-md">
+            <section className="rounded-4xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur-md sm:p-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                  <Sparkles className="h-7 w-7" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 sm:h-14 sm:w-14">
+                  <Sparkles className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-800">
+                <div className="min-w-0">
+                  <h3 className="child-tab-section-title !text-lg">
                     下一個解鎖目標
                   </h3>
-                  <p className="text-base font-semibold text-slate-500">
+                  <p className="child-tab-section-copy">
                     再努力一點點，就可以拿到新的徽章。
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:mt-5 sm:gap-5 md:grid-cols-2">
                 {nextTargets.length > 0 ? (
                   nextTargets.map((badge) => (
                     <div
                       key={badge.id}
-                      className="rounded-3xl border-2 border-slate-100 bg-slate-50/80 p-5 flex items-center gap-5"
+                      className="rounded-3xl border-2 border-slate-100 bg-slate-50/80 p-3 flex items-center gap-3 sm:p-5 sm:gap-5"
                     >
                       <div
                         className={cn(
-                          "flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-5xl",
+                          "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-3xl sm:h-20 sm:w-20 sm:text-5xl",
                           badge.accent,
                         )}
                       >
                         {badge.icon}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xl font-black text-slate-800">{badge.name}</p>
-                          <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-4 py-1.5 text-base text-slate-600 shrink-0 font-bold">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                          <p className="child-tab-card-title !mt-0 whitespace-nowrap !text-base sm:!text-xl">{badge.name}</p>
+                          <Badge variant="outline" className="self-start rounded-full border-slate-200 bg-white px-2.5 py-0.5 text-xs text-slate-600 shrink-0 font-bold sm:self-auto sm:px-4 sm:py-1.5 sm:text-base">
                             {badge.currentValue}/{badge.requirement}
                           </Badge>
                         </div>
-                        <p className="text-base font-medium text-slate-500 mt-1">{badge.description}</p>
-                        <Progress value={badge.progress} className="mt-3 h-5 rounded-full bg-white" indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400" />
+                        <p className="child-tab-card-copy">{badge.description}</p>
+                        <Progress value={badge.progress} className="mt-2 h-3 rounded-full bg-white sm:mt-3 sm:h-5" indicatorClassName="bg-linear-to-r from-amber-400 to-orange-400" />
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="rounded-3xl border-2 border-emerald-100 bg-emerald-50 p-6 text-center md:col-span-2">
-                    <p className="text-2xl font-black text-emerald-700">全部里程碑都解鎖了</p>
-                    <p className="mt-2 text-base font-semibold text-emerald-600">目前這一批挑戰已經全部完成，做得很好。</p>
+                    <p className="child-tab-section-title !text-emerald-700">全部里程碑都解鎖了</p>
+                    <p className="child-tab-section-copy !mt-2 !text-emerald-600">目前這一批挑戰已經全部完成，做得很好。</p>
                   </div>
                 )}
               </div>
@@ -425,8 +425,8 @@ export function RewardsView({
                   <Check className="h-7 w-7" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-800">已獲得的徽章</h3>
-                  <p className="text-base font-semibold text-slate-500">
+                  <h3 className="child-tab-section-title">已獲得的徽章</h3>
+                  <p className="child-tab-section-copy !text-base">
                     每次練習、升級和連續打卡都會留下趣軌。
                   </p>
                 </div>
@@ -446,10 +446,10 @@ export function RewardsView({
                         已解鎖
                       </Badge>
                     </div>
-                    <p className="mt-3 text-lg font-black text-slate-800">
+                    <p className="child-tab-card-title !mt-3 !text-lg">
                       {achievement.achievement_name}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">
+                    <p className="child-tab-card-copy !text-sm">
                       於 {formatShortDate(achievement.earned_at)} 獲得
                     </p>
                   </div>
@@ -466,10 +466,10 @@ export function RewardsView({
                         里程碑
                       </Badge>
                     </div>
-                    <p className="mt-3 text-base font-black text-slate-800">
+                    <p className="child-tab-card-title !mt-3 !text-base">
                       {badge.name}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">
+                    <p className="child-tab-card-copy">
                       {badge.description}
                     </p>
                   </div>
@@ -478,10 +478,10 @@ export function RewardsView({
                 {achievements.length === 0 &&
                   unlockedMilestones.length === 0 && (
                     <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center sm:col-span-2 lg:col-span-3">
-                      <p className="text-lg font-black text-slate-700">
+                      <p className="child-tab-card-title !text-lg !text-slate-700">
                         第一個徽章快來了
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">
+                      <p className="child-tab-card-copy !text-sm">
                         去學習或玩一局遊戲，很快就會看到第一個獎勵。
                       </p>
                     </div>
@@ -495,10 +495,10 @@ export function RewardsView({
                   <Star className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     本週獎勵節奏
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     最近 7 天一共學習了 {weeklyMinutes} 分鐘。
                   </p>
                 </div>
@@ -532,8 +532,8 @@ export function RewardsView({
                   ))
                 ) : (
                   <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-                    <p className="font-black text-slate-700">還沒有本週記錄</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                    <p className="child-tab-card-title !text-slate-700">還沒有本週記錄</p>
+                    <p className="child-tab-card-copy">
                       開始今天的學習後，這裡會出現你的獎勵成長曲線。
                     </p>
                   </div>
@@ -543,18 +543,18 @@ export function RewardsView({
               {progressStats && (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[22px] bg-indigo-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500">
+                    <p className="child-tab-stat-label !text-indigo-500">
                       主動詞彙
                     </p>
-                    <p className="mt-2 text-2xl font-black text-slate-800">
+                    <p className="child-tab-stat-value">
                       {progressStats.active_vocabulary}
                     </p>
                   </div>
                   <div className="rounded-[22px] bg-emerald-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-500">
+                    <p className="child-tab-stat-label !text-emerald-500">
                       平均曝光次數
                     </p>
-                    <p className="mt-2 text-2xl font-black text-slate-800">
+                    <p className="child-tab-stat-value">
                       {progressStats.average_exposures_per_word.toFixed(1)}
                     </p>
                   </div>
@@ -568,10 +568,10 @@ export function RewardsView({
                   <Lock className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     下一步行動
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     做這些活動，最快累積新的獎勵。
                   </p>
                 </div>
@@ -614,8 +614,8 @@ export function RewardsView({
               <Lock className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-800">尚未解鎖</h3>
-              <p className="text-sm font-semibold text-slate-500">
+              <h3 className="child-tab-section-title !text-xl">尚未解鎖</h3>
+              <p className="child-tab-section-copy !text-sm">
                 這些里程碑還差一點點，繼續前進就會亮起來。
               </p>
             </div>
@@ -631,10 +631,10 @@ export function RewardsView({
                   <div className="text-4xl grayscale">{badge.icon}</div>
                   <Lock className="h-4 w-4 text-slate-400" />
                 </div>
-                <p className="mt-3 text-base font-black text-slate-700">
+                <p className="child-tab-card-title !mt-3 !text-base !text-slate-700">
                   {badge.name}
                 </p>
-                <p className="mt-1 text-sm font-medium text-slate-500">
+                <p className="child-tab-card-copy">
                   {badge.description}
                 </p>
                 <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">

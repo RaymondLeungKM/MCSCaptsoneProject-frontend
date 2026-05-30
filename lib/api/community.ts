@@ -125,6 +125,10 @@ export interface ChallengeParticipation {
   challenge_title_zh: string | null;
   challenge_target: number | null;
   challenge_emoji: string | null;
+  parent_name: string | null;
+  child_name: string | null;
+  child_avatar: string | null;
+  participant_code: string | null;
 }
 
 export interface FriendChallengeParticipant {

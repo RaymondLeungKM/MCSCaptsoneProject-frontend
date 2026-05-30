@@ -322,6 +322,24 @@ export interface CategoryProgress {
   recent_activity: number;
 }
 
+export interface WeeklyDeltaMetric {
+  current: number;
+  previous: number;
+  delta: number;
+}
+
+export interface WeeklyDeltaSummary {
+  current_week_start_date: string;
+  current_week_end_date: string;
+  previous_week_start_date: string;
+  previous_week_end_date: string;
+  words_learned: WeeklyDeltaMetric;
+  learning_time: WeeklyDeltaMetric;
+  sessions: WeeklyDeltaMetric;
+  xp_earned: WeeklyDeltaMetric;
+  active_days: WeeklyDeltaMetric;
+}
+
 export interface DashboardSummary {
   child_id: string;
   child_name: string;
@@ -333,6 +351,7 @@ export interface DashboardSummary {
   weekly_sessions: number;
   weekly_words_learned: number;
   weekly_xp_earned: number;
+  weekly_delta?: WeeklyDeltaSummary;
   category_progress: CategoryProgress[];
   recent_insights: LearningInsight[];
   latest_report?: WeeklyReport;

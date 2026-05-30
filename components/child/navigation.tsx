@@ -79,54 +79,91 @@ const navItems = [
 
 export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
   return (
-    <div className="fixed bottom-4 left-2 right-2 z-50 flex justify-center safe-area-inset-bottom">
-      {/* 🏝️ Floating Glass Island */}
-      <nav className="flex items-end justify-between w-full max-w-lg px-2 py-3.5 bg-white/95 backdrop-blur-xl border-[3px] border-white/50 rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
+    <div
+      // Outer wrapper: pinned to the viewport bottom, full width, never
+      // intercepts pointer events outside the nav island. Uses the iOS safe
+      // area inset so the nav clears the home indicator on every device.
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center px-2 sm:px-4"
+      style={{
+        paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
+      }}
+    >
+      {/* 🏝️ Floating Glass Island — fluid sizing via clamp so it scales
+          smoothly between phones, tablets and desktops without breakpoint
+          jumps that can clip the active "bubble" on intermediate sizes. */}
+      <nav
+        aria-label="兒童主導覽"
+        className="pointer-events-auto isolate grid w-full grid-cols-7 items-end rounded-[26px] border-[3px] border-white/50 bg-white/95 shadow-[0_10px_34px_rgba(0,0,0,0.16)] backdrop-blur-xl sm:rounded-[34px] lg:rounded-[38px]"
+        style={{
+          maxWidth: "min(100%, 52rem)",
+          paddingInline: "clamp(0.375rem, 1.4vw, 1rem)",
+          paddingBlock: "clamp(0.5rem, 1.4vw, 1rem)",
+          columnGap: "clamp(0.125rem, 0.4vw, 0.5rem)",
+        }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
 
+          // Fluid sizes — phones land near the lower bound, tablets/desktops
+          // near the upper bound, with a smooth transition in between.
+          // Targets: mobile ~36/30px bubble, ~16/14px icon, ~11/10px label
+          const bubbleSize = isActive
+            ? "clamp(36px, 8vw, 72px)"
+            : "clamp(30px, 6.75vw, 60px)";
+          const iconSize = isActive
+            ? "clamp(16px, 3.6vw, 34px)"
+            : "clamp(14px, 3.1vw, 29px)";
+          const labelSize = isActive
+            ? "clamp(10px, 3.1vw, 17px)"
+            : "clamp(9px, 2.8vw, 15px)";
+
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => onTabChange(item.id)}
-              className="group relative flex flex-col items-center justify-end w-full gap-1.5 px-0.5"
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="group relative flex min-w-0 flex-col items-center justify-end gap-1 rounded-2xl px-0.5 outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:gap-1.5 lg:gap-2"
             >
               {/* ✨ Icon Container */}
-              <div
+              <span
                 className={cn(
-                  "flex items-center justify-center rounded-full transition-all duration-300",
+                  "flex shrink-0 items-center justify-center rounded-full transition-all duration-300",
                   isActive
-                    ? `w-16 h-16 ${item.activeBg} -translate-y-4 shadow-md border-4 border-white`
-                    : "w-11 h-11 bg-transparent text-slate-400 group-hover:bg-slate-100",
+                    ? `${item.activeBg} -translate-y-2 border-[3px] border-white shadow-md sm:-translate-y-3 lg:-translate-y-4`
+                    : "bg-transparent text-slate-400 group-hover:bg-slate-100",
                 )}
+                style={{ width: bubbleSize, height: bubbleSize }}
               >
                 <Icon
                   className={cn(
                     "transition-all duration-300",
-                    isActive
-                      ? "w-7 h-7 text-white stroke-[3]"
-                      : "w-7 h-7 stroke-[2.5]",
+                    isActive ? "text-white stroke-[3]" : "stroke-[2.5]",
                   )}
+                  style={{ width: iconSize, height: iconSize }}
                 />
-              </div>
+              </span>
 
               {/* 📝 The Label (Now sitting INSIDE the white box) */}
               <span
                 className={cn(
-                  "min-h-[1rem] text-[11px] font-black tracking-wide leading-none transition-all duration-300 sm:text-xs",
+                  "child-tab-caption max-w-full truncate !leading-none tracking-tight transition-all duration-300 font-bold",
                   isActive
-                    ? `${item.activeText} -translate-y-1 text-sm opacity-100`
+                    ? `${item.activeText} font-black opacity-100 sm:-translate-y-1`
                     : "text-slate-500 opacity-100",
                 )}
+                style={{ fontSize: labelSize }}
               >
                 {item.label}
               </span>
 
               {/* ⏺️ Active Dot (Visual Anchor) */}
               {isActive && (
-                <div
-                  className={`w-1.5 h-1.5 rounded-full ${item.activeBg} absolute bottom-0 opacity-50`}
+                <span
+                  aria-hidden
+                  className={`absolute bottom-0 h-1.5 w-1.5 rounded-full ${item.activeBg} opacity-50 sm:h-2 sm:w-2 lg:h-2.5 lg:w-2.5`}
                 />
               )}
             </button>

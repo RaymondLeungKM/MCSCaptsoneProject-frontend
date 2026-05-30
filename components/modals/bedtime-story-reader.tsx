@@ -314,7 +314,7 @@ export function BedtimeStoryReader({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full h-[90dvh] max-h-[90dvh] p-0 bg-transparent border-none shadow-none flex items-stretch justify-center overflow-hidden">
+      <DialogContent className="max-w-[100vw] sm:max-w-3xl md:max-w-4xl w-full h-[100dvh] sm:h-[90dvh] max-h-[100dvh] sm:max-h-[90dvh] p-0 bg-transparent border-none shadow-none flex items-stretch justify-center overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{story.title || "睡前故事"}</DialogTitle>
           <DialogDescription>
@@ -323,7 +323,7 @@ export function BedtimeStoryReader({
         </DialogHeader>
 
         {/* --- BOOK CONTAINER --- */}
-        <div className="relative w-full max-w-3xl bg-[#FFF9F0] rounded-[40px] shadow-2xl border-[12px] border-[#5D4037] overflow-hidden flex flex-col h-full max-h-full min-h-0 animate-in zoom-in-95 duration-300">
+        <div className="relative w-full max-w-3xl bg-[#FFF9F0] rounded-2xl sm:rounded-[40px] shadow-2xl border-4 sm:border-[12px] border-[#5D4037] overflow-hidden flex flex-col h-full max-h-full min-h-0 animate-in zoom-in-95 duration-300">
           {/* HEADER (Book Spine) */}
           <div className="bg-[#5D4037] p-4 flex items-center justify-between text-white shadow-md z-10">
             <div className="flex items-center gap-3 overflow-hidden">

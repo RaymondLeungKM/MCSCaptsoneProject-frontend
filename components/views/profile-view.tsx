@@ -102,9 +102,9 @@ function ProfileAvatar({ avatar, name }: { avatar: string; name: string }) {
   const isImage = avatar?.startsWith("http");
 
   return (
-    <Avatar className="h-28 w-28 border-4 border-white shadow-lg ring-4 ring-sky-100/70">
+    <Avatar className="h-[96px] w-[96px] shrink-0 border-4 border-white shadow-lg ring-4 ring-sky-100/70">
       {isImage && <AvatarImage src={avatar} alt={name} />}
-      <AvatarFallback className="bg-linear-to-br from-orange-100 via-rose-50 to-sky-100 text-6xl font-black text-slate-700">
+      <AvatarFallback className="bg-linear-to-br from-orange-100 via-rose-50 to-sky-100 text-5xl font-black text-slate-700">
         {!isImage && avatar ? avatar : name?.[0] || "C"}
       </AvatarFallback>
     </Avatar>
@@ -136,8 +136,8 @@ function QuickActionButton({
       <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
-      <p className="text-base font-black text-slate-800">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-500">{description}</p>
+      <p className="child-tab-card-title !mt-0 !text-base">{label}</p>
+      <p className="child-tab-card-copy">{description}</p>
     </button>
   );
 }
@@ -155,11 +155,11 @@ function StatCard({
 }) {
   return (
     <div className="rounded-[28px] border border-white/60 bg-white/75 p-5 shadow-sm backdrop-blur-md">
-      <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+      <p className="child-tab-stat-label">
         {label}
       </p>
-      <p className={cn("mt-3 text-3xl font-black", accent)}>{value}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-500">{helper}</p>
+      <p className={cn("child-tab-stat-value !mt-3", accent)}>{value}</p>
+      <p className="child-tab-stat-copy">{helper}</p>
     </div>
   );
 }
@@ -226,29 +226,29 @@ export function ProfileView({
       <div className="overflow-hidden rounded-[40px] border border-white/60 bg-white/80 shadow-sm backdrop-blur-md">
         <div className="bg-linear-to-r from-[#FDE68A]/50 via-[#FDBA74]/35 to-[#7DD3FC]/35 px-6 py-8 md:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-5">
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-5">
               <ProfileAvatar avatar={selectedAvatar} name={profile.name} />
-              <div className="space-y-3">
+              <div className="space-y-2 min-w-0 w-full sm:flex-1 text-center sm:text-left">
                 <div>
-                  <p className="text-base font-black uppercase tracking-[0.25em] text-slate-400">
+                  <p className="child-tab-caption !text-slate-400">
                     我的檔案
                   </p>
-                  <h2 className="mt-1 text-4xl font-black tracking-tight text-slate-800 md:text-5xl">
+                  <h2 className="child-tab-hero-title !mt-1 !text-3xl sm:!text-4xl">
                     {profile.name}
                   </h2>
-                  <p className="mt-2 text-base font-semibold text-slate-500 md:text-lg">
+                  <p className="child-tab-hero-copy !max-w-none !text-sm sm:!text-base">
                     {profile.age} 歲 ・ Lv.{profile.level} ・ {profile.xp} XP
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="rounded-full bg-sky-500 px-4 py-2 text-base text-white hover:bg-sky-500 font-bold">
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <Badge className="rounded-full bg-sky-500 px-4 py-2 text-sm text-white hover:bg-sky-500 font-bold whitespace-nowrap">
                     {languageLabels[profile.languagePreference || "cantonese"]}
                   </Badge>
-                  <Badge className="rounded-full bg-emerald-500 px-4 py-2 text-base text-white hover:bg-emerald-500 font-bold">
+                  <Badge className="rounded-full bg-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-500 font-bold whitespace-nowrap">
                     {learningStyle.label}
                   </Badge>
-                  <Badge className="rounded-full bg-violet-500 px-4 py-2 text-base text-white hover:bg-violet-500 font-bold">
+                  <Badge className="rounded-full bg-violet-500 px-4 py-2 text-sm text-white hover:bg-violet-500 font-bold whitespace-nowrap">
                     專注 {profile.attentionSpan} 分鐘
                   </Badge>
                 </div>
@@ -316,10 +316,10 @@ export function ProfileView({
                   <Brain className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     我的學習風格
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     {learningStyle.description}
                   </p>
                 </div>
@@ -395,10 +395,10 @@ export function ProfileView({
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     我喜歡的主題
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     系統會用這些興趣來安排更貼近你的內容。
                   </p>
                 </div>
@@ -425,10 +425,10 @@ export function ProfileView({
                   <Palette className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     換個新頭像
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     挑選你喜歡的角色，讓學習空間更像你自己。
                   </p>
                 </div>
@@ -477,10 +477,10 @@ export function ProfileView({
                   <Users className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800">
+                  <h3 className="child-tab-section-title !text-xl">
                     接下來想做什麼？
                   </h3>
-                  <p className="text-sm font-semibold text-slate-500">
+                  <p className="child-tab-section-copy !text-sm">
                     從你的個人檔案，直接跳到下一個活動。
                   </p>
                 </div>

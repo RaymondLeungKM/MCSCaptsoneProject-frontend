@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "next dev --webpack --port 3000",
+    "dev:3001": "next dev --turbopack --port 3001",
+    "dev:3001:webpack": "next dev --webpack --port 3001",
     "lint": "eslint .",
     "preview": "opennextjs-cloudflare build && set -a; [ -f .env.local ] && . ./.env.local; set +a; CLOUDFLARE_API_TOKEN=${CLOUDFLARE_DEPLOY_API_TOKEN:-$CLOUDFLARE_API_TOKEN} opennextjs-cloudflare preview",
     "deploy:preview": "opennextjs-cloudflare build && set -a; [ -f .env.local ] && . ./.env.local; set +a; CLOUDFLARE_API_TOKEN=${CLOUDFLARE_DEPLOY_API_TOKEN:-$CLOUDFLARE_API_TOKEN} wrangler deploy .open-next/worker.js --config wrangler.jsonc --env preview",

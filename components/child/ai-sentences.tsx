@@ -247,18 +247,18 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
   if (sentences.length === 0) return null;
 
   return (
-    <div className="bg-linear-to-br from-violet-50 to-purple-50 rounded-[40px] p-6 md:p-8 shadow-sm border border-white/60 relative overflow-hidden">
+    <div className="bg-linear-to-br from-violet-50 to-purple-50 rounded-[40px] p-3 md:p-5 shadow-sm border border-white/60 relative overflow-hidden">
       {/* Decorative Background Icon */}
       <Bot className="absolute -top-6 -right-6 w-32 h-32 text-purple-100 -rotate-12 pointer-events-none" />
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 relative z-10">
-        <div className="bg-white p-2.5 rounded-full shadow-sm">
-          <Sparkles className="w-6 h-6 text-purple-500 fill-purple-500" />
+      <div className="flex items-center gap-3 mb-4 relative z-10">
+        <div className="bg-white p-2 rounded-full shadow-sm">
+          <Sparkles className="w-5 h-5 text-purple-500 fill-purple-500" />
         </div>
         <div>
-          <h4 className="text-xl font-black text-purple-900 tracking-tight">
-            AI 魔法造句
+          <h4 className="text-base font-black text-purple-900 tracking-tight sm:text-lg">
+            魔法造句
           </h4>
         </div>
       </div>
@@ -268,14 +268,14 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
         {sentences.map((sent, index) => (
           <div
             key={sent.id}
-            className="group bg-white/80 backdrop-blur-md rounded-4xl p-5 border-2 border-transparent hover:border-purple-200 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md flex gap-4 items-start"
+            className="group bg-white/80 backdrop-blur-md rounded-3xl p-3 border-2 border-transparent hover:border-purple-200 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md flex gap-3 items-start"
           >
             {/* Play Button (Big & Round) */}
             <button
               onClick={() => playSentence(sent)}
               disabled={(playingId === sent.id && isPlaying) || isAudioLoading}
               className={`
-                shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
                 ${
                   playingId === sent.id && (isPlaying || isAudioLoading)
                     ? "bg-purple-500 text-white scale-110 shadow-purple-200"
@@ -284,7 +284,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
               `}
             >
               <Volume2
-                className={`w-6 h-6 ${playingId === sent.id && (isPlaying || isAudioLoading) ? "animate-pulse" : ""}`}
+                className={`w-4 h-4 ${playingId === sent.id && (isPlaying || isAudioLoading) ? "animate-pulse" : ""}`}
               />
             </button>
 
@@ -293,7 +293,7 @@ export function AISentences({ wordId, languagePreference, word }: AISentencesPro
               {/* Cantonese */}
               {showCantonese && (
                 <div className="mb-2">
-                  <p className="text-lg font-black text-slate-700 leading-relaxed">
+                  <p className="text-base font-black text-slate-700 leading-relaxed sm:text-lg">
                     {sent.sentence}
                   </p>
                   {sent.jyutping && (
