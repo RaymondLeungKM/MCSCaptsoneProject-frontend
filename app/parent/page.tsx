@@ -2,7 +2,17 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Baby, LayoutGrid, PieChart, Loader2, Users } from "lucide-react";
+import {
+  Baby,
+  BarChart3,
+  LayoutGrid,
+  Loader2,
+  PieChart,
+  Settings,
+  Target,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 // --- UI IMPORTS ---
 import {
@@ -12,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 
 // --- COMPONENT IMPORTS ---
