@@ -21,7 +21,6 @@ import type { OfflineMission } from "@/lib/types";
 import { offlineMissions as mockOfflineMissions } from "@/lib/mock-data";
 import {
   getOfflineMissions,
-  getMissionProgress,
   completeMission,
   toOfflineMission,
 } from "@/lib/api/missions";
@@ -64,20 +63,12 @@ export function OfflineMissionsTab({ childId }: OfflineMissionsTabProps = {}) {
 
       try {
         setError(null);
-        const [missionsData, progressData] = await Promise.allSettled([
+        const [missionsData] = await Promise.allSettled([
           getOfflineMissions(childId!),
-          getMissionProgress(childId!),
         ]);
 
         if (missionsData.status === "fulfilled") {
-          const progressMap = new Map(
-            progressData.status === "fulfilled"
-              ? progressData.value.map((p) => [p.mission_id, p])
-              : [],
-          );
-          const mapped = missionsData.value.map((m) =>
-            toOfflineMission(m, progressMap.get(m.id)),
-          );
+          const mapped = missionsData.value.map((m) => toOfflineMission(m));
           if (mapped.length > 0) {
             setMissions(mapped);
             console.log(`[Missions] Loaded ${mapped.length} offline missions`);

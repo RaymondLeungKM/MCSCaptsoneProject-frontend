@@ -807,10 +807,8 @@ function LearningCalendar({
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dateWords, setDateWords] = useState<WordsByDateResult | null>(null);
+  const [wordsError, setWordsError] = useState<string | null>(null);
   const [loadingWords, setLoadingWords] = useState(false);
-  const [countOverrides, setCountOverrides] = useState<Record<string, number>>(
-    {},
-  );
   const wordsRequestIdRef = useRef(0);
 
   // Build date (YYYY-MM-DD) → word count map from time_series data
@@ -822,11 +820,8 @@ function LearningCalendar({
         d.length === 10 ? d : new Date(d).toISOString().split("T")[0];
       map[dateStr] = (map[dateStr] ?? 0) + words_learned[i];
     });
-    Object.entries(countOverrides).forEach(([dateStr, count]) => {
-      map[dateStr] = count;
-    });
     return map;
-  }, [charts, countOverrides]);
+  }, [charts]);
 
   // Build calendar cells for the currently displayed month
   const calendarCells = useMemo(() => {
@@ -849,6 +844,7 @@ function LearningCalendar({
     const requestId = ++wordsRequestIdRef.current;
     setSelectedDate(dateStr);
     setDateWords(null);
+    setWordsError(null);
 
     const count = dateCountMap[dateStr] ?? 0;
     if (count === 0) {
@@ -865,10 +861,6 @@ function LearningCalendar({
     const isMockChild = !childId || childId.length < 10;
     if (isMockChild) {
       setLoadingWords(false);
-      setCountOverrides((current) => ({
-        ...current,
-        [dateStr]: count,
-      }));
       setDateWords({
         date: dateStr,
         child_id: childId,
@@ -886,23 +878,11 @@ function LearningCalendar({
       const result = await getWordsByDate(childId, dateStr);
       if (requestId !== wordsRequestIdRef.current) return;
       const typedResult = result as WordsByDateResult;
-      setCountOverrides((current) => ({
-        ...current,
-        [dateStr]: typedResult.words_count,
-      }));
       setDateWords(typedResult);
     } catch {
       if (requestId !== wordsRequestIdRef.current) return;
-      setCountOverrides((current) => ({
-        ...current,
-        [dateStr]: 0,
-      }));
-      setDateWords({
-        date: dateStr,
-        child_id: childId,
-        words_count: 0,
-        words: [],
-      });
+      setWordsError("載入當天學習記錄失敗，請稍後再試。");
+      setDateWords(null);
     } finally {
       if (requestId === wordsRequestIdRef.current) {
         setLoadingWords(false);
@@ -917,6 +897,7 @@ function LearningCalendar({
     );
     setSelectedDate(null);
     setDateWords(null);
+    setWordsError(null);
     setLoadingWords(false);
   };
 
@@ -927,6 +908,7 @@ function LearningCalendar({
     );
     setSelectedDate(null);
     setDateWords(null);
+    setWordsError(null);
     setLoadingWords(false);
   };
 
@@ -939,6 +921,7 @@ function LearningCalendar({
       wordsRequestIdRef.current += 1;
       setSelectedDate(null);
       setDateWords(null);
+      setWordsError(null);
       setLoadingWords(false);
     }
   };
@@ -1082,7 +1065,9 @@ function LearningCalendar({
               <DialogDescription className="pr-2 text-left font-medium leading-6 text-slate-500">
                 {loadingWords
                   ? "正在載入當天的學習記錄。"
-                  : `${dateWords?.words_count ?? 0} 個詞彙學習記錄`}
+                  : wordsError
+                    ? wordsError
+                    : `${dateWords?.words_count ?? 0} 個詞彙學習記錄`}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -1093,6 +1078,10 @@ function LearningCalendar({
                 {[...Array(4)].map((_, i) => (
                   <Skeleton key={i} className="h-16 rounded-2xl" />
                 ))}
+              </div>
+            ) : wordsError ? (
+              <div className="py-10 text-center text-rose-500">
+                <p className="text-sm font-medium">{wordsError}</p>
               </div>
             ) : !dateWords || dateWords.words.length === 0 ? (
               <div className="py-10 text-center text-slate-400">

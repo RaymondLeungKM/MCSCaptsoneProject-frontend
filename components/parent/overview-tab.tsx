@@ -16,10 +16,17 @@ import {
   Shield,
   XCircle,
 } from "lucide-react";
-import type { ChildProfile, LearningInsight, ProgressStats } from "@/lib/types";
+import type {
+  ChildProfile,
+  LearningInsight,
+  ProgressStats,
+  WeeklyDeltaMetric,
+  WeeklyDeltaSummary,
+} from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/api/client";
 import {
   approveActiveVocabRequest,
@@ -32,6 +39,7 @@ interface OverviewTabProps {
   profile: ChildProfile;
   stats: ProgressStats;
   insights?: LearningInsight[];
+  weeklyDelta?: WeeklyDeltaSummary | null;
   onActiveVocabularyApproved?: () => void | Promise<void>;
 }
 
@@ -53,6 +61,20 @@ const insightPriorityOrder = {
   medium: 1,
   low: 2,
 } as const;
+
+function sortInsightsByPriority(insights: LearningInsight[]) {
+  return [...insights].sort((left, right) => {
+    const priorityDiff =
+      insightPriorityOrder[left.priority] -
+      insightPriorityOrder[right.priority];
+
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    return Date.parse(right.generated_at) - Date.parse(left.generated_at);
+  });
+}
 
 function getTranslatedCategory(category: string) {
   return categoryTranslations[category] || category;
@@ -122,6 +144,7 @@ export function OverviewTab({
   profile,
   stats,
   insights = [],
+  weeklyDelta = null,
   onActiveVocabularyApproved,
 }: OverviewTabProps) {
   const dailyProgress =
@@ -130,6 +153,17 @@ export function OverviewTab({
       : 0;
   const overallProgress =
     stats.totalWords > 0 ? (stats.masteredWords / stats.totalWords) * 100 : 0;
+  const averageExposureCount = stats.averageExposuresPerWord;
+  const averageExposureProgress = Math.min(
+    (averageExposureCount / 6) * 100,
+    100,
+  );
+  const averageExposureTitle =
+    averageExposureCount >= 6 ? "平均接觸已達穩定門檻" : "可再增加重複接觸";
+  const averageExposureDetail =
+    averageExposureCount >= 6
+      ? `平均每個詞已接觸 ${averageExposureCount.toFixed(1)} 次，可開始加入更多口說輸出任務。`
+      : `平均每個詞目前接觸 ${averageExposureCount.toFixed(1)} 次，建議集中重複少量重點詞，把平均拉近 6 次。`;
   const remaining = Math.max(0, profile.dailyGoal - profile.todayProgress);
   const days = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
   const weeklySeries = days.map((_, index) => stats.weeklyProgress[index] ?? 0);
@@ -170,30 +204,50 @@ export function OverviewTab({
     .slice(0, 3);
   const strongestCategory = categoryRanking[0];
   const focusCategory = categoryFocusList[0];
+  const sortedInsights = sortInsightsByPriority(insights);
+  const spotlightInsight = sortedInsights[0];
+  const supportingInsights = sortedInsights.slice(1, 3);
+  const weeklyChangeActions =
+    spotlightInsight && spotlightInsight.action_items.length > 0
+      ? spotlightInsight.action_items.slice(0, 2)
+      : [
+          focusCategory
+            ? `本週先複習「${getTranslatedCategory(focusCategory.category)}」，把較弱的主題拉回穩定。`
+            : `今天可安排在${timeOfDayLabel[profile.preferredTimeOfDay]}做一段 10 分鐘短練習。`,
+          averageExposureCount >= 6
+            ? `平均每個詞已接觸 ${averageExposureCount.toFixed(1)} 次，可加入更多口語輸出，讓孩子把已認得的詞彙說出來。`
+            : `平均每個詞目前接觸 ${averageExposureCount.toFixed(1)} 次，建議集中重複少量重點詞，把平均拉近 6 次。`,
+        ];
+  const weeklyChangeSummary = spotlightInsight
+    ? {
+        eyebrow: getInsightEyebrow(spotlightInsight),
+        title: spotlightInsight.title,
+        detail: spotlightInsight.description,
+      }
+    : {
+        eyebrow: "本週節奏",
+        title:
+          dailyProgress >= 100
+            ? "今日目標已完成，節奏保持穩定"
+            : focusCategory
+              ? `本週先補強「${getTranslatedCategory(focusCategory.category)}」`
+              : "學習節奏仍在建立中",
+        detail:
+          dailyProgress >= 100
+            ? `今天已完成 ${profile.todayProgress} / ${profile.dailyGoal} 個詞彙目標，可安排一次輕鬆複習鞏固記憶。`
+            : focusCategory
+              ? getCategorySuggestion(focusCategory.category)
+              : "完成幾次學習後，這裡會開始顯示本週最值得留意的變化。",
+      };
 
   const parentTips =
-    insights.length > 0
-      ? [...insights]
-          .sort((left, right) => {
-            const priorityDiff =
-              insightPriorityOrder[left.priority] -
-              insightPriorityOrder[right.priority];
-
-            if (priorityDiff !== 0) {
-              return priorityDiff;
-            }
-
-            return (
-              Date.parse(right.generated_at) - Date.parse(left.generated_at)
-            );
-          })
-          .slice(0, 3)
-          .map((insight) => ({
-            id: insight.id,
-            eyebrow: getInsightEyebrow(insight),
-            title: insight.title,
-            detail: insight.action_items[0] || insight.description,
-          }))
+    sortedInsights.length > 0
+      ? sortedInsights.slice(0, 3).map((insight) => ({
+          id: insight.id,
+          eyebrow: getInsightEyebrow(insight),
+          title: insight.title,
+          detail: insight.action_items[0] || insight.description,
+        }))
       : [
           {
             id: "goal",
@@ -207,14 +261,8 @@ export function OverviewTab({
           {
             id: "engagement",
             eyebrow: "參與模式",
-            title:
-              stats.multiSensoryEngagement >= 80
-                ? "多感官參與表現穩定"
-                : "可再增加多感官提示",
-            detail:
-              stats.multiSensoryEngagement >= 80
-                ? "可加入更多口說輸出任務，幫助孩子把已認得的詞彙說出來。"
-                : "建議多用動作、圖片或實物配對，提升多感官參與度。",
+            title: averageExposureTitle,
+            detail: averageExposureDetail,
           },
           {
             id: "focus",
@@ -318,8 +366,8 @@ export function OverviewTab({
               />
               <MiniMetric
                 icon={<Clock3 className="h-4 w-4 text-emerald-500" />}
-                label="平均輸入次數"
-                value={`${stats.averageExposuresPerWord.toFixed(1)} 次`}
+                label="平均接觸次數"
+                value={`${averageExposureCount.toFixed(1)} 次`}
               />
               <MiniMetric
                 icon={<Activity className="h-4 w-4 text-violet-500" />}
@@ -331,6 +379,51 @@ export function OverviewTab({
                 }
               />
             </div>
+            {weeklyDelta && (
+              <div className="rounded-3xl bg-linear-to-r from-sky-50 to-white p-4 ring-1 ring-slate-100">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
+                      相比上週
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      這一列由後端摘要直接提供，避免前端各自計算不同週期。
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      比較區間
+                    </p>
+                    <p className="text-sm font-black text-slate-700">
+                      本週 vs 上週
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <WeeklyDeltaPill
+                    label="新詞彙"
+                    metric={weeklyDelta.words_learned}
+                    unit="個"
+                  />
+                  <WeeklyDeltaPill
+                    label="學習時間"
+                    metric={weeklyDelta.learning_time}
+                    unit="分"
+                  />
+                  <WeeklyDeltaPill
+                    label="學習回合"
+                    metric={weeklyDelta.sessions}
+                    unit="次"
+                  />
+                  <WeeklyDeltaPill
+                    label="活躍日"
+                    metric={weeklyDelta.active_days}
+                    unit="天"
+                  />
+                </div>
+              </div>
+            )}
             <div className="rounded-[28px] bg-linear-to-b from-slate-50 to-white p-4 ring-1 ring-slate-100">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -386,32 +479,125 @@ export function OverviewTab({
           </CardContent>
         </Card>
 
-        <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              家長小提示
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {parentTips.map((tip, index) => (
-              <div
-                key={tip.id || index}
-                className="rounded-2xl bg-slate-50 px-4 py-3"
-              >
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-500">
-                  {tip.eyebrow}
+        <div className="space-y-6">
+          <Card className="overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-900 via-slate-800 to-sky-900 shadow-sm">
+            <CardHeader className="pb-4 text-white">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-sky-200">
+                <TrendingUp className="h-3.5 w-3.5" />
+                即時洞察
+              </div>
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-white">
+                <Sparkles className="h-5 w-5 text-amber-300" />
+                本週新變化
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-white">
+              <div className="rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-200">
+                  {weeklyChangeSummary.eyebrow}
                 </p>
-                <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
-                  {tip.title}
+                <p className="mt-2 text-xl font-black leading-8 text-white">
+                  {weeklyChangeSummary.title}
                 </p>
-                <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-                  {tip.detail}
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-300">
+                  {weeklyChangeSummary.detail}
                 </p>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MiniMetric
+                  icon={<Layers className="h-4 w-4 text-amber-300" />}
+                  label="本週焦點"
+                  value={
+                    focusCategory
+                      ? getTranslatedCategory(focusCategory.category)
+                      : "建立節奏"
+                  }
+                  className="bg-white/8 text-white ring-1 ring-white/10"
+                  labelClassName="text-slate-400"
+                  valueClassName="text-white"
+                />
+                <MiniMetric
+                  icon={<BookOpen className="h-4 w-4 text-sky-300" />}
+                  label="主動詞彙"
+                  value={`${stats.activeVocabulary} 個`}
+                  className="bg-white/8 text-white ring-1 ring-white/10"
+                  labelClassName="text-slate-400"
+                  valueClassName="text-white"
+                />
+                <MiniMetric
+                  icon={<Activity className="h-4 w-4 text-emerald-300" />}
+                  label="平均接觸"
+                  value={`${averageExposureCount.toFixed(1)} 次`}
+                  className="bg-white/8 text-white ring-1 ring-white/10"
+                  labelClassName="text-slate-400"
+                  valueClassName="text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {weeklyChangeActions.map((action) => (
+                  <div
+                    key={action}
+                    className="flex items-start gap-3 rounded-2xl bg-white/6 px-4 py-3"
+                  >
+                    <div className="mt-0.5 rounded-full bg-emerald-400/20 p-1 text-emerald-300">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                    <p className="text-sm font-medium leading-6 text-slate-200">
+                      {action}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {supportingInsights.length > 0 && (
+                <div className="space-y-2">
+                  {supportingInsights.map((insight) => (
+                    <div
+                      key={insight.id}
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                    >
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-300">
+                        {getInsightEyebrow(insight)}
+                      </p>
+                      <p className="mt-1 text-sm font-bold leading-6 text-white">
+                        {insight.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                家長小提示
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {parentTips.map((tip, index) => (
+                <div
+                  key={tip.id || index}
+                  className="rounded-2xl bg-slate-50 px-4 py-3"
+                >
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-500">
+                    {tip.eyebrow}
+                  </p>
+                  <p className="mt-1 text-sm font-bold leading-6 text-slate-700">
+                    {tip.title}
+                  </p>
+                  <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+                    {tip.detail}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <PendingActiveVocabularyCard
@@ -471,9 +657,9 @@ export function OverviewTab({
                 indicatorClassName="bg-violet-400"
               />
               <MetricRow
-                label="多感官參與度"
-                value={`${stats.multiSensoryEngagement}%`}
-                progress={stats.multiSensoryEngagement}
+                label="平均接觸次數"
+                value={`${averageExposureCount.toFixed(1)} 次`}
+                progress={averageExposureProgress}
                 indicatorClassName="bg-amber-400"
               />
             </div>
@@ -720,20 +906,35 @@ function MiniMetric({
   icon,
   label,
   value,
+  className,
+  labelClassName,
+  valueClassName,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  className?: string;
+  labelClassName?: string;
+  valueClassName?: string;
 }) {
   return (
-    <div className="rounded-3xl bg-slate-50 p-4">
+    <div className={cn("rounded-3xl bg-slate-50 p-4", className)}>
       <div className="mb-3 inline-flex rounded-2xl bg-white p-2 shadow-sm">
         {icon}
       </div>
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+      <p
+        className={cn(
+          "text-xs font-bold uppercase tracking-[0.18em] text-slate-400",
+          labelClassName,
+        )}
+      >
         {label}
       </p>
-      <p className="mt-1 text-lg font-black text-slate-800">{value}</p>
+      <p
+        className={cn("mt-1 text-lg font-black text-slate-800", valueClassName)}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -760,6 +961,54 @@ function MetricRow({
         className="h-2.5 rounded-full bg-slate-100"
         indicatorClassName={indicatorClassName}
       />
+    </div>
+  );
+}
+
+function WeeklyDeltaPill({
+  label,
+  metric,
+  unit,
+}: {
+  label: string;
+  metric: WeeklyDeltaMetric;
+  unit: string;
+}) {
+  const deltaToneClass =
+    metric.delta > 0
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+      : metric.delta < 0
+        ? "bg-rose-50 text-rose-600 ring-rose-100"
+        : "bg-slate-50 text-slate-600 ring-slate-100";
+  const deltaLabel =
+    metric.delta > 0
+      ? `+${metric.delta}${unit}`
+      : metric.delta < 0
+        ? `${metric.delta}${unit}`
+        : "持平";
+
+  return (
+    <div className="relative rounded-3xl bg-white px-4 pb-4 pt-5 shadow-sm ring-1 ring-slate-100">
+      <span
+        className={`absolute right-4 top-4 shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${deltaToneClass}`}
+      >
+        {deltaLabel}
+      </span>
+
+      <div className="min-h-10 pr-20">
+        <p className="text-sm font-bold leading-tight tracking-[0.04em] text-slate-400">
+          {label}
+        </p>
+      </div>
+
+      <p className="mt-3 text-lg font-black text-slate-800">
+        本週 {metric.current}
+        {unit}
+      </p>
+      <p className="mt-1 text-sm font-medium text-slate-500">
+        上週 {metric.previous}
+        {unit}
+      </p>
     </div>
   );
 }

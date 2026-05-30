@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  Award,
   Check,
   ChevronDown,
   ChevronUp,
+  Flame,
   Gamepad2,
+  Gift,
+  History,
   Lightbulb,
   MapPin,
+  Medal,
   MessageCircle,
   Moon,
   RefreshCw,
@@ -25,8 +30,9 @@ import { getAuthToken } from "@/lib/api/client";
 import {
   completeMission,
   getDailyMissions,
-  getMissionProgress,
+  getMissionSummary,
   getOfflineMissions,
+  type MissionSummaryResponse,
   toOfflineMission,
 } from "@/lib/api/missions";
 import { offlineMissions as mockOfflineMissions } from "@/lib/mock-data";
@@ -75,6 +81,52 @@ const mockDailyMissions: OfflineMission[] = [
   },
 ];
 
+const mockMissionSummary: MissionSummaryResponse = {
+  child_id: "mock-child-id",
+  local_today: "2026-05-30",
+  completed_today: 2,
+  completed_this_week: 4,
+  weekly_goal: 5,
+  streak_days: 3,
+  total_completed: 14,
+  family_points: 135,
+  level: 3,
+  level_title: "共學隊長",
+  next_level_points: 220,
+  points_to_next_level: 85,
+  next_reward_label: "再完成 1 個任務，即可達成本週共學目標。",
+  encouragement:
+    "已連續陪孩子完成 3 天任務，持續陪跑有助孩子把詞語自然帶進日常生活。",
+  recent_completions: [
+    {
+      mission_id: "offline-m2",
+      title: "超市對話練習",
+      context: "shopping",
+      is_offline: true,
+      surface: "parent",
+      assignment_date: "2026-05-29",
+      completed_at: "2026-05-29T11:30:00.000Z",
+      completion_notes: "孩子主動說出了兩個食物詞語。",
+      target_words: ["蘋果", "牛奶", "麵包"],
+      points_earned: 15,
+    },
+    {
+      mission_id: "daily-m1",
+      title: "今日說一說紅色",
+      context: "general",
+      is_offline: false,
+      surface: "both",
+      assignment_date: "2026-05-28",
+      completed_at: "2026-05-28T09:15:00.000Z",
+      completion_notes: null,
+      target_words: ["紅色", "蘋果", "氣球"],
+      points_earned: 10,
+    },
+  ],
+};
+
+const RECENT_HISTORY_PREVIEW_COUNT = 2;
+
 function updateMissionCompletion(
   missions: OfflineMission[],
   missionId: string,
@@ -89,6 +141,17 @@ function updateMissionCompletion(
         }
       : mission,
   );
+}
+
+function formatHistoryDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("zh-HK", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  }).format(date);
 }
 
 function getContextIcon(context: OfflineMission["context"]) {
@@ -145,6 +208,10 @@ function getContextColorClasses(context: OfflineMission["context"]) {
 export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
   const [dailyMissions, setDailyMissions] = useState<OfflineMission[]>([]);
   const [offlineMissions, setOfflineMissions] = useState<OfflineMission[]>([]);
+  const [missionSummary, setMissionSummary] =
+    useState<MissionSummaryResponse>(mockMissionSummary);
+  const [showAllRecentCompletions, setShowAllRecentCompletions] =
+    useState(false);
   const [selectedMissionKey, setSelectedMissionKey] = useState<string | null>(
     null,
   );
@@ -157,12 +224,15 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
     childId === "mock-child-id" ||
     childId.length < 10;
 
-  useEffect(() => {
-    async function loadMissions() {
+  const loadMissionDashboard = useCallback(
+    async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
       if (isMockData) {
         setDailyMissions(mockDailyMissions);
         setOfflineMissions(mockOfflineMissions);
-        setLoading(false);
+        setMissionSummary(mockMissionSummary);
+        if (showLoading) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -170,66 +240,69 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
       if (!token) {
         setDailyMissions(mockDailyMissions);
         setOfflineMissions(mockOfflineMissions);
-        setLoading(false);
+        setMissionSummary(mockMissionSummary);
+        if (showLoading) {
+          setLoading(false);
+        }
         return;
       }
 
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
 
       try {
         setError(null);
-        const [dailyResult, offlineResult, progressResult] =
+        const [dailyResult, offlineResult, summaryResult] =
           await Promise.allSettled([
             getDailyMissions(childId!),
             getOfflineMissions(childId!),
-            getMissionProgress(childId!),
+            getMissionSummary(childId!),
           ]);
-
-        const progressMap = new Map(
-          progressResult.status === "fulfilled"
-            ? progressResult.value.map((progress) => [
-                progress.mission_id,
-                progress,
-              ])
-            : [],
-        );
 
         const mappedDaily =
           dailyResult.status === "fulfilled"
-            ? dailyResult.value.map((mission) =>
-                toOfflineMission(mission, progressMap.get(mission.id)),
-              )
+            ? dailyResult.value.map((mission) => toOfflineMission(mission))
             : [];
 
         const mappedOffline =
           offlineResult.status === "fulfilled"
-            ? offlineResult.value.map((mission) =>
-                toOfflineMission(mission, progressMap.get(mission.id)),
-              )
+            ? offlineResult.value.map((mission) => toOfflineMission(mission))
             : [];
 
         setDailyMissions(mappedDaily);
         setOfflineMissions(mappedOffline);
+        setMissionSummary(
+          summaryResult.status === "fulfilled"
+            ? summaryResult.value
+            : mockMissionSummary,
+        );
 
         if (
           dailyResult.status === "rejected" ||
           offlineResult.status === "rejected" ||
-          progressResult.status === "rejected"
+          summaryResult.status === "rejected"
         ) {
-          setError("部分任務暫時未能載入，現正顯示可用內容。");
+          setError("部分任務或追蹤資料暫時未能載入，現正顯示可用內容。");
         }
       } catch (loadError) {
         console.error("[Parent Missions] Error:", loadError);
         setError("無法載入任務，顯示示例資料。");
         setDailyMissions(mockDailyMissions);
         setOfflineMissions(mockOfflineMissions);
+        setMissionSummary(mockMissionSummary);
       } finally {
-        setLoading(false);
+        if (showLoading) {
+          setLoading(false);
+        }
       }
-    }
+    },
+    [childId, isMockData],
+  );
 
-    void loadMissions();
-  }, [childId, isMockData]);
+  useEffect(() => {
+    void loadMissionDashboard();
+  }, [loadMissionDashboard]);
 
   async function toggleMissionComplete(missionId: string) {
     const target = [...dailyMissions, ...offlineMissions].find(
@@ -251,6 +324,7 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
     if (!isMockData && childId) {
       try {
         await completeMission(missionId, childId, newCompleted);
+        await loadMissionDashboard({ showLoading: false });
       } catch (completionError) {
         console.warn(
           "[Parent Missions] Could not sync completion:",
@@ -285,6 +359,19 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
   ).length;
   const progressPercentage =
     allMissions.length > 0 ? (completedCount / allMissions.length) * 100 : 0;
+  const weeklyProgressPercentage =
+    missionSummary.weekly_goal > 0
+      ? Math.min(
+          (missionSummary.completed_this_week / missionSummary.weekly_goal) *
+            100,
+          100,
+        )
+      : 0;
+  const canExpandRecentHistory =
+    missionSummary.recent_completions.length > RECENT_HISTORY_PREVIEW_COUNT;
+  const visibleRecentCompletions = showAllRecentCompletions
+    ? missionSummary.recent_completions
+    : missionSummary.recent_completions.slice(0, RECENT_HISTORY_PREVIEW_COUNT);
 
   if (loading) {
     return (
@@ -357,21 +444,27 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           {
-            icon: "🎯",
-            title: "每日任務",
-            desc: "適合在畫面內完成的小任務。",
+            icon: <Medal className="w-5 h-5 text-amber-500" />,
+            title: "家庭星星",
+            value: `${missionSummary.family_points}`,
+            desc: "每日任務 +10，生活實戰 +15",
             color: "bg-amber-50 text-amber-700 border-amber-100",
           },
           {
-            icon: "🏡",
-            title: "生活實戰",
-            desc: "把詞彙帶進用餐、睡前與外出情境。",
+            icon: <Flame className="w-5 h-5 text-rose-500" />,
+            title: "連續陪跑",
+            value: `${missionSummary.streak_days} 天`,
+            desc:
+              missionSummary.streak_days > 0
+                ? "每天完成至少一個任務就能延續節奏。"
+                : "今天完成第一個任務即可建立新節奏。",
             color: "bg-emerald-50 text-emerald-700 border-emerald-100",
           },
           {
-            icon: "🤝",
-            title: "兩個介面同步",
-            desc: "兩個介面任務會同時在家長與小朋友介面出現。",
+            icon: <Gift className="w-5 h-5 text-violet-500" />,
+            title: "本週目標",
+            value: `${missionSummary.completed_this_week}/${missionSummary.weekly_goal}`,
+            desc: missionSummary.next_reward_label,
             color: "bg-violet-50 text-violet-700 border-violet-100",
           },
         ].map((item, index) => (
@@ -384,9 +477,166 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
           >
             <span className="text-3xl mb-2">{item.icon}</span>
             <h4 className="font-bold text-sm">{item.title}</h4>
-            <span className="text-xs opacity-80">{item.desc}</span>
+            <span className="text-2xl font-black mt-1">{item.value}</span>
+            <span className="text-xs opacity-80 mt-1">{item.desc}</span>
           </div>
         ))}
+      </div>
+
+      <Card className="border-none shadow-lg bg-linear-to-br from-orange-50 via-white to-yellow-50 rounded-3xl overflow-hidden">
+        <CardContent className="p-6 md:p-7">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 items-start">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-sm">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800">
+                    家庭共學獎勵
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium">
+                    讓家長看得到努力，也讓孩子感受到陪伴的累積成果。
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-orange-100 bg-white/80 p-4 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold border border-orange-200">
+                    等級 {missionSummary.level}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+                    {missionSummary.level_title}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-700 font-medium">
+                  {missionSummary.encouragement}
+                </p>
+                <p className="text-sm text-orange-700 font-bold">
+                  {missionSummary.points_to_next_level > 0
+                    ? `再累積 ${missionSummary.points_to_next_level} 顆家庭星星，就能升到下一級。`
+                    : "已達目前最高等級，繼續完成任務可保持家庭共學節奏。"}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-amber-100 bg-white/80 p-5 shadow-sm space-y-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-500">
+                  本週進度
+                </p>
+                <p className="text-2xl font-black text-slate-800 mt-1">
+                  {missionSummary.completed_this_week} /{" "}
+                  {missionSummary.weekly_goal}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold text-slate-500">
+                  <span>本週共學目標</span>
+                  <span>{Math.round(weeklyProgressPercentage)}%</span>
+                </div>
+                <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-400 transition-all duration-700"
+                    style={{ width: `${weeklyProgressPercentage}%` }}
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-slate-600 font-medium">
+                {missionSummary.next_reward_label}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        <div className="px-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+              <History className="w-5 h-5 text-amber-500" />
+              最近完成紀錄
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 font-medium">
+              家長可回顧最近陪孩子完成的任務，追蹤共學節奏和累積的家庭星星。
+            </p>
+          </div>
+
+          {canExpandRecentHistory && (
+            <button
+              type="button"
+              onClick={() => setShowAllRecentCompletions((current) => !current)}
+              className="self-start sm:self-auto px-4 py-2 rounded-full border border-amber-200 bg-white text-sm font-bold text-amber-700 hover:bg-amber-50 transition-colors"
+            >
+              {showAllRecentCompletions
+                ? "收起較早紀錄"
+                : `查看另外 ${missionSummary.recent_completions.length - RECENT_HISTORY_PREVIEW_COUNT} 筆紀錄`}
+            </button>
+          )}
+        </div>
+
+        {missionSummary.recent_completions.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-white/80 px-5 py-6 text-center text-sm font-medium text-slate-500">
+            完成第一個任務後，這裡會記錄最近的共學成果。
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {visibleRecentCompletions.map((item) => (
+              <div
+                key={`${item.mission_id}:${item.assignment_date}`}
+                className="rounded-3xl border border-slate-200 bg-white/85 p-5 shadow-sm space-y-3"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span
+                        className={cn(
+                          "text-xs font-bold tracking-wider px-2 py-0.5 rounded-full border",
+                          getContextColorClasses(item.context),
+                        )}
+                      >
+                        {getContextLabel(item.context)}
+                      </span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                        {item.is_offline ? "生活實戰任務" : "每日互動任務"}
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-800">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium mt-1">
+                      {formatHistoryDate(item.completed_at)} 完成
+                    </p>
+                  </div>
+                  <div className="shrink-0 px-3 py-2 rounded-2xl bg-amber-50 text-amber-700 border border-amber-100 text-center">
+                    <p className="text-xs font-bold uppercase tracking-wider">
+                      星星
+                    </p>
+                    <p className="text-xl font-black">+{item.points_earned}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {item.target_words.map((word, index) => (
+                    <span
+                      key={`${item.mission_id}:${item.assignment_date}:${word}:${index}`}
+                      className="px-3 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold rounded-full"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+
+                {item.completion_notes && (
+                  <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-sm text-emerald-800 font-medium">
+                    {item.completion_notes}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {sections.map((section) => (

@@ -95,6 +95,37 @@ export interface MissionProgressResponse {
   parent_notes: string | null;
 }
 
+export interface MissionCompletionHistoryResponse {
+  mission_id: string;
+  title: string;
+  context: MissionContext;
+  is_offline: boolean;
+  surface: MissionSurface;
+  assignment_date: string;
+  completed_at: string;
+  completion_notes: string | null;
+  target_words: string[];
+  points_earned: number;
+}
+
+export interface MissionSummaryResponse {
+  child_id: string;
+  local_today: string;
+  completed_today: number;
+  completed_this_week: number;
+  weekly_goal: number;
+  streak_days: number;
+  total_completed: number;
+  family_points: number;
+  level: number;
+  level_title: string;
+  next_level_points: number;
+  points_to_next_level: number;
+  next_reward_label: string;
+  encouragement: string;
+  recent_completions: MissionCompletionHistoryResponse[];
+}
+
 // ─── Public helper ───────────────────────────────────────────────────────────
 
 /**
@@ -104,6 +135,13 @@ export function toOfflineMission(
   m: MissionResponse,
   progress?: MissionProgressResponse,
 ): OfflineMission {
+  const assignmentCompleted = m.assignment
+    ? m.assignment.status === "completed"
+    : undefined;
+  const completed = assignmentCompleted ?? progress?.completed ?? false;
+  const completedDate = m.assignment?.completed_at ?? progress?.completed_date;
+  const parentNotes = m.assignment?.completion_notes ?? progress?.parent_notes;
+
   return {
     id: m.id,
     title: m.title,
@@ -111,11 +149,9 @@ export function toOfflineMission(
     targetWords: m.target_words,
     context: m.context,
     conversationPrompts: m.conversation_prompts,
-    completed: progress?.completed ?? false,
-    completedDate: progress?.completed_date
-      ? new Date(progress.completed_date)
-      : undefined,
-    parentNotes: progress?.parent_notes ?? undefined,
+    completed,
+    completedDate: completedDate ? new Date(completedDate) : undefined,
+    parentNotes: parentNotes ?? undefined,
   };
 }
 
@@ -140,12 +176,12 @@ export async function getDailyMissions(
 }
 
 /**
- * Get completion progress for all missions for a child.
+ * Get mission tracking summary, incentives, and recent completions for a child.
  */
-export async function getMissionProgress(
+export async function getMissionSummary(
   childId: string,
-): Promise<MissionProgressResponse[]> {
-  return apiRequest<MissionProgressResponse[]>(`/missions/${childId}/progress`);
+): Promise<MissionSummaryResponse> {
+  return apiRequest<MissionSummaryResponse>(`/missions/${childId}/summary`);
 }
 
 /**

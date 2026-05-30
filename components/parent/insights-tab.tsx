@@ -10,29 +10,19 @@ import {
   Heart,
   Clock,
   Zap,
-  BookOpen,
   Sparkles,
   ArrowRight,
-  Info,
   RefreshCw,
-  Star, // <--- Added missing import
-  CheckCircle2, // Used for the check icons
+  Star,
+  CheckCircle2,
 } from "lucide-react";
-import type {
-  ChildProfile,
-  Word,
-  LearningSession,
-  ProgressStats,
-} from "@/lib/types";
+import type { ChildProfile, Word, ProgressStats } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  generateParentInsights,
-  getAdaptiveLearningRecommendation,
-} from "@/lib/adaptive-learning";
+import { getAdaptiveLearningRecommendation } from "@/lib/adaptive-learning";
 import {
   getRecommendations,
   type AdaptiveLearningRecommendation as ApiAdaptiveLearningRecommendation,
@@ -43,7 +33,7 @@ import {
 } from "@/lib/mock-data";
 import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { getAuthToken } from "@/lib/api/client";
-import { getDailyStats } from "@/lib/api/progress";
+import { getDailyStats, type DailyStatsResponse } from "@/lib/api/progress";
 import { getChild } from "@/lib/api/children";
 
 interface InsightsTabProps {
@@ -60,7 +50,39 @@ interface InsightsRecommendation {
   suggestedActivities?: string[];
 }
 
-const PLACEHOLDER_FOCUS_WORDS = ["太陽", "蝴蝶", "薄餅", "牛奶", "筆記簿"];
+interface FocusWordDetail {
+  id: string;
+  label: string;
+  categoryLabel: string;
+  exposureCount: number;
+  daysSincePractice: number | null;
+  pendingApproval: boolean;
+}
+
+interface DailyWindowStat {
+  date: string;
+  label: string;
+  totalMinutes: number;
+  wordsEncountered: number;
+  goalAchieved: boolean;
+  averageEngagement: number;
+  sessionCount: number;
+}
+
+const DYNAMIC_PARENT_REMINDERS = [
+  {
+    title: "輪流對話",
+    description: "請孩子回應、補充或指認，不要只停留在大人單向講解。",
+  },
+  {
+    title: "同一詞換情境",
+    description: "在吃飯、收拾和遊戲中重用同一個詞，記憶會更穩定。",
+  },
+  {
+    title: "看圖加動作",
+    description: "圖片、聲音和手勢放在同一輪，最容易把辨認推向主動輸出。",
+  },
+] as const;
 
 const ACTIVITY_LABELS = {
   story: "故事時間",
@@ -113,6 +135,115 @@ const ACTIVITY_ALIASES: Record<string, SupportedActivity> = {
   綜合練習: "mixed",
 };
 
+function toLocalDateKey(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function shiftDateByDays(value: Date, days: number): Date {
+  const next = new Date(value);
+  next.setHours(0, 0, 0, 0);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDayLabel(value: Date): string {
+  return new Intl.DateTimeFormat("zh-HK", { weekday: "narrow" }).format(value);
+}
+
+function formatRefreshTime(value: Date | null): string {
+  if (!value) {
+    return "等待首次更新";
+  }
+
+  return value.toLocaleTimeString("zh-HK", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function getWordDisplayLabel(word: Word): string {
+  return word.word_cantonese?.trim() || word.word.trim();
+}
+
+function getCategoryDisplayLabel(word: Word): string {
+  return (
+    word.category_name_cantonese?.trim() ||
+    word.categoryName?.trim() ||
+    word.category
+  );
+}
+
+function getDaysSincePractice(lastPracticed?: Date): number {
+  if (!lastPracticed) {
+    return 999;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const baseline = new Date(lastPracticed);
+  baseline.setHours(0, 0, 0, 0);
+
+  return Math.max(
+    Math.floor((today.getTime() - baseline.getTime()) / (1000 * 60 * 60 * 24)),
+    0,
+  );
+}
+
+function buildMockDailyStats(): DailyStatsResponse[] {
+  const minutes = [0, 8, 12, 6, 0, 16, 11, 9, 14, 18, 7, 17, 13, 20];
+  const words = [0, 2, 3, 1, 0, 4, 2, 2, 3, 4, 1, 4, 3, 5];
+  const goals = [
+    false,
+    false,
+    true,
+    false,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+  ];
+  const engagements = [
+    0, 0.48, 0.56, 0.43, 0, 0.72, 0.68, 0.55, 0.63, 0.79, 0.44, 0.74, 0.69,
+    0.82,
+  ];
+
+  return minutes.map((totalMinutes, index) => {
+    const date = shiftDateByDays(new Date(), index - (minutes.length - 1));
+    const wordsEncountered = words[index] ?? 0;
+
+    return {
+      date: toLocalDateKey(date),
+      total_minutes: totalMinutes,
+      words_encountered: wordsEncountered,
+      words_mastered:
+        totalMinutes > 0 ? Math.max(0, Math.floor(wordsEncountered / 2)) : 0,
+      activities_completed:
+        totalMinutes > 0 ? Math.max(1, Math.ceil(totalMinutes / 8)) : 0,
+      xp_earned: wordsEncountered * 10,
+      session_count: totalMinutes > 0 ? (totalMinutes >= 15 ? 2 : 1) : 0,
+      average_engagement: engagements[index] ?? 0,
+      daily_goal_progress:
+        totalMinutes > 0
+          ? Math.min(Math.round((wordsEncountered / 5) * 100), 100)
+          : 0,
+      goal_achieved: goals[index] ?? false,
+    };
+  });
+}
+
+const MOCK_DAILY_STATS = buildMockDailyStats();
+
 function normalizeSupportedActivity(
   activity?: string | null,
 ): SupportedActivity {
@@ -131,19 +262,6 @@ function normalizeSuggestedActivities(
     new Set(activities.map((activity) => normalizeSupportedActivity(activity))),
   );
 }
-
-const MOCK_RECENT_SESSIONS: LearningSession[] = [
-  {
-    id: "mock-1",
-    childId: mockChildProfile.id,
-    date: new Date(),
-    duration: 15,
-    wordsEncountered: ["elephant", "giraffe", "apple", "butterfly"],
-    wordsUsedActively: ["elephant", "apple"],
-    engagementLevel: "high",
-    activitiesCompleted: ["story", "charades"],
-  },
-];
 
 function createEmptyProfile(childId?: string): ChildProfile {
   return {
@@ -165,6 +283,69 @@ function createEmptyProfile(childId?: string): ChildProfile {
   };
 }
 
+function buildFallbackFocusWords(
+  allWords: Word[],
+  limit: number = 5,
+): string[] {
+  const prioritizedWords = [...allWords]
+    .filter(
+      (word) =>
+        word.pendingActiveVocabApproval ||
+        (!word.mastered && word.exposureCount > 0) ||
+        word.exposureCount === 0,
+    )
+    .sort((left, right) => {
+      const pendingDelta =
+        Number(Boolean(right.pendingActiveVocabApproval)) -
+        Number(Boolean(left.pendingActiveVocabApproval));
+      if (pendingDelta !== 0) {
+        return pendingDelta;
+      }
+
+      if (left.exposureCount !== right.exposureCount) {
+        return left.exposureCount - right.exposureCount;
+      }
+
+      return (
+        getDaysSincePractice(right.lastPracticed) -
+        getDaysSincePractice(left.lastPracticed)
+      );
+    });
+
+  return Array.from(
+    new Set(
+      prioritizedWords
+        .map((word) => getWordDisplayLabel(word))
+        .filter((label) => Boolean(label.trim())),
+    ),
+  ).slice(0, limit);
+}
+
+function buildDailyStatsWindow(
+  allStats: DailyStatsResponse[],
+  days: number,
+  offsetDays: number = 0,
+): DailyWindowStat[] {
+  const statsByDate = new Map(allStats.map((stat) => [stat.date, stat]));
+
+  return Array.from({ length: days }, (_, index) => {
+    const daysFromToday = offsetDays + (days - 1 - index);
+    const date = shiftDateByDays(new Date(), -daysFromToday);
+    const dateKey = toLocalDateKey(date);
+    const stat = statsByDate.get(dateKey);
+
+    return {
+      date: dateKey,
+      label: formatDayLabel(date),
+      totalMinutes: stat?.total_minutes ?? 0,
+      wordsEncountered: stat?.words_encountered ?? 0,
+      goalAchieved: stat?.goal_achieved ?? false,
+      averageEngagement: stat?.average_engagement ?? 0,
+      sessionCount: stat?.session_count ?? 0,
+    };
+  });
+}
+
 function buildLocalRecommendation(
   allWords: Word[],
   profile: ChildProfile,
@@ -180,9 +361,9 @@ function buildLocalRecommendation(
   );
 
   return {
-    // Temporarily bypass DB-backed focus-word selection until the word records are cleaned up.
-    // nextWords: getCantoneseFocusWords(recommendation.nextWords),
-    focusWords: PLACEHOLDER_FOCUS_WORDS,
+    focusWords: recommendation.nextWords
+      .map((word) => getWordDisplayLabel(word))
+      .filter((label) => Boolean(label.trim())),
     recommendedActivity: normalizeSupportedActivity(
       recommendation.recommendedActivity,
     ),
@@ -203,13 +384,11 @@ function buildApiRecommendation(
   }
 
   return {
-    // Temporarily bypass DB-backed focus-word selection until the word records are cleaned up.
-    // focusWords: apiRecommendation.next_words
-    //   .map((wordId) => allWords.find((word) => word.id === wordId))
-    //   .filter((word): word is Word => Boolean(word))
-    //   .map((word) => word.word_cantonese)
-    //   .filter((word): word is string => Boolean(word?.trim())),
-    focusWords: PLACEHOLDER_FOCUS_WORDS,
+    focusWords: apiRecommendation.next_words
+      .map((wordId) => allWords.find((word) => word.id === wordId))
+      .filter((word): word is Word => Boolean(word))
+      .map((word) => getWordDisplayLabel(word))
+      .filter((label) => Boolean(label.trim())),
     recommendedActivity: normalizeSupportedActivity(
       apiRecommendation.recommended_activity,
     ),
@@ -240,13 +419,16 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
   const [words, setWords] = useState<Word[]>(() =>
     isMockData ? mockWords : [],
   );
-  const [recentSessions, setRecentSessions] = useState<LearningSession[]>(() =>
-    isMockData ? MOCK_RECENT_SESSIONS : [],
+  const [dailyStats, setDailyStats] = useState<DailyStatsResponse[]>(() =>
+    isMockData ? MOCK_DAILY_STATS : [],
   );
   const [recommendation, setRecommendation] =
     useState<InsightsRecommendation | null>(() =>
       isMockData ? buildLocalRecommendation(mockWords, mockChildProfile) : null,
     );
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(() =>
+    isMockData ? new Date() : null,
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -257,10 +439,11 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
       if (isMockData) {
         setProfile(mockChildProfile);
         setWords(mockWords);
-        setRecentSessions(MOCK_RECENT_SESSIONS);
+        setDailyStats(MOCK_DAILY_STATS);
         setRecommendation(
           buildLocalRecommendation(mockWords, mockChildProfile),
         );
+        setLastUpdatedAt(new Date());
         setLoading(false);
         setRefreshing(false);
         return;
@@ -274,7 +457,7 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
         setLoading(true);
         setProfile(fallbackProfile);
         setWords([]);
-        setRecentSessions([]);
+        setDailyStats([]);
         setRecommendation(null);
       }
 
@@ -282,16 +465,17 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
         const token = getAuthToken();
         if (!token) {
           console.log("No auth token, using mock data");
+          setDailyStats([]);
           setRecommendation(null);
+          setLastUpdatedAt(new Date());
           return;
         }
 
-        // Fetch child profile, words, daily stats, and adaptive recommendation in parallel
         const [childResult, wordsResult, statsResult, recommendationResult] =
           await Promise.allSettled([
             getChild(childId!),
             getWordsWithProgress(childId!),
-            getDailyStats(childId!, 7),
+            getDailyStats(childId!, 14),
             getRecommendations(childId!),
           ]);
 
@@ -329,35 +513,8 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
           console.log(`[Insights] Loaded ${resolvedWords.length} words`);
         }
 
-        // Build approximate LearningSession objects from daily stats
-        if (
-          statsResult.status === "fulfilled" &&
-          statsResult.value.length > 0
-        ) {
-          const sessions: LearningSession[] = statsResult.value.map(
-            (s: any) => ({
-              id: `session-${s.date}`,
-              childId: childId!,
-              date: new Date(s.date),
-              duration: s.total_minutes || 0,
-              // daily stats only give counts, not word IDs – use empty array
-              wordsEncountered: Array(s.words_encountered || 0).fill(""),
-              wordsUsedActively: [],
-              engagementLevel:
-                s.average_engagement >= 0.7
-                  ? "high"
-                  : s.average_engagement >= 0.4
-                    ? "medium"
-                    : "low",
-              activitiesCompleted: Array(s.activities_completed || 0).fill(
-                "game",
-              ),
-            }),
-          );
-          setRecentSessions(sessions);
-          console.log(
-            `[Insights] Built ${sessions.length} sessions from stats`,
-          );
+        if (statsResult.status === "fulfilled") {
+          setDailyStats(statsResult.value);
         }
 
         let resolvedRecommendation =
@@ -380,7 +537,18 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
           );
         }
 
+        if (
+          resolvedRecommendation &&
+          resolvedRecommendation.focusWords.length === 0
+        ) {
+          resolvedRecommendation = {
+            ...resolvedRecommendation,
+            focusWords: buildFallbackFocusWords(resolvedWords),
+          };
+        }
+
         setRecommendation(resolvedRecommendation);
+        setLastUpdatedAt(new Date());
       } catch (error) {
         console.error("Failed to load data for insights:", error);
       } finally {
@@ -414,25 +582,164 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     };
   }, [isMockData, loadRealData]);
 
-  const insights =
-    words.length > 0
-      ? generateParentInsights(profile, words, recentSessions)
-      : [
-          `${profile.name} 暫時還未有足夠的學習數據，完成更多練習後會顯示更準確的個人化建議。`,
-        ];
-
-  // Calculate stats
   const activeVocab =
     stats?.activeVocabulary ?? words.filter((w) => w.mastered).length;
   const passiveVocab =
     stats?.passiveVocabulary ??
     words.filter((w) => !w.mastered && w.exposureCount > 0).length;
-  const needingExposure = words.filter((w) => w.exposureCount < 6).length;
-  const wellLearned = words.filter((w) => w.exposureCount >= 6).length;
+  const exposureBacklogWords = words.filter(
+    (word) =>
+      !word.mastered && word.exposureCount > 0 && word.exposureCount < 6,
+  );
+  const pendingApprovalWords = words.filter(
+    (word) => word.pendingActiveVocabApproval,
+  );
+  const wellLearned = words.filter((word) => word.exposureCount >= 6).length;
   const masteredProgress =
     words.length > 0 ? (wellLearned / words.length) * 100 : 0;
+  const averageExposures =
+    stats?.averageExposuresPerWord ??
+    (words.length > 0
+      ? words.reduce((sum, word) => sum + word.exposureCount, 0) / words.length
+      : 0);
+  const trackedVocabulary = activeVocab + passiveVocab;
+  const activeShare =
+    trackedVocabulary > 0
+      ? Math.round((activeVocab / trackedVocabulary) * 100)
+      : 0;
+  const averageExposureDescription =
+    averageExposures >= 6
+      ? "平均接觸次數已達穩定記憶門檻，可逐步加強短句和主動命名。"
+      : averageExposures >= 3
+        ? "多數詞語已進入記憶建立期，繼續把重點詞帶進日常對話和複習。"
+        : "目前仍在累積早期接觸，建議集中重複少量重點詞，把平均次數慢慢拉高。";
 
-  // Translation Helper for Learning Styles
+  const weeklyWindow = buildDailyStatsWindow(dailyStats, 7);
+  const previousWindow = buildDailyStatsWindow(dailyStats, 7, 7);
+  const totalMinutesThisWeek = weeklyWindow.reduce(
+    (sum, day) => sum + day.totalMinutes,
+    0,
+  );
+  const totalWordsThisWeek = weeklyWindow.reduce(
+    (sum, day) => sum + day.wordsEncountered,
+    0,
+  );
+  const totalSessionsThisWeek = weeklyWindow.reduce(
+    (sum, day) => sum + day.sessionCount,
+    0,
+  );
+  const activeDaysThisWeek = weeklyWindow.filter(
+    (day) => day.totalMinutes > 0 || day.wordsEncountered > 0,
+  ).length;
+  const goalHitDaysThisWeek = weeklyWindow.filter(
+    (day) => day.goalAchieved,
+  ).length;
+  const previousMinutes = previousWindow.reduce(
+    (sum, day) => sum + day.totalMinutes,
+    0,
+  );
+  const previousWords = previousWindow.reduce(
+    (sum, day) => sum + day.wordsEncountered,
+    0,
+  );
+  const minuteDelta = totalMinutesThisWeek - previousMinutes;
+  const wordDelta = totalWordsThisWeek - previousWords;
+  const activeWeekStats = weeklyWindow.filter(
+    (day) => day.totalMinutes > 0 || day.wordsEncountered > 0,
+  );
+  const averageEngagement =
+    activeWeekStats.length > 0
+      ? activeWeekStats.reduce((sum, day) => sum + day.averageEngagement, 0) /
+        activeWeekStats.length
+      : 0;
+  const engagementPercent = Math.round(averageEngagement * 100);
+  const maxDailyMinutes = Math.max(
+    ...weeklyWindow.map((day) => day.totalMinutes),
+    10,
+  );
+
+  const resolveCategoryLabel = (category: string) => {
+    const match = words.find(
+      (word) =>
+        word.category === category ||
+        word.categoryName === category ||
+        word.category_name_cantonese === category,
+    );
+
+    return match?.category_name_cantonese || match?.categoryName || category;
+  };
+
+  const weakestCategory =
+    [...(stats?.categoryProgress ?? [])]
+      .filter(
+        (category) =>
+          category.total === undefined ||
+          category.mastered === undefined ||
+          category.total > category.mastered,
+      )
+      .sort((left, right) => left.progress - right.progress)[0] ?? null;
+  const weakestCategoryLabel = weakestCategory
+    ? resolveCategoryLabel(weakestCategory.category)
+    : null;
+  const weakestCategoryRemaining =
+    weakestCategory?.total !== undefined &&
+    weakestCategory.mastered !== undefined
+      ? Math.max(weakestCategory.total - weakestCategory.mastered, 0)
+      : null;
+
+  const focusWordDetails: FocusWordDetail[] = [...words]
+    .filter((word) => word.pendingActiveVocabApproval || !word.mastered)
+    .sort((left, right) => {
+      const pendingDelta =
+        Number(Boolean(right.pendingActiveVocabApproval)) -
+        Number(Boolean(left.pendingActiveVocabApproval));
+      if (pendingDelta !== 0) {
+        return pendingDelta;
+      }
+
+      if (left.exposureCount !== right.exposureCount) {
+        return left.exposureCount - right.exposureCount;
+      }
+
+      return (
+        getDaysSincePractice(right.lastPracticed) -
+        getDaysSincePractice(left.lastPracticed)
+      );
+    })
+    .slice(0, 4)
+    .map((word) => ({
+      id: word.id,
+      label: getWordDisplayLabel(word),
+      categoryLabel: getCategoryDisplayLabel(word),
+      exposureCount: word.exposureCount,
+      daysSincePractice:
+        word.lastPracticed !== undefined
+          ? getDaysSincePractice(word.lastPracticed)
+          : null,
+      pendingApproval: Boolean(word.pendingActiveVocabApproval),
+    }));
+
+  const focusWordLabels =
+    recommendation?.focusWords.length && recommendation.focusWords.length > 0
+      ? recommendation.focusWords
+      : buildFallbackFocusWords(words);
+
+  let momentumTitle = "等待新數據";
+  let momentumDescription = `${profile.name} 這一週還未累積足夠練習，完成一次短練習後這裡就會開始變化。`;
+
+  if (totalMinutesThisWeek > 0 || totalWordsThisWeek > 0) {
+    if (minuteDelta > 10 || wordDelta > 2) {
+      momentumTitle = "節奏正在升溫";
+      momentumDescription = `相較上週多了 ${Math.max(minuteDelta, 0)} 分鐘與 ${Math.max(wordDelta, 0)} 個接觸詞彙，近期動能明顯回升。`;
+    } else if (minuteDelta < -10 && wordDelta <= 0) {
+      momentumTitle = "需要重新拉回節奏";
+      momentumDescription = `這週比上週少了 ${Math.abs(minuteDelta)} 分鐘，建議先用短時段把練習頻率拉回來。`;
+    } else {
+      momentumTitle = "節奏大致穩定";
+      momentumDescription = `${profile.name} 這週維持了 ${activeDaysThisWeek} 天活躍，適合在現有節奏上把辨認再推向主動說出。`;
+    }
+  }
+
   const getStyleLabel = (style: string) => {
     switch (style) {
       case "kinesthetic":
@@ -463,6 +770,19 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     }
   };
 
+  const getTimeLabel = (time: string) => {
+    switch (time) {
+      case "morning":
+        return "早上";
+      case "afternoon":
+        return "下午";
+      case "evening":
+        return "晚上";
+      default:
+        return time;
+    }
+  };
+
   const getRecommendedActivities = (style: string) => {
     switch (style) {
       case "kinesthetic":
@@ -476,7 +796,6 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     }
   };
 
-  // Translation Helper for Activities
   const getActivityLabel = (activity: string) => {
     return ACTIVITY_LABELS[normalizeSupportedActivity(activity)];
   };
@@ -502,6 +821,91 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
     );
   };
 
+  const parentActionPlan = (() => {
+    const actions: string[] = [];
+
+    if (goalHitDaysThisWeek <= 2) {
+      actions.push(
+        `把練習固定在${getTimeLabel(profile.preferredTimeOfDay)}，先做 ${Math.min(Math.max(profile.attentionSpan, 5), 10)} 分鐘短練習，先求穩定再加量。`,
+      );
+    }
+
+    if (
+      weakestCategoryLabel &&
+      weakestCategory &&
+      weakestCategory.progress < 60
+    ) {
+      actions.push(
+        `本週優先補「${weakestCategoryLabel}」，先從還未穩定的 ${weakestCategoryRemaining ?? 0} 個詞中挑 2 個帶入日常情境。`,
+      );
+    }
+
+    if (pendingApprovalWords.length > 0) {
+      actions.push(
+        `有 ${pendingApprovalWords.length} 個詞等待家長確認主動使用，今晚可請孩子用完整短句說一次再確認。`,
+      );
+    }
+
+    if (actions.length < 3 && exposureBacklogWords.length > 0) {
+      actions.push(
+        `${exposureBacklogWords.length} 個詞仍未達 6 次接觸，優先重複 ${focusWordLabels.slice(0, 2).join("、") || "本週重點詞"}，每個詞做看圖、跟讀和動作各一次。`,
+      );
+    }
+
+    if (actions.length < 3 && averageExposures < 4) {
+      actions.push(
+        `平均每個詞目前只接觸 ${averageExposures.toFixed(1)} 次，先集中重複 ${focusWordLabels.slice(0, 2).join("、") || "本週重點詞"}，把接觸次數慢慢拉近 6 次。`,
+      );
+    }
+
+    if (actions.length < 3 && passiveVocab > activeVocab) {
+      actions.push(
+        `目前辨認詞彙比主動說出的詞多 ${passiveVocab - activeVocab} 個，可多問「這是什麼？」和「你看到什麼？」。`,
+      );
+    }
+
+    if (actions.length === 0) {
+      actions.push(
+        "本週節奏穩定，接下來可把已熟悉詞彙放入故事或角色扮演，從辨認推向主動輸出。",
+      );
+    }
+
+    return actions.slice(0, 3);
+  })();
+
+  const liveSignals = [
+    {
+      title: "最需加強主題",
+      value: weakestCategoryLabel || "等待更多數據",
+      description: weakestCategory
+        ? `掌握度 ${weakestCategory.progress}%${weakestCategoryRemaining !== null ? `，仍有 ${weakestCategoryRemaining} 個詞待穩定` : ""}`
+        : "再多幾次練習後，這裡會自動指出目前最弱的一塊。",
+      className: "from-amber-50 to-orange-50 border-amber-100 text-amber-900",
+    },
+    {
+      title: "待鞏固詞彙",
+      value: `${exposureBacklogWords.length} 個`,
+      description:
+        focusWordLabels.length > 0
+          ? `優先重複 ${focusWordLabels.slice(0, 2).join("、")}`
+          : "完成更多詞彙練習後會自動整理出待鞏固清單。",
+      className: "from-sky-50 to-cyan-50 border-sky-100 text-sky-900",
+    },
+    {
+      title: "家長待跟進",
+      value:
+        pendingApprovalWords.length > 0
+          ? `${pendingApprovalWords.length} 個待確認`
+          : `${goalHitDaysThisWeek} / 7 天達標`,
+      description:
+        pendingApprovalWords.length > 0
+          ? "這些詞最接近由辨認轉為主動使用。"
+          : `最近一週有 ${activeDaysThisWeek} 天出現學習活動。`,
+      className:
+        "from-emerald-50 to-teal-50 border-emerald-100 text-emerald-900",
+    },
+  ];
+
   const learningStyleDescription =
     recommendation?.styleExplanation ||
     getStyleDescription(profile.learningStyle);
@@ -513,380 +917,523 @@ export function InsightsTab({ childId, stats }: InsightsTabProps = {}) {
 
   if (loading) {
     return (
-      <div className="space-y-6 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
-        <Skeleton className="h-32 w-full rounded-[32px]" />
+      <div className="space-y-6 w-full rounded-4xl bg-white/50 p-4 backdrop-blur-sm md:p-6">
+        <Skeleton className="h-32 w-full rounded-4xl" />
         <div className="grid grid-cols-2 gap-6">
-          <Skeleton className="h-48 rounded-[28px]" />
-          <Skeleton className="h-48 rounded-[28px]" />
+          <Skeleton className="h-48 rounded-4xl" />
+          <Skeleton className="h-48 rounded-4xl" />
         </div>
-        <Skeleton className="h-64 w-full rounded-[28px]" />
+        <Skeleton className="h-64 w-full rounded-4xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
-      {/* --- HEADER --- */}
-      <div className="text-center space-y-3 mb-8">
-        <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-2xl mb-2 shadow-sm">
-          <Brain className="w-8 h-8 text-violet-500 animate-pulse" />
-        </div>
-        <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-          AI 學習洞察
-        </h2>
-        <p className="text-slate-500 font-medium max-w-lg mx-auto">
-          深入分析 {profile.name} 的詞彙發展，提供有科學根據的學習建議。
-        </p>
-      </div>
-
-      {/* --- KEY METRICS (Active vs Passive) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Active Vocab Card */}
-        <Card className="border-none shadow-md bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 rounded-[28px] relative overflow-hidden transition-transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-            <Zap className="w-32 h-32 text-emerald-600" />
+    <div className="space-y-8 w-full rounded-4xl bg-white/50 p-4 backdrop-blur-sm md:p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-sky-100 to-cyan-100 px-4 py-1.5 text-sm font-black text-sky-700 shadow-sm">
+            <Sparkles className="h-4 w-4" />
+            每次練習後都會更新
           </div>
-          <CardContent className="p-8 relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
-                <Zap className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-emerald-900 uppercase tracking-wider text-sm">
-                主動詞彙
-              </span>
+          <div className="space-y-2">
+            <div className="inline-flex items-center justify-center rounded-2xl bg-linear-to-br from-violet-100 to-fuchsia-100 p-3 shadow-sm">
+              <Brain className="h-8 w-8 animate-pulse text-violet-500" />
             </div>
-            <div>
-              <span className="text-5xl font-black text-emerald-700">
-                {activeVocab}
-              </span>
-              <span className="text-emerald-600/80 ml-2 font-bold text-lg">
-                個
-              </span>
-            </div>
-            <p className="text-sm text-emerald-700/70 mt-3 font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> 能自信地在對話中使用
+            <h2 className="text-3xl font-black tracking-tight text-slate-800">
+              學習動態雷達
+            </h2>
+            <p className="max-w-2xl text-slate-500">
+              這一頁改用最近兩週的練習、接觸頻率和家長跟進訊號，讓重點會隨孩子的行為變動，而不是只顯示幾條固定建議。
             </p>
-          </CardContent>
-        </Card>
-
-        {/* Passive Vocab Card */}
-        <Card className="border-none shadow-md bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 rounded-[28px] relative overflow-hidden transition-transform hover:-translate-y-1">
-          <div className="absolute top-0 right-0 p-6 opacity-10">
-            <BookOpen className="w-32 h-32 text-blue-600" />
-          </div>
-          <CardContent className="p-8 relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
-                <Brain className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-blue-900 uppercase tracking-wider text-sm">
-                被動詞彙
-              </span>
-            </div>
-            <div>
-              <span className="text-5xl font-black text-blue-700">
-                {passiveVocab}
-              </span>
-              <span className="text-blue-600/80 ml-2 font-bold text-lg">
-                個
-              </span>
-            </div>
-            <p className="text-sm text-blue-700/70 mt-3 font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> 聽得懂但仍在學習中
+            <p className="text-sm font-semibold text-slate-400">
+              最近更新：{formatRefreshTime(lastUpdatedAt)}
             </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* --- EXPOSURE TRACKING --- */}
-      <Card className="border-none shadow-sm bg-white rounded-[28px]">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
-            <Target className="w-6 h-6 text-orange-500" />
-            詞彙接觸頻率追蹤
-          </CardTitle>
-          {!isMockData && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => void loadRealData({ background: true })}
-              disabled={refreshing}
-              className="text-slate-500 hover:text-slate-700"
-            >
-              <RefreshCw
-                className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
-              />
-              更新數據
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-6 pt-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm font-medium">
-              <span className="text-slate-500">已掌握詞彙 (接觸 6 次以上)</span>
-              <span className="font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                {wellLearned} / {words.length}
-              </span>
-            </div>
-            <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${masteredProgress}%` }}
-              />
-            </div>
           </div>
-
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-5 flex gap-4 items-start">
-            <div className="bg-white p-2 rounded-full shadow-sm shrink-0 text-orange-500">
-              <Info className="w-5 h-5" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-orange-900">專家研究指出</p>
-              <p className="text-sm text-orange-800/80 leading-relaxed">
-                兒童通常需要在不同情境下接觸一個新詞彙 <strong>6-12 次</strong>
-                ，才能將其轉化為長期記憶。
-                {profile.name} 還有 <strong>{needingExposure}</strong>{" "}
-                個詞彙需要更多練習！
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* --- PERSONALIZED INSIGHTS --- */}
-      <Card className="border-none shadow-sm bg-gradient-to-br from-yellow-50 to-amber-50 rounded-[28px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-amber-800 text-xl">
-            <Lightbulb className="w-6 h-6 text-amber-500 fill-amber-500" />
-            個人化學習建議
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {/* Note: In a real app, these insights strings should also be localized in the generator function */}
-            {insights.map((insight, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 p-4 bg-white/80 rounded-2xl shadow-sm border border-amber-100/50"
-              >
-                <div className="shrink-0 mt-0.5 text-xl">💡</div>
-                <p className="text-slate-700 font-medium leading-relaxed">
-                  {insight}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* --- RECOMMENDATION CARD (HERO) --- */}
-      <Card className="border-none shadow-lg bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-[28px] overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-12 opacity-5">
-          <TrendingUp className="w-64 h-64 text-white" />
         </div>
 
-        <CardHeader>
-          <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider w-fit mb-2">
-            <Sparkles className="w-3 h-3" /> 為你推薦
+        {!isMockData && (
+          <Button
+            type="button"
+            onClick={() => void loadRealData({ background: true })}
+            disabled={refreshing}
+            className="rounded-full bg-slate-900 px-5 py-2.5 font-black text-white hover:bg-slate-800"
+          >
+            <RefreshCw
+              className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")}
+            />
+            更新數據
+          </Button>
+        )}
+      </div>
+
+      <Card className="overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-900 via-slate-800 to-sky-900 text-white shadow-lg">
+        <CardHeader className="relative overflow-hidden pb-5">
+          <div className="absolute right-0 top-0 p-10 opacity-5">
+            <TrendingUp className="h-56 w-56 text-white" />
           </div>
-          <CardTitle className="flex items-center gap-3 text-2xl">
-            推薦學習活動
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-6 relative z-10">
-          {recommendation ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10 md:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={handleOpenRecommendedActivity}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-                >
-                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">
-                    活動類型
-                  </p>
-                  <p className="text-xl font-bold text-white flex items-center gap-2">
-                    {getActivityLabel(recommendation.recommendedActivity)}
-                    <ArrowRight className="w-4 h-4 text-emerald-300" />
-                  </p>
-                  <p className="mt-2 text-sm text-slate-300">
-                    按一下前往孩子頁面開始這個活動
-                  </p>
-                </button>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs text-slate-400 uppercase font-bold mb-1">
-                    建議時間
-                  </p>
-                  <p className="text-xl font-bold text-white">
-                    {recommendation.estimatedDuration} 分鐘
-                  </p>
-                </div>
+          <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-200">
+                <TrendingUp className="h-3.5 w-3.5" />
+                本週學習脈搏
               </div>
-
-              <div>
-                <p className="text-sm text-slate-400 font-bold uppercase mb-3">
-                  重點詞彙
-                </p>
-                {recommendation.focusWords.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {recommendation.focusWords.map((word) => (
-                      <Badge
-                        key={word}
-                        className="bg-white text-slate-900 hover:bg-slate-200 px-4 py-1.5 text-sm font-bold border-none"
-                      >
-                        {word}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-300">
-                    暫時未能整理出建議詞彙，完成更多練習後會更新。
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-                <p className="text-sm text-emerald-100 leading-relaxed">
-                  <strong className="text-emerald-400 block mb-1">
-                    推薦原因
-                  </strong>
-                  {recommendation.reason}
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                onClick={handleOpenRecommendedActivity}
-                className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300 font-black rounded-full"
-              >
-                前往 {getActivityLabel(recommendation.recommendedActivity)}
-              </Button>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200">
-              暫時未有足夠的活動建議數據，待孩子完成更多學習後會自動更新。
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* --- LEARNING STYLE --- */}
-      <Card className="border-none shadow-sm bg-white rounded-[28px]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
-            <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
-            學習風格分析
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-pink-50 rounded-[24px] border border-pink-100">
-            <div className="text-6xl bg-white p-4 rounded-full shadow-sm shrink-0">
-              {profile.learningStyle === "kinesthetic" && "🤸"}
-              {profile.learningStyle === "visual" && "👀"}
-              {profile.learningStyle === "auditory" && "👂"}
-              {profile.learningStyle === "mixed" && "🎨"}
-            </div>
-            <div className="text-center sm:text-left space-y-2">
-              <h3 className="font-black text-2xl text-pink-900 capitalize">
-                {getStyleLabel(profile.learningStyle)}
+              <h3 className="text-3xl font-black tracking-tight">
+                {momentumTitle}
               </h3>
-              <p className="text-pink-800/80 font-medium">
-                {learningStyleDescription}
+              <p className="max-w-xl text-sm leading-6 text-slate-300">
+                {momentumDescription}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 lg:min-w-85">
+              <div className="rounded-3xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  活躍日
+                </p>
+                <p className="mt-2 text-3xl font-black">{activeDaysThisWeek}</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  最近 7 天內有練習的日數
+                </p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  完成目標
+                </p>
+                <p className="mt-2 text-3xl font-black">
+                  {goalHitDaysThisWeek}
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  最近 7 天中達標的日數
+                </p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  平均投入
+                </p>
+                <p className="mt-2 text-3xl font-black">{engagementPercent}%</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  按最近活躍日的參與度估算
+                </p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  連續學習
+                </p>
+                <p className="mt-2 text-3xl font-black">
+                  {stats?.streakDays ?? profile.currentStreak}
+                </p>
+                <p className="mt-1 text-sm text-slate-300">
+                  目前持續中的學習天數
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-5 pt-0">
+          <div className="grid grid-cols-7 gap-2">
+            {weeklyWindow.map((day) => {
+              const height =
+                day.totalMinutes > 0
+                  ? Math.max((day.totalMinutes / maxDailyMinutes) * 100, 18)
+                  : 8;
+
+              return (
+                <div key={day.date} className="space-y-2">
+                  <div className="flex h-30 items-end rounded-3xl bg-white/6 p-2">
+                    <div
+                      className={cn(
+                        "w-full rounded-2xl bg-linear-to-t transition-all duration-700",
+                        day.totalMinutes > 0
+                          ? "from-cyan-400 via-sky-400 to-emerald-300"
+                          : "from-slate-700 to-slate-600",
+                      )}
+                      style={{ height: `${height}%` }}
+                    />
+                  </div>
+                  <div className="space-y-0.5 text-center">
+                    <p className="text-xs font-bold text-slate-300">
+                      {day.label}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {day.totalMinutes} 分
+                    </p>
+                    {day.goalAchieved && (
+                      <p className="text-[11px] font-bold text-emerald-300">
+                        達標
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-3xl border border-white/10 bg-white/6 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                本週學習時間
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {totalMinutesThisWeek} 分鐘
+              </p>
+              <p className="mt-1 text-sm text-slate-300">
+                {minuteDelta >= 0 ? "比上週多" : "比上週少"}{" "}
+                {Math.abs(minuteDelta)} 分鐘
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/6 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                接觸詞彙
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {totalWordsThisWeek} 個
+              </p>
+              <p className="mt-1 text-sm text-slate-300">
+                {wordDelta >= 0 ? "較上週增加" : "較上週減少"}{" "}
+                {Math.abs(wordDelta)} 個
+              </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/6 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                學習節奏
+              </p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {totalSessionsThisWeek} 次
+              </p>
+              <p className="mt-1 text-sm text-slate-300">
+                最近一週累積的學習回合數
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div>
-            <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-              建議活動
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {learningStyleActivities.map((activity, i) => (
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card className="rounded-4xl border-none bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl text-slate-700">
+              <Target className="h-6 w-6 text-orange-500" />
+              本週最需要跟進的焦點
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 md:grid-cols-3">
+              {liveSignals.map((signal) => (
                 <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
+                  key={signal.title}
+                  className={cn(
+                    "rounded-3xl border bg-linear-to-br p-4 shadow-sm",
+                    signal.className,
+                  )}
                 >
-                  <div className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
-                  <span className="text-slate-600 font-medium text-sm">
-                    {getActivityLabel(activity)}
-                  </span>
+                  <p className="text-xs font-black uppercase tracking-wider opacity-70">
+                    {signal.title}
+                  </p>
+                  <p className="mt-2 text-xl font-black">{signal.value}</p>
+                  <p className="mt-2 text-sm leading-6 opacity-80">
+                    {signal.description}
+                  </p>
                 </div>
               ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* --- BEST PRACTICES GRID --- */}
-      <Card className="border-none shadow-sm bg-white rounded-[28px] overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-indigo-900 text-xl">
-            <Clock className="w-6 h-6 text-indigo-500" />
-            專家學習錦囊
-          </CardTitle>
-        </CardHeader>
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-          <div className="p-6 hover:bg-slate-50 transition-colors">
-            <div className="flex items-start gap-4">
-              <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔄</span>
-              <div>
-                <p className="font-bold text-slate-800 text-lg mb-1">
-                  輪流對話
-                </p>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  進行一來一往的對話。引導 {profile.name} 回應，而不僅僅是聆聽。
+            <div className="rounded-4xl bg-slate-50 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wider text-slate-400">
+                    重點詞彙隊列
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    這一列會隨接觸次數、最近練習和家長確認狀態而改變。
+                  </p>
+                </div>
+                <Badge className="border-none bg-slate-900 px-3 py-1 text-white">
+                  平均接觸 {averageExposures.toFixed(1)} 次
+                </Badge>
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                {focusWordDetails.length > 0 ? (
+                  focusWordDetails.map((detail) => (
+                    <div
+                      key={detail.id}
+                      className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-lg font-black text-slate-800">
+                            {detail.label}
+                          </p>
+                          <Badge className="border-none bg-slate-100 text-slate-700">
+                            {detail.categoryLabel}
+                          </Badge>
+                          {detail.pendingApproval && (
+                            <Badge className="border-none bg-emerald-100 text-emerald-700">
+                              等待主動詞彙確認
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          已接觸 {detail.exposureCount} 次
+                          {detail.daysSincePractice !== null
+                            ? `，上次練習是 ${detail.daysSincePractice} 天前`
+                            : "，尚未出現有效練習紀錄"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
+                        <div className="h-2.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-linear-to-r from-orange-400 to-rose-400"
+                            style={{
+                              width: `${Math.min((detail.exposureCount / 6) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span>{Math.min(detail.exposureCount, 6)} / 6</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+                    暫時未有足夠的詞彙追蹤資料，完成更多學習後這裡會開始列出最值得跟進的詞。
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-3xl border border-orange-100 bg-linear-to-r from-orange-50 to-amber-50 p-4 text-sm text-orange-900">
+                已達 6 次接觸的詞彙共有 {wellLearned} 個，占目前追蹤詞彙的{" "}
+                {Math.round(masteredProgress)}%。這個數字每天都會隨練習改變。
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-800 to-slate-900 text-white shadow-lg">
+          <div className="absolute right-0 top-0 p-10 opacity-5">
+            <Lightbulb className="h-44 w-44 text-white" />
+          </div>
+
+          <CardHeader className="relative z-10">
+            <div className="mb-2 inline-flex w-fit items-center gap-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-300">
+              <Sparkles className="h-3.5 w-3.5" />
+              即時建議
+            </div>
+            <CardTitle className="text-2xl">下一個最值得做的動作</CardTitle>
+          </CardHeader>
+
+          <CardContent className="relative z-10 space-y-6">
+            {recommendation ? (
+              <>
+                <div className="grid gap-4 rounded-3xl border border-white/10 bg-white/6 p-4 backdrop-blur-sm md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenRecommendedActivity}
+                    className="rounded-3xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                  >
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      建議活動
+                    </p>
+                    <p className="mt-2 flex items-center gap-2 text-xl font-black text-white">
+                      {getActivityLabel(recommendation.recommendedActivity)}
+                      <ArrowRight className="h-4 w-4 text-emerald-300" />
+                    </p>
+                    <p className="mt-2 text-sm text-slate-300">
+                      直接跳去孩子頁面開始這個活動
+                    </p>
+                  </button>
+
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      建議時間
+                    </p>
+                    <p className="mt-2 text-xl font-black text-white">
+                      {recommendation.estimatedDuration} 分鐘
+                    </p>
+                    <p className="mt-2 text-sm text-slate-300">
+                      適合安排在 {getTimeLabel(profile.preferredTimeOfDay)}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">
+                    重點詞彙
+                  </p>
+                  {focusWordLabels.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {focusWordLabels.map((word) => (
+                        <Badge
+                          key={word}
+                          className="border-none bg-white px-4 py-1.5 text-sm font-bold text-slate-900 hover:bg-slate-200"
+                        >
+                          {word}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-300">
+                      暫時未能整理出建議詞彙，完成更多練習後會更新。
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <p className="text-sm leading-6 text-emerald-100">
+                    <strong className="mb-1 block text-emerald-400">
+                      推薦原因
+                    </strong>
+                    {recommendation.reason}
+                  </p>
+                </div>
+
+                <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                    家長下一步
+                  </p>
+                  <div className="grid gap-3">
+                    {parentActionPlan.map((action) => (
+                      <div
+                        key={action}
+                        className="flex items-start gap-3 rounded-2xl bg-white/6 p-3"
+                      >
+                        <div className="mt-0.5 rounded-full bg-emerald-400/20 p-1 text-emerald-300">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                        <p className="text-sm leading-6 text-slate-200">
+                          {action}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleOpenRecommendedActivity}
+                  className="w-full rounded-full bg-emerald-400 font-black text-slate-950 hover:bg-emerald-300"
+                >
+                  前往 {getActivityLabel(recommendation.recommendedActivity)}
+                </Button>
+              </>
+            ) : (
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200">
+                暫時未有足夠的活動建議數據，待孩子完成更多學習後會自動更新。
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="rounded-4xl border-none bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl text-slate-700">
+              <Heart className="h-6 w-6 fill-pink-500 text-pink-500" />
+              學習風格與輸出轉化
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center gap-6 rounded-3xl border border-pink-100 bg-pink-50 p-6 sm:flex-row">
+              <div className="rounded-full bg-white p-4 text-6xl shadow-sm shrink-0">
+                {profile.learningStyle === "kinesthetic" && "🤸"}
+                {profile.learningStyle === "visual" && "👀"}
+                {profile.learningStyle === "auditory" && "👂"}
+                {profile.learningStyle === "mixed" && "🎨"}
+              </div>
+              <div className="space-y-2 text-center sm:text-left">
+                <h3 className="text-2xl font-black capitalize text-pink-900">
+                  {getStyleLabel(profile.learningStyle)}
+                </h3>
+                <p className="font-medium text-pink-800/80">
+                  {learningStyleDescription}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="p-6 hover:bg-slate-50 transition-colors">
-            <div className="flex items-start gap-4">
-              <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🔁</span>
-              <div>
-                <p className="font-bold text-slate-800 text-lg mb-1">
-                  重複接觸
+            <div>
+              <h4 className="mb-4 flex items-center gap-2 font-bold text-slate-700">
+                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                建議活動
+              </h4>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {learningStyleActivities.map((activity, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
+                  >
+                    <div className="h-2 w-2 shrink-0 rounded-full bg-pink-400" />
+                    <span className="text-sm font-medium text-slate-600">
+                      {getActivityLabel(activity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  主動詞彙佔比
                 </p>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  在日常生活中不同情境下使用新詞彙。目標是創造 6-12
-                  次有意義的接觸。
+                <p className="mt-2 text-3xl font-black text-slate-800">
+                  {activeShare}%
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  目前 {activeVocab} 個主動詞彙，{passiveVocab}{" "}
+                  個仍主要停留在辨認階段。
+                </p>
+              </div>
+
+              <div className="rounded-3xl bg-slate-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  平均接觸次數
+                </p>
+                <p className="mt-2 text-3xl font-black text-slate-800">
+                  {averageExposures.toFixed(1)} 次
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {averageExposureDescription}
                 </p>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="p-6 hover:bg-slate-50 transition-colors border-t border-slate-100 md:border-none">
-            <div className="flex items-start gap-4">
-              <span className="text-3xl bg-indigo-100 p-2 rounded-xl">🌍</span>
-              <div>
-                <p className="font-bold text-slate-800 text-lg mb-1">
-                  生活應用
-                </p>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  在日常作息中，將詞彙與真實的物體和體驗連結起來。
+        <Card className="overflow-hidden rounded-4xl border-none bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl text-indigo-900">
+              <Lightbulb className="h-6 w-6 text-indigo-500" />
+              家長互動提醒
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            {DYNAMIC_PARENT_REMINDERS.map((tip) => (
+              <div
+                key={tip.title}
+                className="rounded-3xl border border-slate-100 bg-slate-50 p-4"
+              >
+                <p className="font-black text-slate-800">{tip.title}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  {tip.description}
                 </p>
               </div>
-            </div>
-          </div>
+            ))}
 
-          <div className="p-6 hover:bg-slate-50 transition-colors border-t border-slate-100 md:border-none">
-            <div className="flex items-start gap-4">
-              <span className="text-3xl bg-indigo-100 p-2 rounded-xl">👐</span>
-              <div>
-                <p className="font-bold text-slate-800 text-lg mb-1">
-                  多感官學習
-                </p>
-                <p className="text-slate-500 text-sm leading-relaxed">
-                  結合視覺、聲音、手勢和肢體動作，能顯著提升記憶效果。
-                </p>
-              </div>
+            <div className="rounded-3xl border border-sky-100 bg-linear-to-r from-sky-50 to-cyan-50 p-4">
+              <p className="text-sm font-black text-sky-900">
+                怎樣用會較自然？
+              </p>
+              <p className="mt-1 text-sm leading-6 text-sky-800/80">
+                不用一次把三條都做完。每次練習只要挑一條，放進吃飯、收拾或遊戲中的
+                1 到 2 分鐘互動，就已經足夠。
+              </p>
             </div>
-          </div>
-        </div>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

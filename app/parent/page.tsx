@@ -5,17 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Baby,
   LayoutGrid,
-  TrendingUp,
-  Target,
-  BarChart3,
-  Settings,
   PieChart,
   Loader2,
   Users,
 } from "lucide-react";
 
 // --- UI IMPORTS ---
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 
 // --- COMPONENT IMPORTS ---
@@ -30,13 +32,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PrivacyConsentModal } from "@/components/modals/privacy-consent-modal";
 import { useAuth } from "@/lib/auth-context";
 import { getChildren, toChildProfile } from "@/lib/api/children";
-import { getLearningInsights } from "@/lib/api/parent-dashboard";
+import { getDashboardSummary } from "@/lib/api/parent-dashboard";
 import { getProgressStats } from "@/lib/api/progress";
 import { getAuthToken } from "@/lib/api/client";
 import type {
   ChildProfile,
   LearningInsight,
   ProgressStats,
+  WeeklyDeltaSummary,
   Word,
 } from "@/lib/types";
 
@@ -128,14 +131,71 @@ const MOCK_INSIGHTS: LearningInsight[] = [
   },
 ];
 
+const MOCK_WEEKLY_DELTA: WeeklyDeltaSummary = {
+  current_week_start_date: "2026-04-28",
+  current_week_end_date: "2026-05-04",
+  previous_week_start_date: "2026-04-21",
+  previous_week_end_date: "2026-04-27",
+  words_learned: { current: 18, previous: 12, delta: 6 },
+  learning_time: { current: 92, previous: 74, delta: 18 },
+  sessions: { current: 7, previous: 5, delta: 2 },
+  xp_earned: { current: 180, previous: 120, delta: 60 },
+  active_days: { current: 5, previous: 4, delta: 1 },
+};
+
+const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
+
+function getStoredSelectedChildId(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem(SELECTED_CHILD_STORAGE_KEY);
+}
+
+function persistSelectedChildId(childId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(SELECTED_CHILD_STORAGE_KEY, childId);
+}
+
+function getChildDisplayLabel(
+  child: ChildProfile,
+  children: ChildProfile[],
+): string {
+  const hasDuplicateName = children.some(
+    (candidate) =>
+      candidate.id !== child.id && candidate.name.trim() === child.name.trim(),
+  );
+
+  if (!hasDuplicateName) {
+    return child.name;
+  }
+
+  const ageLabel =
+    child.age > 0 ? `${child.age}歲` : `ID ${child.id.slice(-4)}`;
+  return `${child.name} · ${ageLabel} · ${child.id.slice(-4)}`;
+}
+
 // --- INTERNAL CONTENT COMPONENT ---
 function ParentDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const requestedChildId = searchParams.get("childId");
   const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<ChildProfile | null>(null);
+  const [availableChildren, setAvailableChildren] = useState<ChildProfile[]>(
+    [],
+  );
+  const [selectedChildId, setSelectedChildId] = useState("");
   const [insights, setInsights] = useState<LearningInsight[]>([]);
+  const [weeklyDelta, setWeeklyDelta] = useState<WeeklyDeltaSummary | null>(
+    MOCK_WEEKLY_DELTA,
+  );
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -145,9 +205,15 @@ function ParentDashboardContent() {
 
   // Handle URL parameters for deep linking
   useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab) setActiveTab(tab);
-  }, [searchParams]);
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+    }
+
+    if (requestedChildId) {
+      setSelectedChildId(requestedChildId);
+      persistSelectedChildId(requestedChildId);
+    }
+  }, [requestedChildId, requestedTab]);
 
   const loadParentDashboardProfile = useCallback(
     async ({ background = false }: { background?: boolean } = {}) => {
@@ -162,6 +228,7 @@ function ParentDashboardContent() {
         setProfile(MOCK_PROFILE);
         setStats(MOCK_STATS);
         setInsights(MOCK_INSIGHTS);
+        setWeeklyDelta(MOCK_WEEKLY_DELTA);
         if (!background) {
           setIsLoadingProfile(false);
         }
@@ -170,25 +237,50 @@ function ParentDashboardContent() {
 
       try {
         const children = await getChildren();
-        if (children.length === 0) {
+        const mappedChildren = children.map((child) => toChildProfile(child));
+        setAvailableChildren(mappedChildren);
+
+        if (mappedChildren.length === 0) {
           setProfile(null);
           setInsights([]);
+          setWeeklyDelta(null);
           if (!background) {
             setIsLoadingProfile(false);
           }
           return;
         }
 
-        const childProfile = toChildProfile(children[0]);
+        const storedChildId = getStoredSelectedChildId();
+        const resolvedChildId =
+          mappedChildren.find((child) => child.id === selectedChildId)?.id ||
+          mappedChildren.find((child) => child.id === requestedChildId)?.id ||
+          mappedChildren.find((child) => child.id === storedChildId)?.id ||
+          mappedChildren[0]?.id ||
+          "";
+
+        if (!resolvedChildId) {
+          setProfile(null);
+          setInsights([]);
+          setWeeklyDelta(null);
+          if (!background) {
+            setIsLoadingProfile(false);
+          }
+          return;
+        }
+
+        if (resolvedChildId !== selectedChildId) {
+          setSelectedChildId(resolvedChildId);
+        }
+        persistSelectedChildId(resolvedChildId);
+
+        const childProfile =
+          mappedChildren.find((child) => child.id === resolvedChildId) ||
+          mappedChildren[0];
         setProfile(childProfile);
 
-        const [statsResult, insightsResult] = await Promise.allSettled([
+        const [statsResult, summaryResult] = await Promise.allSettled([
           getProgressStats(childProfile.id),
-          getLearningInsights(childProfile.id, {
-            includeRead: true,
-            includeDismissed: false,
-            limit: 3,
-          }),
+          getDashboardSummary(childProfile.id),
         ]);
 
         if (statsResult.status === "rejected") {
@@ -212,14 +304,16 @@ function ParentDashboardContent() {
           multiSensoryEngagement: statsResult.value.multi_sensory_engagement,
         });
 
-        if (insightsResult.status === "fulfilled") {
-          setInsights(insightsResult.value);
+        if (summaryResult.status === "fulfilled") {
+          setInsights((summaryResult.value.recent_insights || []).slice(0, 3));
+          setWeeklyDelta(summaryResult.value.weekly_delta ?? null);
         } else {
           console.warn(
-            "Failed to load parent insights:",
-            insightsResult.reason,
+            "Failed to load parent dashboard summary:",
+            summaryResult.reason,
           );
           setInsights([]);
+          setWeeklyDelta(null);
         }
       } catch (error) {
         console.error("Failed to load parent dashboard:", error);
@@ -230,7 +324,7 @@ function ParentDashboardContent() {
         }
       }
     },
-    [],
+    [requestedChildId, selectedChildId],
   );
 
   useEffect(() => {
@@ -248,6 +342,13 @@ function ParentDashboardContent() {
       window.removeEventListener("focus", handleWindowFocus);
     };
   }, [loadParentDashboardProfile]);
+
+  const activeChildLabel = profile
+    ? getChildDisplayLabel(
+        profile,
+        availableChildren.length > 0 ? availableChildren : [profile],
+      )
+    : "";
 
   if (isLoadingProfile) {
     return (
@@ -310,15 +411,47 @@ function ParentDashboardContent() {
                     家長中心
                   </h1>
                   <p className="text-slate-500 font-bold text-xs md:text-sm">
-                    跟進 <span className="text-[#38BDF8]">{profile?.name}</span>{" "}
+                    跟進{" "}
+                    <span className="text-[#38BDF8]">{activeChildLabel}</span>{" "}
                     的學習進度
                   </p>
+                  {availableChildren.length > 1 && (
+                    <div className="mt-2">
+                      <Select
+                        value={selectedChildId || profile?.id || ""}
+                        onValueChange={(nextChildId) => {
+                          setSelectedChildId(nextChildId);
+                          persistSelectedChildId(nextChildId);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 min-w-44 rounded-full border-slate-200 bg-white/80 text-xs font-bold text-slate-600 shadow-none">
+                          <SelectValue placeholder="選擇小朋友" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableChildren.map((child) => (
+                            <SelectItem key={child.id} value={child.id}>
+                              {getChildDisplayLabel(child, availableChildren)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <button
+<<<<<<< HEAD
                 onClick={() => router.push("/child")}
                 className="group flex items-center gap-1.5 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-1.5 pr-2.5 py-1.5 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-xs md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0 whitespace-nowrap"
+=======
+                onClick={() =>
+                  router.push(
+                    profile?.id ? `/child?childId=${profile.id}` : "/child",
+                  )
+                }
+                className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0"
+>>>>>>> 94e6e92 (feat: enhance parent missions tab with mission summary and recent completions)
               >
                 <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
                   <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -384,6 +517,7 @@ function ParentDashboardContent() {
                   profile={profile}
                   stats={stats}
                   insights={insights}
+                  weeklyDelta={weeklyDelta}
                   onActiveVocabularyApproved={loadParentDashboardProfile}
                 />
               )}
