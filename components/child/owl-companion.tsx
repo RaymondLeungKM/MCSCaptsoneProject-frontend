@@ -69,7 +69,7 @@ const MASCOT_TIERS: MascotTier[] = [
       "覺得難？慢慢嚟，我會陪住你 💜",
       "完成一個小任務就可以攞星星，加油！",
     ],
-    render: (size) => <CartoonOwl size={size} animate="scene" />,
+    render: (size) => <CartoonOwl size={size} animate="scene" variant="storybook" />,
   },
   {
     id: "dog",
@@ -381,31 +381,11 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
         className="fixed bottom-28 right-3 z-40 flex h-24 w-24 items-center justify-center"
         style={{ outline: "none" }}
       >
-        {/* Soft glow ring */}
-        <span
-          aria-hidden
-          className="absolute inset-1 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${activeMascot.accent} 0%, rgba(255,255,255,0) 70%)`,
-            animation: "owl-ring-pulse 2.6s ease-in-out infinite",
-          }}
-        />
-        {/* Outward attention ripple when waving */}
-        {isWaving && (
-          <span
-            aria-hidden
-            className="absolute inset-2 rounded-full"
-            style={{
-              border: `3px solid ${activeMascot.bubbleBorder}`,
-              animation: "owl-ring-attention 1.4s ease-out infinite",
-            }}
-          />
-        )}
         {/* Notification dot */}
         {hasNewTip && !open && (
           <span
             aria-hidden
-            className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[10px] font-black text-white shadow-md"
+            className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[10px] font-black text-white shadow-md"
             style={{
               background: activeMascot.dot,
               animation: "owl-dot-bob 1.4s ease-in-out infinite",
@@ -416,17 +396,16 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
         )}
         {/* The mascot itself */}
         <span
-          className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/70 backdrop-blur-sm"
+          className="relative flex items-center justify-center"
           style={{
-            boxShadow: "0 14px 28px rgba(15, 23, 42, 0.22)",
-            border: `2px solid ${activeMascot.bubbleBorder}`,
             animation: isWaving
               ? "owl-mascot-wave 1.8s ease-in-out"
               : "owl-mascot-idle 3.2s ease-in-out infinite",
             transformOrigin: "50% 80%",
+            filter: "drop-shadow(0 14px 24px rgba(15, 23, 42, 0.24))",
           }}
         >
-          {activeMascot.render(72)}
+          {activeMascot.render(88)}
         </span>
       </button>
     </>

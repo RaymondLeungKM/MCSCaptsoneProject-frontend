@@ -107,16 +107,16 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
 
           // Fluid sizes — phones land near the lower bound, tablets/desktops
           // near the upper bound, with a smooth transition in between.
-          // Targets: mobile ~9/10px, tablet ~13/15px, desktop ~15/17px
+          // Targets: mobile ~36/30px bubble, ~16/14px icon, ~11/10px label
           const bubbleSize = isActive
-            ? "clamp(2.5rem, 8vw, 4.5rem)"
-            : "clamp(2.1rem, 6.75vw, 3.75rem)";
+            ? "clamp(36px, 8vw, 72px)"
+            : "clamp(30px, 6.75vw, 60px)";
           const iconSize = isActive
-            ? "clamp(1.1rem, 3.6vw, 2.1rem)"
-            : "clamp(1rem, 3.1vw, 1.8rem)";
+            ? "clamp(16px, 3.6vw, 34px)"
+            : "clamp(14px, 3.1vw, 29px)";
           const labelSize = isActive
-            ? "clamp(1.1rem, 2vw, 1.0625rem)"
-            : "clamp(1rem, 1.8vw, 0.9375rem)";
+            ? "clamp(10px, 3.1vw, 17px)"
+            : "clamp(9px, 2.8vw, 15px)";
 
           return (
             <button

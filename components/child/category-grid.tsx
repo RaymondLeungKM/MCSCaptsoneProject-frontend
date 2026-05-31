@@ -183,7 +183,7 @@ export function CategoryGrid({
           childId={childId}
           onProgressUpdate={handleProgressUpdate}
         />
-        <div className="flex max-h-[calc(100dvh-110px)] w-full flex-col overflow-y-auto rounded-[32px] border border-white/50 bg-white/80 p-4 shadow-sm backdrop-blur-md animate-in fade-in slide-in-from-right-4 duration-300 sm:max-h-[calc(100vh-140px)] sm:rounded-[40px] sm:p-6 md:p-8">
+        <div className="flex max-h-[calc(100dvh-110px)] w-full flex-col overflow-y-auto rounded-[32px] border border-white/50 bg-white/80 p-4 shadow-sm backdrop-blur-md sm:max-h-[calc(100vh-140px)] sm:rounded-[40px] sm:p-6 md:p-8">
           {/* Header – Back Button */}
           <div className="mb-4 flex items-center gap-2.5 sm:mb-6 sm:gap-3">
             <button
@@ -303,18 +303,7 @@ export function CategoryGrid({
                       </span>
                     )}
 
-                    <div className="mt-auto flex w-full items-end justify-between gap-1.5 pt-3 sm:gap-3 sm:pt-4">
-                      {childId ? (
-                        <MemoryStarsProgress
-                          exposureCount={word.exposureCount}
-                          languagePreference={languagePreference}
-                          variant="badge"
-                          className="min-w-0 max-w-full flex-1 truncate"
-                        />
-                      ) : (
-                        <div className="flex-1" />
-                      )}
-
+                    <div className="mt-auto flex w-full flex-col items-center gap-2 pt-3 sm:pt-4">
                       <button
                         type="button"
                         onClick={(e) => handlePlayWord(e, word)}
@@ -328,6 +317,14 @@ export function CategoryGrid({
                           )}
                         />
                       </button>
+                      {childId && (
+                        <MemoryStarsProgress
+                          exposureCount={word.exposureCount}
+                          languagePreference={languagePreference}
+                          variant="badge"
+                          className="w-full max-w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -392,7 +389,7 @@ export function CategoryGrid({
                 </div>
 
                 {/* Name */}
-                <span className="child-tab-card-title !mt-0 !text-center !text-base !leading-tight sm:!text-lg">
+                <span className="child-tab-card-title !mt-0 !text-center !text-base !leading-tight !text-blue-600 sm:!text-lg">
                   {categoryName}
                 </span>
 

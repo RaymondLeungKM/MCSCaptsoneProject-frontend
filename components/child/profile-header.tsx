@@ -88,7 +88,7 @@ export function ProfileHeader({ childId, refreshKey }: ProfileHeaderProps) {
         {/* Info Section */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="child-tab-hero-title !text-4xl !text-slate-700 truncate">
+            <h1 className="child-tab-hero-title !text-2xl !text-slate-700">
               你好，{profile.name}！
             </h1>
           </div>
@@ -175,7 +175,7 @@ function StatBox({
     >
       <div className="mb-1">{icon}</div>
       <p className="child-tab-stat-value !mt-0 !text-2xl !leading-none !text-slate-700">{value}</p>
-      <p className="child-tab-caption !mt-1 opacity-60">
+      <p className="child-tab-caption !mt-1 !text-[10px] !tracking-normal whitespace-nowrap opacity-60">
         {label}
       </p>
     </div>

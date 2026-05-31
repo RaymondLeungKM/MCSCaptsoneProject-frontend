@@ -40,7 +40,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        "flex items-end gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200",
+        "flex items-end gap-2",
         isUser ? "flex-row-reverse" : "flex-row",
       )}
     >

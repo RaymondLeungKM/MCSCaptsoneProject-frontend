@@ -75,6 +75,10 @@ export function BedtimeStoryGenerator({
     setError(null);
     setGeneratedStory(null);
 
+    // Minimum overlay display time so the video transition is visible
+    const MIN_OVERLAY_MS = 3000;
+    const startTime = Date.now();
+
     try {
       const story = await generateStoryWithExternalProgram({
         child_id: childId,
@@ -91,9 +95,20 @@ export function BedtimeStoryGenerator({
         include_jyutping: true,
       });
 
+      // Wait remaining time so video overlay stays visible
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_OVERLAY_MS) {
+        await new Promise((r) => setTimeout(r, MIN_OVERLAY_MS - elapsed));
+      }
+
       setGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
     } catch (err) {
+      // Still hold the overlay for minimum time on error
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_OVERLAY_MS) {
+        await new Promise((r) => setTimeout(r, MIN_OVERLAY_MS - elapsed));
+      }
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -106,17 +121,50 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
+      {/* --- STORY GENERATION VIDEO OVERLAY --- */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
+          <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center sm:gap-6 sm:px-8">
+            <div className="rounded-[28px] border border-white/15 bg-white/5 p-1 shadow-[0_24px_80px_rgba(15,23,42,0.45)] sm:rounded-[36px]">
+              <video
+                src="/story-generating.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="block h-auto rounded-[24px] bg-black object-contain sm:rounded-[32px]"
+                style={{
+                  width: "min(94vw, 110vh, 1280px)",
+                  maxHeight: "min(62vh, 720px)",
+                }}
+              />
+            </div>
+            <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin" />
+                <span className="text-2xl font-black text-white sm:text-3xl">正在施展魔法...</span>
+                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin [animation-direction:reverse]" />
+              </div>
+              <p className="text-base font-semibold text-white/80 sm:text-lg">
+                為{childName}創作專屬故事，請稍候
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}
-        <div className="p-8 text-center space-y-2">
+        <div className="p-5 sm:p-8 text-center space-y-2">
           <div className="inline-flex p-4 bg-white rounded-full shadow-md mb-2">
             <Moon className="w-8 h-8 text-purple-500 fill-purple-500" />
           </div>
           <h2 className="child-tab-hero-title text-purple-900">
             生成睡前故事
           </h2>
-          <p className="child-tab-hero-copy !mt-0 !max-w-none !text-lg !font-bold !text-purple-700 md:!text-xl">
+          <p className="child-tab-hero-copy !mt-0 !max-w-none !text-sm !font-bold !text-purple-700 sm:!text-lg md:!text-xl">
             為
             <span className="font-bold underline decoration-wavy decoration-purple-400">
               {childName}
@@ -126,7 +174,7 @@ export function BedtimeStoryGenerator({
         </div>
 
         {/* Theme Selection Grid */}
-        <div className="bg-white/60 backdrop-blur-md p-6 rounded-[32px] mx-4 mb-4">
+        <div className="bg-white/60 backdrop-blur-md p-4 sm:p-6 rounded-[32px] mx-3 sm:mx-4 mb-4">
           <h3 className="child-tab-section-title mb-4 flex items-center gap-2 text-purple-900">
             <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
@@ -136,21 +184,21 @@ export function BedtimeStoryGenerator({
                 key={theme.value}
                 onClick={() => setSelectedTheme(theme.value)}
                 className={cn(
-                  "flex flex-row items-center justify-center gap-1.5 p-2 rounded-2xl border-2 transition-all duration-300 sm:flex-col sm:gap-0 sm:p-3",
+                  "flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300",
                   selectedTheme === theme.value
-                    ? "bg-purple-600 border-purple-600 text-white shadow-lg scale-105"
+                    ? "bg-purple-100 border-purple-400 text-purple-900 shadow-md scale-105"
                     : "bg-white border-transparent hover:border-purple-200 text-slate-600 hover:bg-purple-50",
                 )}
               >
-                <span className="text-base sm:mb-1 sm:text-2xl">{theme.emoji}</span>
-                <span className="child-tab-card-title whitespace-nowrap !mt-0 !text-sm sm:!text-lg">{theme.label}</span>
+                <span className="text-xl">{theme.emoji}</span>
+                <span className="child-tab-card-title !mt-0 !text-sm sm:!text-base">{theme.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Info Row */}
-        <div className="child-tab-copy px-8 pb-4 flex justify-between !text-sm !font-bold !text-purple-800 opacity-70">
+        <div className="child-tab-copy px-5 pb-3 sm:px-8 sm:pb-4 flex flex-col sm:flex-row justify-between items-center gap-0.5 sm:gap-0 !text-xs sm:!text-sm !font-bold !text-purple-800 opacity-70">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" /> 閱讀時間：5 分鐘
           </div>
@@ -165,7 +213,7 @@ export function BedtimeStoryGenerator({
             onClick={handleGenerateStory}
             disabled={isGenerating}
             className={cn(
-              "w-full h-16 rounded-full text-3xl font-black text-white shadow-lg transition-all",
+              "w-full h-12 sm:h-16 rounded-full text-xl sm:text-3xl font-black text-white shadow-lg transition-all",
               isGenerating
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-[1.02] active:scale-95 shadow-purple-300/50",
@@ -194,7 +242,7 @@ export function BedtimeStoryGenerator({
 
       {/* --- RESULT CARD (Displays when story is ready) --- */}
       {generatedStory && (
-        <div className="animate-in slide-in-from-bottom-8 fade-in duration-700">
+        <div>
           <StoryCard
             story={generatedStory}
             onRead={() => onReadStory?.(generatedStory)}

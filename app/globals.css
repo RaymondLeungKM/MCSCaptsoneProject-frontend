@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @font-face {
-  font-family: "jf-openhuninn";
-  src: url("/fonts/jf-openhuninn-2.1.ttf") format("truetype");
+  font-family: "Xiaolai";
+  src: url("/fonts/Xiaolai-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -68,23 +68,23 @@
   --ocean: oklch(0.7 0.15 240);
   --peach: oklch(0.85 0.12 50);
   --slate: oklch(0.7 0.05 250);
-  --font-zen: "jf-openhuninn", sans-serif;
-  --child-tab-display-family: "jf-openhuninn", sans-serif;
-  --child-tab-body-family: "jf-openhuninn", sans-serif;
-  --font-title: "jf-openhuninn", sans-serif;
-  --font-body: "jf-openhuninn", sans-serif;
+  --font-zen: "Xiaolai", sans-serif;
+  --child-tab-display-family: "Xiaolai", sans-serif;
+  --child-tab-body-family: "Xiaolai", sans-serif;
+  --font-title: "Xiaolai", sans-serif;
+  --font-body: "Xiaolai", sans-serif;
 }
 
 .font-title {
-  font-family: "jf-openhuninn", sans-serif;
+  font-family: "Xiaolai", sans-serif;
 }
 
 .font-body {
-  font-family: "jf-openhuninn", sans-serif;
+  font-family: "Xiaolai", sans-serif;
 }
 
 .font-zen {
-  font-family: "jf-openhuninn", sans-serif;
+  font-family: "Xiaolai", sans-serif;
 }
 
 .dark {
@@ -123,7 +123,7 @@
 }
 
 @theme inline {
-  --font-sans: "jf-openhuninn", sans-serif;
+  --font-sans: "Xiaolai", sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   /* Custom playful colors */
   --color-sunny: var(--sunny);
@@ -252,45 +252,43 @@
   }
 
   .child-tab-compact-title {
-    @apply text-lg font-black tracking-tight text-emerald sm:text-3xl;
+    @apply text-xl font-black tracking-tight text-slate-700 sm:text-4xl;
     font-family: var(--child-tab-display-family);
   }
 
   .child-tab-compact-copy {
-    @apply text-xs font-bold text-slate-400 sm:text-base;
+    @apply text-sm font-bold text-slate-500 sm:text-lg;
     font-family: var(--child-tab-body-family);
   }
 }
 
 /* ── Kid mode font scale (child pages only) ─────────────────────────────────
-   Mobile-first: a friendly 16px base on phones grows to a kid-comfortable
-   ~24px on large desktops. We do this with the root font-size only so
-   Tailwind's text-* tokens preserve a proper visual hierarchy at every size
-   (a `text-xs` badge stays smaller than `text-lg` body text).
+   Tailwind text-* classes use rem, which is relative to the HTML root (16px).
+   We add .kid-font-scale on <html> from the child layout so ALL rem-based
+   sizes scale up automatically. font-weight on .kid-mode div still works.
 */
-.kid-mode {
-  font-size: 19px;
-  font-weight: 700;
+html.kid-font-scale {
+  font-size: 20px; /* 1.25x default — all rem text sizes scale by 25% */
 }
 
-/* sm — small tablets & large phones (landscape) */
 @media (min-width: 640px) {
-  .kid-mode { font-size: 22px; }
+  html.kid-font-scale { font-size: 22px; }
 }
 
-/* md — tablets */
 @media (min-width: 768px) {
-  .kid-mode { font-size: 24px; }
+  html.kid-font-scale { font-size: 24px; }
 }
 
-/* lg — small laptops / iPad Pro */
 @media (min-width: 1024px) {
-  .kid-mode { font-size: 26px; }
+  html.kid-font-scale { font-size: 26px; }
 }
 
-/* xl — desktops (the original 18pt kid-friendly target) */
 @media (min-width: 1280px) {
-  .kid-mode { font-size: 30px; }
+  html.kid-font-scale { font-size: 28px; }
+}
+
+.kid-mode {
+  font-weight: 800;
 }
 
 /* Prevent horizontal page scroll caused by oversized children inside kid-mode.

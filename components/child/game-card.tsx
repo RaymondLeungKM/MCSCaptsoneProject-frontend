@@ -46,10 +46,10 @@ export function GameCard({ game, onPlay }: GameCardProps) {
       
       {/* Text Content */}
       <div className="flex-1 min-w-0">
-        <h3 className="child-tab-compact-title mb-0.5 !text-base sm:mb-1">
+        <h3 className="child-tab-compact-title mb-0.5 !text-base !text-slate-800 sm:mb-1">
           {game.name}
         </h3>
-        <p className="child-tab-compact-copy line-clamp-2 !text-xs !leading-tight opacity-70 sm:!text-xl">
+        <p className="child-tab-compact-copy line-clamp-2 !text-xs !leading-tight !text-slate-600 sm:!text-xl">
           {game.description}
         </p>
       </div>

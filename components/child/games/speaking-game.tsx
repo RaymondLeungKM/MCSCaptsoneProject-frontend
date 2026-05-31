@@ -471,14 +471,14 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 overflow-y-auto pb-10">
+      <div className="flex-1 flex flex-col items-center justify-start pt-4 px-6 gap-4 overflow-y-auto pb-10">
         {/* Instruction */}
         <p className="child-tab-section-title !mt-0 !text-2xl !text-center !text-slate-700">
           聽聲音，讀出圖片
         </p>
 
         {/* Picture card */}
-        <div className="bg-white rounded-[40px] p-10 text-center shadow-xl w-full max-w-sm border-4 border-orange-200">
+        <div className="bg-white rounded-[40px] p-4 text-center shadow-xl w-full max-w-sm border-4 border-orange-200">
           {currentWord ? (
             <CartoonWordImage
               wordId={currentWord.id}
@@ -486,13 +486,13 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
               wordCantonese={currentWord.word_cantonese}
               category={currentWord.category}
               existingImageUrl={currentWord.image_url}
-              className="w-full h-56 rounded-3xl"
+              className="w-full h-[160px] rounded-3xl"
               emojiSize="text-7xl"
               placeholderBg="bg-orange-50"
               showLabel={false}
             />
           ) : (
-            <div className="w-full h-56 rounded-3xl bg-orange-50 flex items-center justify-center text-7xl">
+            <div className="w-full h-[160px] rounded-3xl bg-orange-50 flex items-center justify-center text-7xl">
               🎨
             </div>
           )}
@@ -508,11 +508,7 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
           {/* Audio replay button */}
           <button
             onClick={playCurrentWord}
-            className={`mt-6 w-16 h-16 rounded-full flex items-center justify-center mx-auto transition-all active:scale-90 active:translate-y-1 active:shadow-none ${
-              isPlaying
-                ? "bg-gradient-to-b from-orange-400 to-orange-500 scale-110 animate-pulse shadow-[0_4px_0_#c2410c]"
-                : "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_0_#c2410c,0_6px_12px_rgba(194,65,12,0.3)]"
-            }`}
+            className={`mt-3 w-14 h-14 rounded-full flex items-center justify-center mx-auto transition-all active:scale-90 active:translate-y-1 active:shadow-none ${isPlaying ? "bg-gradient-to-b from-orange-400 to-orange-500 scale-110 animate-pulse shadow-[0_4px_0_#c2410c]" : "bg-gradient-to-b from-orange-400 to-orange-600 shadow-[0_4px_0_#c2410c,0_6px_12px_rgba(194,65,12,0.3)]"}`}
           >
             <Volume2
               className="w-8 h-8 text-white drop-shadow"
@@ -572,15 +568,15 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={toggleListening}
-              className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl transition-all select-none
+            className={`w-[80px] h-[80px] rounded-full flex items-center justify-center shadow-xl transition-all select-none
                 ${isListening 
                   ? "bg-gradient-to-b from-red-400 to-red-600 scale-110 animate-pulse shadow-[0_6px_0_#991b1b]" 
                   : "bg-gradient-to-b from-orange-400 to-orange-600 active:scale-90 active:translate-y-1 active:shadow-none shadow-[0_8px_0_#c2410c]"}`}
             >
               {isListening ? (
-                <MicOff className="w-12 h-12 text-white" />
+                <MicOff className="w-8 h-8 text-white" />
               ) : (
-                <Mic className="w-12 h-12 text-white" />
+                <Mic className="w-8 h-8 text-white" />
               )}
             </button>
             {isListening ? (

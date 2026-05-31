@@ -186,7 +186,7 @@ export function SpacedRepetitionCard({
 
       {/* Quality rating buttons (only when flipped) */}
       {isFlipped && (
-        <div className="w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="w-full">
           <p className="child-tab-copy !mb-2 !text-center !text-sm">
             你記得幾好？
           </p>

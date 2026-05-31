@@ -129,6 +129,7 @@ const CANTONESE_TO_ENGLISH: Record<string, string> = {
   氣球: "balloon",
   鼓: "drum",
   拼圖: "jigsaw puzzle",
+  砌圖: "jigsaw puzzle",
   跳繩: "jump rope",
   滑板車: "scooter",
   陀螺: "spinning top",

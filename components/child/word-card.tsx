@@ -51,7 +51,7 @@ export function WordCard({
         
         {/* Mastery Badge */}
         {word.mastered && (
-          <div className="absolute top-4 right-4 bg-emerald-400 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1 animate-in zoom-in">
+          <div className="absolute top-4 right-4 bg-emerald-400 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
             <CheckCircle className="w-3.5 h-3.5" />
             {labels.mastered}
           </div>

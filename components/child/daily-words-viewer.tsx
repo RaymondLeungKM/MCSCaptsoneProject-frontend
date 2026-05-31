@@ -410,7 +410,7 @@ export function DailyWordsViewer({
           onWordLearned?.();
         }}
       />
-      <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="space-y-8">
         {/* Main Container Card */}
         <Card className="bg-white/80 backdrop-blur-md rounded-[40px] border-4 border-white shadow-sm overflow-hidden">
           {/* Header Section */}

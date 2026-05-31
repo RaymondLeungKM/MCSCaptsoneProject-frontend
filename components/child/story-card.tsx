@@ -80,7 +80,7 @@ export function StoryCard({
         )}
       >
         {story.completed && (
-          <div className="absolute top-4 right-4 bg-white text-emerald-500 rounded-full p-2 shadow-sm animate-in zoom-in">
+          <div className="absolute top-4 right-4 bg-white text-emerald-500 rounded-full p-2 shadow-sm">
             <CheckCircle className="w-6 h-6 fill-emerald-100" />
           </div>
         )}
@@ -92,7 +92,7 @@ export function StoryCard({
 
       <div className="p-6 bg-white w-full text-left flex flex-col justify-between h-36">
         <div>
-          <h3 className="child-tab-section-title !mt-0 !text-[1.9rem] !leading-tight !text-slate-700 line-clamp-2 group-hover:!text-purple-600 transition-colors">
+          <h3 className="child-tab-section-title !mt-0 !text-base !leading-tight !text-slate-700 group-hover:!text-purple-600 transition-colors">
             {story.title}
           </h3>
         </div>

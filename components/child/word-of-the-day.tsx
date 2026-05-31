@@ -53,7 +53,7 @@ export function WordOfTheDay({
       
       {/* --- Decorative Elements --- */}
       <div className="absolute top-0 right-0 p-4 opacity-50 pointer-events-none">
-        <Sparkles className="w-12 h-12 text-yellow-300 fill-yellow-100 animate-pulse" />
+        <Sparkles className="w-12 h-12 text-yellow-300 fill-yellow-100" />
       </div>
 
       {/* --- Header --- */}
@@ -73,7 +73,7 @@ export function WordOfTheDay({
         <div className="relative shrink-0 mx-auto sm:mx-0">
             {/* XP Badge */}
             {word.exposureCount === 0 && (
-                <div className="absolute -top-2 -left-2 z-20 bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1 animate-bounce">
+                <div className="absolute -top-2 -left-2 z-20 bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
                 <Star className="w-3 h-3 fill-current" />
                 +10 XP
                 </div>
