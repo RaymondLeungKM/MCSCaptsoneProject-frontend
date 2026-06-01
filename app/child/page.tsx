@@ -19,7 +19,10 @@ import CozyPageWrapper from "@/components/CozyPageWrapper";
 import { ProfileHeader } from "@/components/child/profile-header";
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { CategoryGrid } from "@/components/child/category-grid";
-import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
+import {
+  BedtimeStoryGenerator,
+  type BedtimeStoryTheme,
+} from "@/components/child/bedtime-story";
 import { GamesList } from "@/components/child/game-card";
 import { ChildMissionsPanel } from "@/components/child/child-missions-panel";
 import { CartoonKeyframes } from "@/components/child/cartoon-characters";
@@ -47,7 +50,11 @@ import {
   toCategory,
   toChildProfile,
 } from "@/lib/api";
-import { getChildStories, getStory } from "@/lib/api/bedtime-stories";
+import {
+  generateStoryWithExternalProgram,
+  getChildStories,
+  getStory,
+} from "@/lib/api/bedtime-stories";
 import {
   endLearningSession,
   getLearningControlStatus,
@@ -63,6 +70,7 @@ import type {
   Game,
   GeneratedStory,
   LearningControlStatus,
+  StoryGenerationRequest,
 } from "@/lib/types";
 import type { StoryCardData } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
@@ -258,6 +266,14 @@ function ChildDashboardContent() {
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [storyGenerationTheme, setStoryGenerationTheme] =
+    useState<BedtimeStoryTheme>("bedtime");
+  const [isStoryGenerating, setIsStoryGenerating] = useState(false);
+  const [latestGeneratedStory, setLatestGeneratedStory] =
+    useState<GeneratedStory | null>(null);
+  const [storyGenerationError, setStoryGenerationError] = useState<string | null>(
+    null,
+  );
   const [stories, setStories] = useState<GeneratedStory[]>([]);
   const [selectedStory, setSelectedStory] = useState<GeneratedStory | null>(
     null,
@@ -271,6 +287,7 @@ function ChildDashboardContent() {
   const storyAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const sessionChildIdRef = useRef<string | null>(null);
+  const currentChildIdRef = useRef<string | null>(null);
   const sessionStartPendingRef = useRef(false);
   const sessionShouldRemainOpenRef = useRef(false);
   const lastInteractionAtRef = useRef<number>(Date.now());
@@ -438,8 +455,16 @@ function ChildDashboardContent() {
         children.find((child) => child.id === storedChildId) ||
         children[0];
       const selectedChild = toChildProfile(selectedChildRecord);
+      const childChanged = currentChildIdRef.current !== selectedChild.id;
       persistSelectedChildId(selectedChild.id);
       setProfile(selectedChild);
+      currentChildIdRef.current = selectedChild.id;
+      if (childChanged) {
+        setStoryGenerationTheme("bedtime");
+        setIsStoryGenerating(false);
+        setLatestGeneratedStory(null);
+        setStoryGenerationError(null);
+      }
       lastInteractionAtRef.current = Date.now();
       setIsIdle(true);
 
@@ -610,6 +635,17 @@ function ChildDashboardContent() {
     setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)]);
     setSelectedStory(story);
     setIsReaderOpen(true);
+  };
+
+  const handleGenerateStory = async (request: StoryGenerationRequest) => {
+    const story = await generateStoryWithExternalProgram(request);
+
+    if (currentChildIdRef.current !== request.child_id) {
+      return;
+    }
+
+    setLatestGeneratedStory(story);
+    handleStoryGenerated(story);
   };
 
   const handleReadGeneratedStory = (story: GeneratedStory) => {
@@ -1111,7 +1147,15 @@ function ChildDashboardContent() {
                   childId={profile.id}
                   childName={profile.name}
                   languagePreference="cantonese"
-                  onStoryGenerated={handleStoryGenerated}
+                  selectedTheme={storyGenerationTheme}
+                  isGenerating={isStoryGenerating}
+                  generatedStory={latestGeneratedStory}
+                  error={storyGenerationError}
+                  onSelectedThemeChange={setStoryGenerationTheme}
+                  onIsGeneratingChange={setIsStoryGenerating}
+                  onGeneratedStoryChange={setLatestGeneratedStory}
+                  onErrorChange={setStoryGenerationError}
+                  onGenerateStory={handleGenerateStory}
                   onReadStory={handleReadGeneratedStory}
                 />
               </section>

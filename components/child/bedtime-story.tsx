@@ -1,23 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { Moon, Sparkles, BookOpen, Clock, Heart, Wand2 } from "lucide-react";
+import { Moon, Sparkles, BookOpen, Clock, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { GeneratedStory, LanguagePreference } from "@/lib/types";
+import {
+  GeneratedStory,
+  LanguagePreference,
+  StoryGenerationRequest,
+} from "@/lib/types";
 import { generateStoryWithExternalProgram } from "@/lib/api/bedtime-stories";
+
+export type BedtimeStoryTheme = NonNullable<StoryGenerationRequest["theme"]>;
 
 interface BedtimeStoryGeneratorProps {
   childId?: string;
   childName?: string;
   languagePreference?: LanguagePreference;
+  selectedTheme?: BedtimeStoryTheme;
+  isGenerating?: boolean;
+  generatedStory?: GeneratedStory | null;
+  error?: string | null;
+  onSelectedThemeChange?: (theme: BedtimeStoryTheme) => void;
+  onIsGeneratingChange?: (isGenerating: boolean) => void;
+  onGeneratedStoryChange?: (story: GeneratedStory | null) => void;
+  onErrorChange?: (error: string | null) => void;
+  onGenerateStory?: (request: StoryGenerationRequest) => Promise<void>;
   onStoryGenerated?: (story: GeneratedStory) => void;
   onReadStory?: (story: GeneratedStory) => void;
 }
 
-const themes = [
+const themes: Array<{
+  value: BedtimeStoryTheme;
+  label: string;
+  emoji: string;
+  color: string;
+}> = [
   {
     value: "bedtime",
     label: "睡前",
@@ -59,48 +79,70 @@ const themes = [
 export function BedtimeStoryGenerator({
   childId = "1",
   childName = "小朋友",
-  languagePreference = "cantonese",
+  selectedTheme,
+  isGenerating,
+  generatedStory,
+  error,
+  onSelectedThemeChange,
+  onIsGeneratingChange,
+  onGeneratedStoryChange,
+  onErrorChange,
+  onGenerateStory,
   onStoryGenerated,
   onReadStory,
 }: BedtimeStoryGeneratorProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState<string>("bedtime");
-  const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
+  const [internalIsGenerating, setInternalIsGenerating] = useState(false);
+  const [internalSelectedTheme, setInternalSelectedTheme] =
+    useState<BedtimeStoryTheme>("bedtime");
+  const [internalGeneratedStory, setInternalGeneratedStory] =
+    useState<GeneratedStory | null>(null);
+  const [internalError, setInternalError] = useState<string | null>(null);
+
+  const currentIsGenerating = isGenerating ?? internalIsGenerating;
+  const currentSelectedTheme = selectedTheme ?? internalSelectedTheme;
+  const currentGeneratedStory = generatedStory ?? internalGeneratedStory;
+  const currentError = error ?? internalError;
+
+  const setCurrentIsGenerating =
+    onIsGeneratingChange ?? setInternalIsGenerating;
+  const setCurrentSelectedTheme =
+    onSelectedThemeChange ?? setInternalSelectedTheme;
+  const setCurrentGeneratedStory =
+    onGeneratedStoryChange ?? setInternalGeneratedStory;
+  const setCurrentError = onErrorChange ?? setInternalError;
 
   const handleGenerateStory = async () => {
-    setIsGenerating(true);
-    setError(null);
-    setGeneratedStory(null);
+    const request: StoryGenerationRequest = {
+      child_id: childId,
+      theme: currentSelectedTheme,
+      reading_time_minutes: 5,
+      word_count_target: 400,
+      include_english: false,
+      include_jyutping: true,
+    };
+
+    setCurrentIsGenerating(true);
+    setCurrentError(null);
+    setCurrentGeneratedStory(null);
 
     try {
-      const story = await generateStoryWithExternalProgram({
-        child_id: childId,
-        theme: selectedTheme as
-          | "adventure"
-          | "family"
-          | "animals"
-          | "nature"
-          | "friendship"
-          | "bedtime",
-        reading_time_minutes: 5,
-        word_count_target: 400,
-        include_english: false,
-        include_jyutping: true,
-      });
+      if (onGenerateStory) {
+        await onGenerateStory(request);
+        return;
+      }
 
-      setGeneratedStory(story);
+      const story = await generateStoryWithExternalProgram(request);
+
+      setCurrentGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message);
+        setCurrentError(err.message);
       } else {
-        setError("生成故事失敗，請稍後再試。");
+        setCurrentError("生成故事失敗，請稍後再試。");
       }
     } finally {
-      setIsGenerating(false);
+      setCurrentIsGenerating(false);
     }
   };
 
@@ -134,10 +176,10 @@ export function BedtimeStoryGenerator({
             {themes.map((theme) => (
               <button
                 key={theme.value}
-                onClick={() => setSelectedTheme(theme.value)}
+                onClick={() => setCurrentSelectedTheme(theme.value)}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300",
-                  selectedTheme === theme.value
+                  currentSelectedTheme === theme.value
                     ? "bg-purple-100 border-purple-400 text-purple-900 shadow-md scale-105"
                     : "bg-white border-transparent hover:border-purple-200 text-slate-600 hover:bg-purple-50",
                 )}
@@ -163,15 +205,15 @@ export function BedtimeStoryGenerator({
         <div className="p-4">
           <Button
             onClick={handleGenerateStory}
-            disabled={isGenerating}
+            disabled={currentIsGenerating}
             className={cn(
               "w-full h-12 sm:h-16 rounded-full text-xl sm:text-3xl font-black text-white shadow-lg transition-all",
-              isGenerating
+              currentIsGenerating
                 ? "bg-slate-400 cursor-not-allowed"
                 : "bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-[1.02] active:scale-95 shadow-purple-300/50",
             )}
           >
-            {isGenerating ? (
+            {currentIsGenerating ? (
               <div className="flex items-center gap-3">
                 <Sparkles className="w-6 h-6 animate-spin" />
                 正在施展魔法...
@@ -185,19 +227,19 @@ export function BedtimeStoryGenerator({
           </Button>
         </div>
 
-        {error && (
+        {currentError && (
           <div className="child-tab-copy px-6 pb-5 !text-sm !font-bold !text-red-600">
-            {error}
+            {currentError}
           </div>
         )}
       </Card>
 
       {/* --- RESULT CARD (Displays when story is ready) --- */}
-      {generatedStory && (
+      {currentGeneratedStory && (
         <div>
           <StoryCard
-            story={generatedStory}
-            onRead={() => onReadStory?.(generatedStory)}
+            story={currentGeneratedStory}
+            onRead={() => onReadStory?.(currentGeneratedStory)}
           />
         </div>
       )}
