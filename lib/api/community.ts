@@ -5,7 +5,7 @@
  *  Epic 10.1 – Kid-Friendly Community Feeds
  *  Epic 10.2 – Parent Social Networking
  */
-import { apiRequest, getAuthToken, API_BASE_URL } from "./client";
+import { apiRequest, getAuthToken, API_BASE_URL, APIError } from "./client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,17 +14,6 @@ import { apiRequest, getAuthToken, API_BASE_URL } from "./client";
 export type ModerationStatus = "pending" | "approved" | "rejected";
 export type FriendshipStatus = "pending" | "accepted" | "blocked";
 export type ChallengeStatus = "active" | "completed" | "expired";
-export type FriendChallengeMetric =
-  | "practice_days"
-  | "new_words"
-  | "active_words";
-export type FriendChallengeInviteStatus = "pending" | "accepted" | "declined";
-export type FriendChallengeViewStatus =
-  | "pending"
-  | "active"
-  | "completed"
-  | "expired"
-  | "declined";
 
 export interface CommunityPost {
   id: string;
@@ -97,11 +86,11 @@ export interface CommunityChallenge {
 
 export interface CommunityChallengeMutationRequest {
   title: string;
-  title_zh?: string | null;
-  description?: string | null;
-  description_zh?: string | null;
+  title_zh: string | null;
+  description: string | null;
+  description_zh: string | null;
   target_count: number;
-  category?: string | null;
+  category: string | null;
   emoji: string;
   status: ChallengeStatus;
   starts_at: string;
@@ -112,10 +101,6 @@ export interface ChallengeParticipation {
   id: string;
   challenge_id: string;
   child_id: string;
-  child_name: string | null;
-  child_avatar: string | null;
-  parent_name: string | null;
-  participant_code: string | null;
   progress: number;
   is_completed: boolean;
   completed_at: string | null;
@@ -131,9 +116,26 @@ export interface ChallengeParticipation {
   participant_code: string | null;
 }
 
+export type FriendChallengeMetric =
+  | "practice_days"
+  | "new_words"
+  | "active_words";
+
+export type FriendChallengeInviteStatus =
+  | "pending"
+  | "accepted"
+  | "declined";
+
+export type FriendChallengeViewStatus =
+  | "pending"
+  | "active"
+  | "completed"
+  | "expired"
+  | "declined";
+
 export interface FriendChallengeParticipant {
   id: string;
-  parent_id: string;
+  parent_id: string | null;
   parent_name: string | null;
   child_id: string | null;
   child_name: string | null;
@@ -145,25 +147,56 @@ export interface FriendChallengeParticipant {
 
 export interface FriendChallenge {
   id: string;
-  creator_id: string;
-  creator_name: string | null;
   title: string;
-  title_zh: string;
+  title_zh: string | null;
+  emoji: string;
+  creator_name: string | null;
+  metric_type: FriendChallengeMetric;
+  target_count: number;
+  starts_at: string;
+  ends_at: string;
+  my_progress: number;
+  pending_participant_count: number;
+  view_status: FriendChallengeViewStatus;
+  participants: FriendChallengeParticipant[];
+}
+
+export interface FriendChallengeCreate {
+  child_id: string;
+  invited_parent_ids: string[];
   metric_type: FriendChallengeMetric;
   target_count: number;
   duration_days: number;
-  emoji: string;
-  starts_at: string;
-  ends_at: string;
-  created_at: string;
-  accepted_participant_count: number;
-  pending_participant_count: number;
-  my_invite_status: FriendChallengeInviteStatus;
-  my_child_id: string | null;
-  my_progress: number;
-  my_completed: boolean;
-  view_status: FriendChallengeViewStatus;
-  participants: FriendChallengeParticipant[];
+}
+
+export interface FriendChallengeResponseUpdate {
+  invite_status: Extract<FriendChallengeInviteStatus, "accepted" | "declined">;
+  child_id?: string;
+}
+
+const FRIEND_CHALLENGE_ENDPOINT = "/social/friend-challenges";
+const FRIEND_CHALLENGE_UNAVAILABLE_MESSAGE = "好友挑戰功能尚未在目前伺服器啟用。";
+const ADMIN_CHALLENGE_UPDATE_UNAVAILABLE_MESSAGE =
+  "目前後端未提供編輯公共挑戰 API。";
+
+function isUnavailableFriendChallengeEndpoint(error: unknown): boolean {
+  return error instanceof APIError && [404, 405, 501].includes(error.status);
+}
+
+function toChallengeCreatePayload(
+  payload: CommunityChallengeMutationRequest,
+): Omit<CommunityChallenge, "id" | "status" | "created_at"> {
+  return {
+    title: payload.title,
+    title_zh: payload.title_zh,
+    description: payload.description,
+    description_zh: payload.description_zh,
+    target_count: payload.target_count,
+    category: payload.category,
+    emoji: payload.emoji,
+    starts_at: payload.starts_at,
+    ends_at: payload.ends_at,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -353,6 +386,57 @@ export async function getFriendsProgress(): Promise<FriendProgress[]> {
   return apiRequest<FriendProgress[]>("/social/friends/progress");
 }
 
+/**
+ * Friend challenges are still optional on the backend; return an empty list
+ * when that slice is not deployed so the parent page keeps compiling.
+ */
+export async function getFriendChallenges(): Promise<FriendChallenge[]> {
+  try {
+    return await apiRequest<FriendChallenge[]>(FRIEND_CHALLENGE_ENDPOINT);
+  } catch (error) {
+    if (isUnavailableFriendChallengeEndpoint(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function createFriendChallenge(
+  payload: FriendChallengeCreate,
+): Promise<FriendChallenge> {
+  try {
+    return await apiRequest<FriendChallenge>(FRIEND_CHALLENGE_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (isUnavailableFriendChallengeEndpoint(error)) {
+      throw new Error(FRIEND_CHALLENGE_UNAVAILABLE_MESSAGE);
+    }
+    throw error;
+  }
+}
+
+export async function respondToFriendChallenge(
+  challengeId: string,
+  payload: FriendChallengeResponseUpdate,
+): Promise<FriendChallenge> {
+  try {
+    return await apiRequest<FriendChallenge>(
+      `${FRIEND_CHALLENGE_ENDPOINT}/${challengeId}/respond`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+    );
+  } catch (error) {
+    if (isUnavailableFriendChallengeEndpoint(error)) {
+      throw new Error(FRIEND_CHALLENGE_UNAVAILABLE_MESSAGE);
+    }
+    throw error;
+  }
+}
+
 /** List active community challenges */
 export async function getChallenges(
   status: ChallengeStatus = "active",
@@ -364,45 +448,57 @@ export async function getChallenges(
 
 /** Create a new community challenge */
 export async function createChallenge(
-  payload: CommunityChallengeMutationRequest,
+  payload: Omit<CommunityChallenge, "id" | "status" | "created_at">,
 ): Promise<CommunityChallenge> {
-  return createAdminChallenge(payload);
-}
-
-/** List public community challenges for admin management */
-export async function listAdminChallenges(
-  status?: ChallengeStatus,
-): Promise<CommunityChallenge[]> {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-
-  return apiRequest<CommunityChallenge[]>(
-    `/social/admin/challenges${params.size > 0 ? `?${params.toString()}` : ""}`,
-  );
-}
-
-/** Create a public community challenge as an admin */
-export async function createAdminChallenge(
-  payload: CommunityChallengeMutationRequest,
-): Promise<CommunityChallenge> {
-  return apiRequest<CommunityChallenge>("/social/admin/challenges", {
+  return apiRequest<CommunityChallenge>("/social/challenges", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-/** Update a public community challenge as an admin */
+export async function listAdminChallenges(): Promise<CommunityChallenge[]> {
+  const lists = await Promise.all([
+    getChallenges("active"),
+    getChallenges("completed"),
+    getChallenges("expired"),
+  ]);
+
+  const merged = new Map<string, CommunityChallenge>();
+  for (const challenge of lists.flat()) {
+    merged.set(challenge.id, challenge);
+  }
+
+  return Array.from(merged.values()).sort(
+    (left, right) =>
+      new Date(left.ends_at).getTime() - new Date(right.ends_at).getTime(),
+  );
+}
+
+export async function createAdminChallenge(
+  payload: CommunityChallengeMutationRequest,
+): Promise<CommunityChallenge> {
+  if (payload.status !== "active") {
+    throw new Error("目前後端只支援建立進行中的公共挑戰。");
+  }
+
+  return createChallenge(toChallengeCreatePayload(payload));
+}
+
 export async function updateAdminChallenge(
   challengeId: string,
-  payload: Partial<CommunityChallengeMutationRequest>,
+  payload: CommunityChallengeMutationRequest,
 ): Promise<CommunityChallenge> {
-  return apiRequest<CommunityChallenge>(
-    `/social/admin/challenges/${challengeId}`,
-    {
-      method: "PATCH",
+  try {
+    return await apiRequest<CommunityChallenge>(`/social/challenges/${challengeId}`, {
+      method: "PUT",
       body: JSON.stringify(payload),
-    },
-  );
+    });
+  } catch (error) {
+    if (error instanceof APIError && [404, 405, 501].includes(error.status)) {
+      throw new Error(ADMIN_CHALLENGE_UPDATE_UNAVAILABLE_MESSAGE);
+    }
+    throw error;
+  }
 }
 
 /** Join / increment progress on a challenge */
@@ -436,41 +532,5 @@ export async function getMyChallengeProgress(
 ): Promise<ChallengeParticipation> {
   return apiRequest<ChallengeParticipation>(
     `/social/challenges/${challengeId}/my-progress/${childId}`,
-  );
-}
-
-export async function getFriendChallenges(): Promise<FriendChallenge[]> {
-  return apiRequest<FriendChallenge[]>("/social/friend-challenges");
-}
-
-export async function createFriendChallenge(payload: {
-  child_id: string;
-  invited_parent_ids: string[];
-  metric_type: FriendChallengeMetric;
-  target_count: number;
-  duration_days: number;
-}): Promise<FriendChallenge> {
-  return apiRequest<FriendChallenge>("/social/friend-challenges", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function respondToFriendChallenge(
-  challengeId: string,
-  payload: {
-    invite_status: Extract<
-      FriendChallengeInviteStatus,
-      "accepted" | "declined"
-    >;
-    child_id?: string;
-  },
-): Promise<FriendChallenge> {
-  return apiRequest<FriendChallenge>(
-    `/social/friend-challenges/${challengeId}/respond`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
   );
 }
