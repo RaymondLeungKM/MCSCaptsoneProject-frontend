@@ -25,11 +25,13 @@ type PronunciationModel = {
   default: boolean;
   enabled: boolean;
   notes?: string;
+  availability?: string;
 };
 
 type PronunciationModelsResponse = {
   default_provider: string;
   default_model: string;
+  provider_defaults?: Record<string, string>;
   models: PronunciationModel[];
 };
 
@@ -349,8 +351,8 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
   const [backendError, setBackendError] = useState("");
   const [modelsLoading, setModelsLoading] = useState(false);
   const [recognitionModels, setRecognitionModels] = useState<PronunciationModel[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState("groq");
-  const [selectedModel, setSelectedModel] = useState("whisper-large-v3");
+  const [selectedProvider, setSelectedProvider] = useState("huggingface");
+  const [selectedModel, setSelectedModel] = useState("openai/whisper-large-v3");
   const [customModel, setCustomModel] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState(DEFAULT_LANGUAGE_PRESET.id);
   const [wordCantonese, setWordCantonese] = useState(DEFAULT_LANGUAGE_PRESET.defaultTarget);
@@ -392,8 +394,24 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
   const { speak, stop, isAvailable } = useSpeech();
 
   const enabledModels = recognitionModels.filter((model) => model.enabled);
-  const hasEnabledRecognitionModel = enabledModels.length > 0;
+  const selectedConfiguredModel =
+    recognitionModels.find(
+      (model) => model.id === selectedModel && model.provider === selectedProvider,
+    ) ?? recognitionModels.find((model) => model.id === selectedModel);
+  const enabledProviders = new Set(enabledModels.map((model) => model.provider));
+  const hasEnabledSelectedProvider = enabledProviders.has(selectedProvider);
+  const hasEnabledRecognitionModel = customModel.trim()
+    ? hasEnabledSelectedProvider
+    : Boolean(selectedConfiguredModel?.enabled);
   const effectiveModel = customModel.trim() || selectedModel;
+  const activeModelNotes = customModel.trim()
+    ? `Custom model id will be sent to the ${selectedProvider} provider.`
+    : selectedConfiguredModel?.notes || "";
+  const activeAvailability = customModel.trim()
+    ? hasEnabledSelectedProvider
+      ? ""
+      : `The ${selectedProvider} provider is not configured on the backend.`
+    : selectedConfiguredModel?.availability || "";
   const selectedLanguagePreset = getLanguagePreset(selectedLanguage);
   const recognizedText = recognitionResult?.heard?.trim() || "";
   const currentDrillWord = isDrillActive ? drillWords[drillCurrentIndex] ?? null : null;
@@ -502,8 +520,20 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
 
         const models = data.models || [];
         setRecognitionModels(models);
-        setSelectedProvider(data.default_provider || "groq");
-        setSelectedModel(data.default_model || "whisper-large-v3");
+
+        const defaultSelection =
+          models.find((model) => model.default && model.enabled) ||
+          models.find((model) => model.enabled) ||
+          models.find((model) => model.default) ||
+          models[0];
+
+        if (defaultSelection) {
+          setSelectedProvider(defaultSelection.provider);
+          setSelectedModel(defaultSelection.id);
+        } else {
+          setSelectedProvider(data.default_provider || "huggingface");
+          setSelectedModel(data.default_model || "openai/whisper-large-v3");
+        }
 
         if (models.some((model) => model.enabled)) {
           setBackendStatus(
@@ -511,7 +541,7 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
           );
         } else {
           setBackendStatus(
-            "Backend pronunciation test API is mounted, but no configured speech model is enabled in the running server. Set GROQ_API_KEY and reload the backend to run recognition tests.",
+            "No speech API keys are configured. Set HUGGINGFACE_API_TOKEN (free, included models support Cantonese) or CLOUDFLARE_AI_API_TOKEN in the backend .env to enable recognition models, then restart the backend.",
           );
         }
       } catch (error) {
@@ -1566,9 +1596,13 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
                 )}
               </select>
               {recognitionModels.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Provider: {selectedProvider}
-                </p>
+                <div className="space-y-1 rounded-lg border bg-slate-50 p-3 text-xs text-slate-600">
+                  <p>
+                    <span className="font-medium text-slate-900">Provider:</span> {selectedProvider}
+                  </p>
+                  {activeModelNotes && <p>{activeModelNotes}</p>}
+                  {activeAvailability && <p className="text-amber-700">{activeAvailability}</p>}
+                </div>
               )}
             </div>
 
@@ -1672,7 +1706,7 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
 
               {!hasEnabledRecognitionModel && !modelsLoading && !backendError && (
                 <p className="text-sm text-amber-700">
-                  No enabled backend model is currently available. Configure the backend key first.
+                  {activeAvailability || `No enabled backend model is currently available for ${selectedProvider}. Configure that backend provider first.`}
                 </p>
               )}
 

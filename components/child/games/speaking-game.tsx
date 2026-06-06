@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronRight, Mic, MicOff, RotateCcw, Star, Volume2, X, Zap } from "lucide-react";
+import { Mic, MicOff, RotateCcw, Star, Volume2, X, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
+import { API_BASE_URL } from "@/lib/api/client";
 import { getWords } from "@/lib/api/vocabulary";
 import { recordGameSession } from "@/lib/api/games";
 import { Confetti } from "./confetti";
@@ -19,6 +20,7 @@ interface SpeakingGameProps {
 }
 
 type RoundResult = "correct" | "partial" | "incorrect" | null;
+type MicErrorKind = "permission" | "device" | "network" | "unknown" | null;
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -78,6 +80,18 @@ function scoreTranscript(heard: string, target: string): RoundResult {
   return "incorrect";
 }
 
+function getPreferredRecordingMimeType(): string | undefined {
+  if (typeof window === "undefined" || typeof MediaRecorder === "undefined") return undefined;
+  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/wav"];
+  return candidates.find((c) => MediaRecorder.isTypeSupported(c));
+}
+
+function getAudioExtension(mimeType: string): string {
+  if (mimeType.includes("wav")) return ".wav";
+  if (mimeType.includes("mp4") || mimeType.includes("m4a")) return ".m4a";
+  return ".webm";
+}
+
 const TOTAL_ROUNDS = 8;
 
 export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
@@ -92,7 +106,13 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
   const [result, setResult] = useState<RoundResult>(null);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [micError, setMicError] = useState<string | null>(null);
+  const [micErrorKind, setMicErrorKind] = useState<MicErrorKind>(null);
   const [micPermissionGranted, setMicPermissionGranted] = useState(false);
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [practiceModeMessage, setPracticeModeMessage] = useState<string | null>(null);
+  const [preferBackendStt, setPreferBackendStt] = useState(false);
+  const [isBackendRecording, setIsBackendRecording] = useState(false);
+  const [isBackendValidating, setIsBackendValidating] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [xpEarned, setXpEarned] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -101,10 +121,45 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
   const [showJyutping, setShowJyutping] = useState(false);
   const recognitionRef = useRef<any>(null);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const backendRecorderRef = useRef<MediaRecorder | null>(null);
+  const backendStreamRef = useRef<MediaStream | null>(null);
+  const backendChunksRef = useRef<Blob[]>([]);
+  const backendStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { playWord, isPlaying } = useWordAudio();
   const startTimeRef = useRef<number>(Date.now());
   const wordsSeenRef = useRef<string[]>([]);
   const wordsCorrectRef = useRef<string[]>([]);
+
+  const requestMicrophoneAccess = useCallback(async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMicPermissionGranted(false);
+      setMicErrorKind("device");
+      setMicError("搵唔到麥克風，試下插返入或者允許使用 🎤");
+      return false;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setMicPermissionGranted(true);
+      setMicError(null);
+      setMicErrorKind(null);
+      return true;
+    } catch (err: any) {
+      console.warn("[SpeakingGame] Mic permission denied:", err);
+      setMicPermissionGranted(false);
+
+      if (err?.name === "NotAllowedError") {
+        setMicErrorKind("permission");
+        setMicError("需要允許使用麥克風先可以玩呢個遊戲 🎤");
+      } else {
+        setMicErrorKind("device");
+        setMicError("搵唔到麥克風，試下插返入或者允許使用 🎤");
+      }
+
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     const SR =
@@ -112,26 +167,11 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
       (window as any).webkitSpeechRecognition;
     if (!SR) {
       setSpeechSupported(false);
-      return;
+      // Try the backend Whisper endpoint instead of jumping to practice mode.
+      setPreferBackendStt(true);
     }
-    // Proactively request mic permission so we get a clear error early
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then(() => {
-          setMicPermissionGranted(true);
-          setMicError(null);
-        })
-        .catch((err) => {
-          console.warn("[SpeakingGame] Mic permission denied:", err);
-          if (err.name === "NotAllowedError") {
-            setMicError("需要允許使用麥克風先可以玩呢個遊戲 🎤");
-          } else {
-            setMicError("搵唔到麥克風，試下插返入或者允許使用 🎤");
-          }
-        });
-    }
-  }, []);
+    void requestMicrophoneAccess();
+  }, [requestMicrophoneAccess]);
 
   useEffect(() => {
     void (async () => {
@@ -186,22 +226,224 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
     setRound((r) => r + 1);
   }, []);
 
-  const toggleListening = () => {
-    if (!speechSupported) return;
+  const markCurrentWordSeen = useCallback((wasCorrect: boolean) => {
+    if (!currentWord) return;
 
-    // If already listening, stop
-    if (isListening) {
-      recognitionRef.current?.stop();
-      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+    if (!wordsSeenRef.current.includes(currentWord.id)) {
+      wordsSeenRef.current = [...wordsSeenRef.current, currentWord.id];
+    }
+
+    if (wasCorrect && !wordsCorrectRef.current.includes(currentWord.id)) {
+      wordsCorrectRef.current = [...wordsCorrectRef.current, currentWord.id];
+    }
+  }, [currentWord]);
+
+  const handleCorrectRound = useCallback(() => {
+    markCurrentWordSeen(true);
+    setScore((s) => s + 1);
+
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.7 },
+      ticks: 100,
+      gravity: 1.5,
+      colors: ['#f97316', '#fbbf24', '#3b82f6', '#10b981', '#ffffff']
+    });
+
+    setTimeout(() => {
+      confetti.reset();
+      nextRound();
+    }, 1500);
+  }, [markCurrentWordSeen, nextRound]);
+
+  const activatePracticeMode = useCallback((message: string) => {
+    setIsListening(false);
+    setMicError(null);
+    setMicErrorKind(null);
+    setPracticeMode(true);
+    setPracticeModeMessage(message);
+  }, []);
+
+  const handlePracticeSuccess = useCallback(() => {
+    setResult("correct");
+    handleCorrectRound();
+  }, [handleCorrectRound]);
+
+  const handlePracticeSkip = useCallback(() => {
+    markCurrentWordSeen(false);
+    setResult(null);
+    setTranscript("");
+    nextRound();
+  }, [markCurrentWordSeen, nextRound]);
+
+  const applyTranscriptResult = useCallback((heard: string) => {
+    const trimmed = (heard || "").trim();
+    setTranscript(trimmed);
+    setMicError(null);
+    setMicErrorKind(null);
+
+    const target = currentWord?.word_cantonese || currentWord?.word || "";
+    const r: RoundResult = trimmed ? scoreTranscript(trimmed, target) : "incorrect";
+    setResult(r);
+
+    if (r === "correct") {
+      handleCorrectRound();
       return;
     }
 
-    // Clear previous mic error when retrying
-    setMicError(null);
+    markCurrentWordSeen(false);
+    setWrongAttemptsThisRound((prev) => {
+      const newCount = prev + 1;
+      if (newCount >= 2) setShowJyutping(true);
+      if (newCount >= 4) {
+        setTimeout(() => { nextRound(); }, 1800);
+      } else {
+        setTimeout(() => { void playCurrentWord(); }, 400);
+        setTimeout(() => { void playCurrentWord(); }, 1400);
+        setTimeout(() => { setResult(null); setTranscript(""); }, 2200);
+      }
+      return newCount;
+    });
+  }, [currentWord, handleCorrectRound, markCurrentWordSeen, nextRound, playCurrentWord]);
+
+  const validateWithBackend = useCallback(async (audioBlob: Blob, mimeType: string): Promise<boolean> => {
+    if (!currentWord) return false;
+    try {
+      setIsBackendValidating(true);
+      const ext = getAudioExtension(mimeType);
+      const form = new FormData();
+      form.append("audio", audioBlob, `speaking${ext}`);
+      form.append("word_cantonese", currentWord.word_cantonese || "");
+      form.append("jyutping", currentWord.jyutping || "");
+      form.append("word_id", currentWord.id);
+      form.append("language", "yue");
+      const resp = await fetch(`${API_BASE_URL}/audio/validate-pronunciation`, {
+        method: "POST",
+        body: form,
+      });
+      if (!resp.ok) return false;
+      const data = await resp.json();
+      const heard = typeof data?.heard === "string" ? data.heard : "";
+      applyTranscriptResult(heard);
+      return true;
+    } catch (err) {
+      console.warn("[SpeakingGame] backend STT failed:", err);
+      return false;
+    } finally {
+      setIsBackendValidating(false);
+    }
+  }, [applyTranscriptResult, currentWord]);
+
+  const recordAndValidateBackend = useCallback(async (): Promise<boolean> => {
+    if (typeof MediaRecorder === "undefined") return false;
+    if (!currentWord) return false;
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") {
+        setMicErrorKind("permission");
+        setMicError("需要允許使用麥克風先可以玩呢個遊戲 🎤");
+      } else {
+        setMicErrorKind("device");
+        setMicError("搵唔到麥克風，試下插返入或者允許使用 🎤");
+      }
+      return false;
+    }
+
+    const mimeType = getPreferredRecordingMimeType() || "audio/webm";
+    let recorder: MediaRecorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch {
+      stream.getTracks().forEach((t) => t.stop());
+      return false;
+    }
+
+    backendRecorderRef.current = recorder;
+    backendStreamRef.current = stream;
+    backendChunksRef.current = [];
+
+    return await new Promise<boolean>((resolve) => {
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) backendChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        if (backendStopTimerRef.current) {
+          clearTimeout(backendStopTimerRef.current);
+          backendStopTimerRef.current = null;
+        }
+        stream.getTracks().forEach((t) => t.stop());
+        backendStreamRef.current = null;
+        backendRecorderRef.current = null;
+        const blob = new Blob(backendChunksRef.current, { type: mimeType });
+        backendChunksRef.current = [];
+        setIsBackendRecording(false);
+        if (blob.size === 0) { resolve(false); return; }
+        const ok = await validateWithBackend(blob, mimeType);
+        resolve(ok);
+      };
+      setIsBackendRecording(true);
+      setMicError(null);
+      setMicErrorKind(null);
+      try {
+        recorder.start();
+      } catch {
+        setIsBackendRecording(false);
+        stream.getTracks().forEach((t) => t.stop());
+        resolve(false);
+        return;
+      }
+      backendStopTimerRef.current = setTimeout(() => {
+        try { if (recorder.state !== "inactive") recorder.stop(); } catch {}
+      }, 4000);
+    });
+  }, [currentWord, validateWithBackend]);
+
+  const stopBackendRecording = useCallback(() => {
+    if (backendStopTimerRef.current) {
+      clearTimeout(backendStopTimerRef.current);
+      backendStopTimerRef.current = null;
+    }
+    const rec = backendRecorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try { rec.stop(); } catch {}
+    }
+  }, []);
+
+  const startListening = useCallback(async () => {
+    if (preferBackendStt) {
+      const granted = micPermissionGranted || (await requestMicrophoneAccess());
+      if (!granted) return;
+      const ok = await recordAndValidateBackend();
+      if (!ok) {
+        activatePracticeMode("語音服務暫時用唔到，已切換到練習模式 🌐");
+      }
+      return;
+    }
+
+    if (!speechSupported) return;
+
+    if (!micPermissionGranted) {
+      const granted = await requestMicrophoneAccess();
+      if (!granted) return;
+    }
 
     const SR =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    setMicError(null);
+    setMicErrorKind(null);
+    setPracticeMode(false);
+    setPracticeModeMessage(null);
+
     const recognition = new SR();
     recognitionRef.current = recognition;
 
@@ -221,64 +463,41 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
         { length: event.results[0].length },
         (_, i) => event.results[0][i].transcript,
       );
-      
-      // Let's take the best alternative but also scan all alternatives 
+
+      setMicError(null);
+      setMicErrorKind(null);
+
+      // Let's take the best alternative but also scan all alternatives
       // for the target word to be more forgiving.
       const bestHeard = event.results[0][0].transcript;
-      const anyAlternativeMatches = alternatives.some(alt => {
+      const anyAlternativeMatches = alternatives.some((alt) => {
         const res = scoreTranscript(alt, currentWord?.word_cantonese || currentWord?.word || "");
         return res === "correct";
       });
 
       setTranscript(bestHeard);
-      
+
       const target = currentWord?.word_cantonese || currentWord?.word || "";
       let r = scoreTranscript(bestHeard, target);
-      
-      // If the best choice wasn't "correct" but another alternative was, upgrade it.
+
       if (r !== "correct" && anyAlternativeMatches) {
         r = "correct";
       }
 
       setResult(r);
 
-      // Track word progress
-      if (currentWord && !wordsSeenRef.current.includes(currentWord.id)) {
-        wordsSeenRef.current = [...wordsSeenRef.current, currentWord.id];
-      }
-      
       if (r === "correct") {
-        setScore((s) => s + 1);
-        if (currentWord) wordsCorrectRef.current = [...wordsCorrectRef.current, currentWord.id];
-        
-        // Realistic confetti burst - shorter duration
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.7 },
-          ticks: 100,
-          gravity: 1.5,
-          colors: ['#f97316', '#fbbf24', '#3b82f6', '#10b981', '#ffffff']
-        });
-
-        // Only move to next round if correct
-        setTimeout(() => {
-          confetti.reset(); // Clear existing confetti before next question
-          nextRound();
-        }, 1500);
+        handleCorrectRound();
       } else {
-        // Wrong / partial — Duolingo-style escalating hints
+        markCurrentWordSeen(false);
         setWrongAttemptsThisRound((prev) => {
           const newCount = prev + 1;
-          // Attempt 2+: show jyutping as a visual hint
           if (newCount >= 2) setShowJyutping(true);
-          // Attempt 4: auto-advance so child is never stuck forever
           if (newCount >= 4) {
             setTimeout(() => {
               nextRound();
             }, 1800);
           } else {
-            // Replay audio twice (with a pause) to reinforce pronunciation
             setTimeout(() => {
               void playCurrentWord();
             }, 400);
@@ -302,39 +521,89 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
       const errorType = event?.error || "";
       switch (errorType) {
         case "not-allowed":
+          setMicErrorKind("permission");
           setMicError("需要允許使用麥克風先可以玩呢個遊戲 🎤");
           break;
         case "audio-capture":
+          setMicErrorKind("device");
           setMicError("搵唔到麥克風，試下插返入或者允許使用 🎤");
           break;
         case "no-speech":
-          // No speech detected — just let them try again, don't penalize
+          setMicErrorKind(null);
           setTranscript("");
           break;
         case "network":
-          setMicError("網絡有問題，試下重新連線 🌐");
+          // Browser-level network (typical Edge/Chromium failure). Switch to backend
+          // STT immediately and re-record so Edge can score like Safari.
+          setPreferBackendStt(true);
+          void (async () => {
+            const ok = await recordAndValidateBackend();
+            if (!ok) activatePracticeMode("語音服務暫時連線唔到，已切換到練習模式 🌐");
+          })();
           break;
         case "aborted":
-          // User or system aborted — no action needed
+          setMicErrorKind(null);
           break;
         default:
-          // Unknown error — mark as incorrect and move on
-          setResult("incorrect");
-          setTimeout(nextRound, 1500);
+          setPreferBackendStt(true);
+          void (async () => {
+            const ok = await recordAndValidateBackend();
+            if (!ok) activatePracticeMode("語音功能暫時用唔到，已切換到練習模式 🎤");
+          })();
           break;
       }
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (err) {
+      console.warn("[SpeakingGame] Failed to start recognition:", err);
+      activatePracticeMode("語音功能暫時用唔到，已切換到練習模式 🎤");
+      return;
+    }
 
-    // Auto-stop after 5 seconds to prevent hanging
     autoStopTimerRef.current = setTimeout(() => {
       recognitionRef.current?.stop();
     }, 5000);
+  }, [activatePracticeMode, currentWord, handleCorrectRound, markCurrentWordSeen, micPermissionGranted, nextRound, playCurrentWord, preferBackendStt, recordAndValidateBackend, requestMicrophoneAccess, speechSupported]);
+
+  const handleMicRetry = useCallback(() => {
+    void startListening();
+  }, [startListening]);
+
+  const handleResumeVoiceMode = useCallback(() => {
+    setPracticeMode(false);
+    setPracticeModeMessage(null);
+    void startListening();
+  }, [startListening]);
+
+  const toggleListening = () => {
+    if (preferBackendStt) {
+      if (isBackendRecording) { stopBackendRecording(); return; }
+      if (isBackendValidating) return;
+      void startListening();
+      return;
+    }
+
+    if (!speechSupported) return;
+
+    // If already listening, stop
+    if (isListening) {
+      recognitionRef.current?.stop();
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      return;
+    }
+    void startListening();
   };
 
   const isGameOver = round >= TOTAL_ROUNDS || round >= words.length;
   const finalScore = Math.round(score);
+  const canUseVoice = speechSupported || preferBackendStt;
+  const showPracticePanel = !canUseVoice || practiceMode;
+  const micActive = isListening || isBackendRecording;
+  const practicePanelMessage = !canUseVoice
+    ? "此設備未支援語音識別，已切換到練習模式 🎤"
+    : (practiceModeMessage || "語音功能暫時用唔到，已切換到練習模式 🎤");
 
   const restart = () => {
     setWords((prev) => shuffle(prev));
@@ -342,6 +611,11 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
     setScore(0);
     setResult(null);
     setTranscript("");
+    setPracticeMode(false);
+    setPracticeModeMessage(null);
+    setMicError(null);
+    setMicErrorKind(null);
+    // Keep preferBackendStt sticky: if browser SR failed once, keep using backend.
     setXpEarned(null);
     wordsSeenRef.current = [];
     wordsCorrectRef.current = [];
@@ -516,78 +790,105 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
           </button>
         </div>
 
-        {/* No speech recognition fallback */}
-        {!speechSupported && (
-          <div className="bg-amber-50 rounded-3xl p-5 text-center w-full max-w-xs">
-            <p className="child-tab-card-copy !mb-3 !font-bold !text-amber-700">
-              此設備不支援語音識別
-            </p>
-            <button
-              onClick={() => {
-                setResult(null);
-                setTranscript("");
-                setRound((r) => r + 1);
-              }}
-              className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 mx-auto active:scale-95 transition-transform"
-            >
-              下一個 <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Mic error banner */}
         {micError && (
           <div className="bg-amber-50 rounded-3xl p-4 text-center w-full max-w-xs">
             <p className="child-tab-card-copy !mb-3 !text-sm !font-bold !text-amber-700">
               {micError}
             </p>
-            <button
-              onClick={() => {
-                setMicError(null);
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                  navigator.mediaDevices
-                    .getUserMedia({ audio: true })
-                    .then(() => {
-                      setMicPermissionGranted(true);
-                      setMicError(null);
-                    })
-                    .catch(() => {
-                      setMicError("仲係冇權限用麥克風 😢 去設定嗰度開返佢");
-                    });
-                }
-              }}
-              className="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
-            >
-              🔄 再試一次
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={handleMicRetry}
+                className="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+              >
+                {micErrorKind === "network" ? "🎤 再試發音" : "🔄 再試一次"}
+              </button>
+              {micErrorKind === "network" && (
+                <button
+                  onClick={() => {
+                    setMicError(null);
+                    setMicErrorKind(null);
+                    setTranscript("");
+                    setResult(null);
+                    nextRound();
+                  }}
+                  className="bg-white text-slate-600 px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+                >
+                  下一題
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Practice mode fallback when live recognition is unavailable */}
+        {showPracticePanel && !micError && !result && (
+          <div className="bg-amber-50 rounded-3xl p-5 text-center w-full max-w-sm border border-amber-200 shadow-sm">
+            <p className="child-tab-card-copy !mb-4 !font-bold !text-amber-700">
+              {practicePanelMessage}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={playCurrentWord}
+                className="bg-white text-orange-600 px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+              >
+                🔊 再聽一次
+              </button>
+              <button
+                onClick={handlePracticeSuccess}
+                className="bg-orange-500 text-white px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+              >
+                ✅ 我讀到啦
+              </button>
+              <button
+                onClick={handlePracticeSkip}
+                className="bg-white text-slate-600 px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+              >
+                下一題
+              </button>
+            </div>
+            {speechSupported && (
+              <button
+                onClick={handleResumeVoiceMode}
+                className="mt-3 text-xs font-bold text-amber-700 underline underline-offset-4"
+              >
+                試返語音
+              </button>
+            )}
           </div>
         )}
 
         {/* Microphone button — click to toggle */}
-        {speechSupported && !result && !micError && (
+        {canUseVoice && !showPracticePanel && !result && !micError && (
           <div className="flex flex-col items-center gap-4">
             <button
               onClick={toggleListening}
+              disabled={isBackendValidating}
             className={`w-[80px] h-[80px] rounded-full flex items-center justify-center shadow-xl transition-all select-none
-                ${isListening 
-                  ? "bg-gradient-to-b from-red-400 to-red-600 scale-110 animate-pulse shadow-[0_6px_0_#991b1b]" 
-                  : "bg-gradient-to-b from-orange-400 to-orange-600 active:scale-90 active:translate-y-1 active:shadow-none shadow-[0_8px_0_#c2410c]"}`}
+                ${micActive
+                  ? "bg-gradient-to-b from-red-400 to-red-600 scale-110 animate-pulse shadow-[0_6px_0_#991b1b]"
+                  : "bg-gradient-to-b from-orange-400 to-orange-600 active:scale-90 active:translate-y-1 active:shadow-none shadow-[0_8px_0_#c2410c]"}
+                ${isBackendValidating ? "opacity-70 cursor-wait" : ""}`}
             >
-              {isListening ? (
+              {micActive ? (
                 <MicOff className="w-8 h-8 text-white" />
               ) : (
                 <Mic className="w-8 h-8 text-white" />
               )}
             </button>
-            {isListening ? (
+            {micActive ? (
               <div className="flex items-end gap-1.5 h-10">
                 {[1,2,3,4,5,6].map((n) => (
                   <div key={n} className="wave-bar w-2.5 bg-red-400 rounded-full" />
                 ))}
               </div>
+            ) : isBackendValidating ? (
+              <p className="child-tab-section-title !mt-0 !text-lg !text-slate-700 bg-white/50 px-6 py-2 rounded-full border-2 border-orange-200">
+                識別中… 🌐
+              </p>
             ) : (
               <p className="child-tab-section-title !mt-0 !text-xl !text-slate-700 bg-white/50 px-6 py-2 rounded-full border-2 border-orange-200">
-                撳麥克風，大聲讀出嚟！
+                {preferBackendStt ? "按麥克風，大聲讀出嚟！ 🌐" : "撳麥克風，大聲讀出嚟！"}
               </p>
             )}
           </div>

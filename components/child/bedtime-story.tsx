@@ -75,7 +75,7 @@ export function BedtimeStoryGenerator({
     setError(null);
     setGeneratedStory(null);
 
-    // Minimum overlay display time so the video transition is visible
+    // Keep the generation overlay visible long enough for the transition to register.
     const MIN_OVERLAY_MS = 3000;
     const startTime = Date.now();
 
@@ -95,20 +95,23 @@ export function BedtimeStoryGenerator({
         include_jyutping: true,
       });
 
-      // Wait remaining time so video overlay stays visible
       const elapsed = Date.now() - startTime;
       if (elapsed < MIN_OVERLAY_MS) {
-        await new Promise((r) => setTimeout(r, MIN_OVERLAY_MS - elapsed));
+        await new Promise((resolve) => {
+          setTimeout(resolve, MIN_OVERLAY_MS - elapsed);
+        });
       }
 
       setGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
     } catch (err) {
-      // Still hold the overlay for minimum time on error
       const elapsed = Date.now() - startTime;
       if (elapsed < MIN_OVERLAY_MS) {
-        await new Promise((r) => setTimeout(r, MIN_OVERLAY_MS - elapsed));
+        await new Promise((resolve) => {
+          setTimeout(resolve, MIN_OVERLAY_MS - elapsed);
+        });
       }
+
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -121,7 +124,6 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
-      {/* --- STORY GENERATION VIDEO OVERLAY --- */}
       {isGenerating && (
         <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
@@ -141,10 +143,10 @@ export function BedtimeStoryGenerator({
               />
             </div>
             <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin" />
+              <div className="mb-3 flex items-center justify-center gap-3">
+                <Sparkles className="w-7 h-7 animate-spin text-yellow-300" />
                 <span className="text-2xl font-black text-white sm:text-3xl">正在施展魔法...</span>
-                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin [animation-direction:reverse]" />
+                <Sparkles className="w-7 h-7 animate-spin text-yellow-300 [animation-direction:reverse]" />
               </div>
               <p className="text-base font-semibold text-white/80 sm:text-lg">
                 為{childName}創作專屬故事，請稍候
