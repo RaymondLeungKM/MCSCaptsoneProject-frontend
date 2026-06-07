@@ -1,301 +1,70 @@
-[00:00:02.543] Server  LOG     
-[00:00:02.544] Server  LOG        We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
-[00:00:02.544] Server  LOG        The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
-
-[00:00:02.544] Server  LOG        	- include was updated to add '.next-fresh/types/**/*.ts'
-[00:00:02.544] Server  LOG        	- include was updated to add '.next-fresh/dev/types/**/*.ts'
-[00:00:02.544] Server  LOG     
-[00:00:02.920] Server  LOG      ✓ Ready in 2.4s
-[00:00:21.561] Server  LOG      ○ Compiling /child ...
-[00:00:31.893] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:31.894] Browser LOG     [Speech] Voices loaded: 210
-[00:00:31.894] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
-[00:00:32.137] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:00:35.528] Server  LOG      ○ Compiling /api/v1/[...path] ...
-[00:00:47.841] Browser LOG     [API] Response successful: /users/me 
-[00:00:47.841] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:00:48.393] Browser LOG     [API] Response successful: /children/ 
-[00:00:48.393] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:00:48.393] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:00:48.629] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:00:48.629] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:00:48.629] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:00:49.067] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:00:49.067] Browser LOG     [Speech] stop() called
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:00:49.067] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:00:49.722] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:00:49.722] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:00:49.722] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:00:50.099] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:00:50.099] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:00:50.099] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:00:50.286] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:00:52.265] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:00:52.265] Browser LOG     [Speech] stop() called
-[00:00:52.265] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:00:52.265] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:00:52.265] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:00:54.347] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:16.406] Browser LOG     [Speech] Voices loaded: 223
-[00:04:16.406] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
-[00:04:19.803] Server  LOG      ○ Compiling /login ...
-[00:04:22.054] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:04:22.054] Browser LOG     [Speech] Voices loaded: 210
-[00:04:22.054] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
-[00:04:22.296] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:04:25.355] Server  LOG      ○ Compiling /api/v1/[...path] ...
-[00:04:29.017] Browser LOG     [API] Response successful: /users/me 
-[00:04:29.017] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:04:29.701] Browser LOG     [API] Response successful: /children/ 
-[00:04:29.701] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:04:29.701] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:04:32.077] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:04:32.077] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:04:32.077] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:32.077] Browser LOG     [Speech] stop() called
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:04:32.077] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:32.274] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:04:32.447] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:04:33.004] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:04:33.004] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:04:33.004] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:04:33.004] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:04:35.273] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:35.273] Browser LOG     [Speech] stop() called
-[00:04:36.051] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:04:36.142] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:04:38.305] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:38.305] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:04:38.305] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:04:41.922] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:04:41.922] Browser LOG     [Speech] Voices loaded: 210
-[00:04:41.922] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
-[00:04:42.266] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:04:42.266] Browser LOG     [API] Response successful: /users/me 
-[00:04:42.266] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:04:42.266] Browser LOG     [API] Response successful: /children/ 
-[00:04:42.266] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:04:42.266] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:04:42.692] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:04:42.692] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:04:42.692] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:42.692] Browser LOG     [Speech] stop() called
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:04:42.692] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:42.692] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:04:42.692] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:04:43.207] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:04:43.207] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:04:45.994] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:45.994] Browser LOG     [Speech] stop() called
-[00:04:45.994] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:04:45.994] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:04:45.994] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:04:45.994] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:04:48.210] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:04:48.210] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:04:48.210] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:04:58.244] Server  LOG      ○ Compiling / ...
-[00:05:08.577] Browser LOG     [Speech] Voices loaded: 223
-[00:05:08.577] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
-[00:05:14.696] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:05:14.696] Browser LOG     [Speech] Voices loaded: 210
-[00:05:14.697] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
-[00:05:14.916] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:05:15.738] Browser LOG     [API] Response successful: /users/me 
-[00:05:15.739] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:05:16.022] Browser LOG     [API] Response successful: /children/ 
-[00:05:16.022] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:05:16.023] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:05:16.179] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:05:16.179] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:05:16.179] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:05:17.037] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:05:17.037] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:05:17.038] Browser LOG     [Speech] stop() called
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:05:17.038] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:05:20.655] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:05:20.655] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:05:24.640] Browser LOG     [API] Request [1/3]: POST /auth/login 
-[00:05:26.429] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:05:26.429] Browser LOG     [Speech] stop() called
-[00:05:26.429] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:05:26.429] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:05:26.429] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:05:26.576] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:05:27.875] Browser LOG     [API] Response successful: /auth/login 
-[00:05:27.875] Browser LOG     [API] Token stored 
-[00:05:27.875] Browser LOG     [API] Token stored 
-[00:05:27.875] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:05:33.286] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:05:33.286] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:05:33.286] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:05:33.286] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:05:33.286] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:05:33.288] Browser LOG     [API] Response successful: /users/me 
-[00:05:37.070] Server  LOG      ○ Compiling /parent ...
-[00:05:50.503] Browser LOG     [API] Request [1/3]: POST /auth/login 
-[00:07:33.729] Browser LOG     [API] Response successful: /auth/login 
-[00:07:33.734] Browser LOG     [API] Token stored 
-[00:07:33.734] Browser LOG     [API] Token stored 
-[00:07:33.734] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:07:41.908] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:07:51.158] Browser LOG     [API] Response successful: /users/me 
-[00:07:53.890] Browser LOG     [Speech] Voices loaded: 223
-[00:07:53.890] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
-[00:07:53.890] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:07:53.890] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:07:54.275] Browser LOG     [API] Response successful: /children/ 
-[00:07:54.275] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:07:54.275] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
-[00:07:54.275] Browser LOG     [API] Response successful: /children/ 
-[00:07:54.275] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:07:54.275] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
-[00:07:54.275] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:07:54.833] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:07:54.844] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:07:54.844] Browser LOG     [API] Response successful: /children/ 
-[00:07:54.844] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:07:54.844] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
-[00:07:54.844] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
-[00:07:54.844] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
-[00:07:54.844] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
-[00:07:54.844] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
-[00:07:54.844] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:07:55.018] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
-[00:07:55.018] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
-[00:07:55.018] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
-[00:07:55.810] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:07:55.810] Browser LOG     [Speech] Voices loaded: 210
-[00:07:55.810] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
-[00:07:56.044] Browser LOG     [API] Request [1/3]: GET /users/me 
-[00:07:56.207] Browser LOG     [API] Response successful: /users/me 
-[00:07:56.207] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:07:56.333] Browser LOG     [API] Response successful: /children/ 
-[00:07:56.333] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:07:56.333] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:07:57.024] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:07:57.024] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:07:57.024] Browser LOG     [Speech] stop() called
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:07:57.024] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:07:57.239] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:07:57.239] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:07:57.809] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:08:00.148] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:08:00.148] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:08:00.148] Browser LOG     [Speech] stop() called
-[00:08:00.148] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:08:00.148] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:08:00.148] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:08:02.609] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:08:02.610] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:08:02.610] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:08:02.610] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:08:05.519] Server  LOG      ○ Compiling /_not-found ...
-[00:10:23.036] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:10:23.036] Browser LOG     [API] Request [1/3]: GET /children/ 
-[00:10:30.835] Browser LOG     [API] Response successful: /children/ 
-[00:10:30.835] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:10:30.835] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:10:31.525] Browser LOG     [API] Response successful: /children/ 
-[00:10:31.525] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
-[00:10:31.525] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:10:32.454] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:10:32.454] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:10:32.454] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:10:32.873] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
-[00:10:33.266] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:10:33.266] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:10:36.353] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:10:36.353] Browser LOG     [Speech] stop() called
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:10:36.353] Browser LOG     [API] Request [1/3]: POST /progress/session 
-[00:10:38.371] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
-[00:10:38.371] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
-[00:10:38.372] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
-[00:10:38.742] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:10:39.114] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:10:39.114] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:10:39.236] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:10:41.698] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:10:41.908] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:10:41.908] Browser LOG     [Speech] stop() called
-[00:10:42.341] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
-[00:10:44.539] Browser LOG     [API] Response successful: /children/sample-child-community-1 
-[00:10:44.714] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
-[00:10:44.714] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:10:45.219] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
-[00:10:45.219] Browser LOG     [API] Response successful: /progress/session 
-[00:10:45.219] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
-[00:10:45.219] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
-[00:10:45.219] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
-[00:10:45.219] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
-[00:10:45.219] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[00:00:02.541] Server  LOG      ✓ Ready in 2.2s
+[00:00:05.574] Server  LOG      ○ Compiling /test-images ...
+[00:00:18.600] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:18.600] Browser LOG     [Speech] Voices loaded: 210
+[00:00:18.600] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)","Google 普通话（中国大陆） (zh-CN)","Google 粤語（香港） (zh-HK)","Google 國語（臺灣） (zh-TW)"]
+[00:00:18.614] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:22.846] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-1-schnell provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for children..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[00:00:22.848] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-1-schnell multipart=false prompt="a high-quality watercolor illustration of a single apple for children..."
+[00:00:24.058] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:00:24.074] Server  LOG     [generate-image] result=ok 109663b image/jpeg
+[00:01:12.847] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/child. Falling back to browser navigation. {}
+[00:01:16.357] Browser LOG     [Speech] Voices loaded: 223
+[00:01:16.357] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[00:01:16.889] Browser LOG     [API] Request [1/3]: GET /users/me 
+[00:01:17.985] Browser LOG     [Speech] Voices loaded: 223
+[00:01:17.985] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[00:01:19.446] Server  LOG      ○ Compiling /api/v1/[...path] ...
+[00:01:22.412] Browser LOG     [API] Unauthorized (401) - clearing token 
+[00:01:22.412] Browser LOG     [API] Token cleared 
+[00:01:22.412] Browser ERROR   Auth check failed: {"detail":"Could not validate credentials","name":"APIError","status":401}
+[00:01:22.492] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/login. Falling back to browser navigation. {}
+[00:01:23.512] Browser LOG     [Speech] Voices loaded: 223
+[00:01:23.512] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[00:01:31.671] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:31.672] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:31.673] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:31.673] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:33.070] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[00:01:33.072] Server  LOG     [generate-image] result=ok 33036b image/png
+[00:01:33.258] Server  LOG     [generate-image] model=@cf/lykon/dreamshaper-8-lcm provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:33.258] Server  LOG     [generate-image] CF request: model=@cf/lykon/dreamshaper-8-lcm multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:35.017] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[00:01:35.041] Server  LOG     [generate-image] result=ok 278438b image/png
+[00:01:35.125] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-1-schnell provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:35.126] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-1-schnell multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:35.938] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:01:35.940] Server  LOG     [generate-image] result=ok 64783b image/jpeg
+[00:01:35.966] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:35.966] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:36.019] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[00:01:36.039] Server  LOG     [generate-image] result=ok 329648b image/png
+[00:01:36.171] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:36.171] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:37.278] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:01:37.280] Server  LOG     [generate-image] result=ok 63498b image/jpeg
+[00:01:37.432] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:37.432] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:48.227] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:01:48.232] Server  LOG     [generate-image] result=ok 129960b image/jpeg
+[00:01:48.355] Server  LOG     [generate-image] model=@cf/leonardo/lucid-origin provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:48.355] Server  LOG     [generate-image] CF request: model=@cf/leonardo/lucid-origin multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:49.966] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:01:49.969] Server  LOG     [generate-image] result=ok 60289b image/jpeg
+[00:01:50.032] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:50.032] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..."
+[00:01:51.503] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[00:01:51.705] Server  LOG     [generate-image] result=ok 134743b image/jpeg
+[00:01:51.924] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:57.139] Server  LOG     [generate-image] result=ok 1034735b image/png
+[00:01:57.179] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:01:57.180] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[00:02:04.848] Server  LOG     [generate-image] result=ok 1560141b image/png
+[00:02:04.940] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:02:04.940] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[00:02:12.431] Server  LOG     [generate-image] result=ok 1111663b image/png
+[00:02:12.500] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single apple for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[00:02:12.500] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[00:02:23.843] Server  LOG     [generate-image] result=ok 652978b image/jpeg
+[00:02:45.306] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[00:02:45.312] Server  LOG     [generate-image] result=ok 132390b image/jpeg

@@ -416,6 +416,7 @@ async function generateWithCloudflare(
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/${model}`;
   const useMultipart = MULTIPART_MODELS.has(model);
+  console.log(`[generate-image] CF request: model=${model} multipart=${useMultipart} prompt="${imagePrompt.prompt.slice(0, 80)}..."`);
 
   try {
     let res: Response;
@@ -474,6 +475,7 @@ async function generateWithCloudflare(
       });
     }
 
+    console.log(`[generate-image] CF response: status=${res.status} content-type=${res.headers.get("content-type")}`);
     if (!res.ok) {
       console.error(
         `[generate-image] Cloudflare error ${res.status}: ${await res.text().catch(() => "")}`,
@@ -828,7 +830,7 @@ export async function GET(request: Request) {
         : provider === "siliconflow"
           ? SILICONFLOW_MODEL
           : CF_MODEL);
-    console.log(`using model ${modelUsed}`);
+    console.log(`[generate-image] model=${modelUsed} provider=${provider} prompt="${imagePrompt.prompt.slice(0, 80)}..." neg="${imagePrompt.negative_prompt.slice(0, 60)}..."`);
 
     const imageResult =
       provider === "gemini"
@@ -836,6 +838,8 @@ export async function GET(request: Request) {
         : provider === "siliconflow"
           ? await generateWithSiliconFlow(imagePrompt, genOptions)
           : await generateWithCloudflare(imagePrompt, genOptions);
+
+    console.log(`[generate-image] result=${imageResult ? `ok ${(imageResult.buffer as Buffer).byteLength}b ${imageResult.mimeType}` : "null"}`);
 
     if (imageResult && imageResult.buffer.byteLength > 1000) {
       // In normal mode, save to disk cache. In test mode, skip caching.
