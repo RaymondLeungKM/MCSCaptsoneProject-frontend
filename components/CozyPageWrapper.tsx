@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sun, Moon, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CartoonKeyframes, CartoonOwl } from "@/components/child/cartoon-characters";
+import { CartoonKeyframes } from "@/components/child/cartoon-characters";
 
 interface WrapperProps {
   children: React.ReactNode;
@@ -255,20 +255,6 @@ export default function CozyPageWrapper({
             {/* Layer 5: Fast, Small, Front */}
             <div className={cn("absolute top-10 -left-10 animate-flow-fast delay-n10", isNight ? "opacity-5 text-indigo-300" : "opacity-60 text-white")}>
               <CustomCloud path={CLOUD_PATHS[0]} className="w-20 h-20" />
-            </div>
-
-            {/* ── Cartoon mascots (day only) ── */}
-            <div className={cn(
-              "absolute transition-all duration-[2000ms]",
-              isNight ? "opacity-0 pointer-events-none" : "opacity-100"
-            )} style={{ bottom: "18%", right: "3%" }}>
-              <CartoonOwl size={88} animate="float" variant="storybook" />
-            </div>
-            <div className={cn(
-              "absolute transition-all duration-[2000ms]",
-              isNight ? "opacity-60" : "opacity-0 pointer-events-none"
-            )} style={{ bottom: "22%", right: "4%" }}>
-              <CartoonOwl size={80} animate="float" variant="storybook" />
             </div>
 
             {/* --- HILLS & GARDEN --- */}
