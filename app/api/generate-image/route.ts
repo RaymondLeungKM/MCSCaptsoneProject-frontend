@@ -265,9 +265,7 @@ function isLikelyEnglish(value: string): boolean {
 }
 
 function withTimeoutSignal(ms: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
+  return AbortSignal.timeout(ms);
 }
 
 function toResponseBytes(buffer: Buffer): ArrayBuffer {
@@ -320,7 +318,7 @@ interface ImagePrompt {
 function buildPrompt(wordEnglish: string): ImagePrompt {
   const w = (wordEnglish || "object").trim().toLowerCase();
   return {
-    prompt: `a single ${w}, highly detailed, photorealistic RAW photograph of a single {word}, centered on a pure white seamless background. High-end product photography, soft studio lighting, shot on DSLR, 85mm lens, f/8 aperture, razor-sharp focus, visible natural textures, 8k resolution. Clean and bright, no text, no label.`,
+    prompt: `a single ${w}, highly detailed, photorealistic RAW photograph, centered on a pure white seamless background. High-end product photography, soft studio lighting, shot on DSLR, 85mm lens, f/8 aperture, razor-sharp focus, visible natural textures, 8k resolution. Clean and bright, no text, no label.`,
     negative_prompt:
       "cartoon, emoji, vector, flat, illustration, drawing, sketch, anime, manga, 3D render, text, letters, words, watermark, blurry, noisy, multiple objects, busy background, human, person, fingers, hands, face on object, anthropomorphic, dark, moody, scary",
   };
@@ -393,6 +391,12 @@ const MULTIPART_MODELS = new Set([
 /* Models that only accept { prompt } JSON (no guidance, num_steps, etc.) */
 const SIMPLE_JSON_MODELS = new Set([
   "google/nano-banana-2",
+  "@cf/lykon/dreamshaper-8-lcm",
+]);
+
+/* Models that break with long negative prompts — skip negative_prompt for these */
+const SKIP_NEG_PROMPT_MODELS = new Set([
+  "@cf/lykon/dreamshaper-8-lcm",
 ]);
 
 async function generateWithCloudflare(
@@ -431,7 +435,7 @@ async function generateWithCloudflare(
         method: "POST",
         headers: { Authorization: `Bearer ${CF_API_TOKEN}` },
         body: form,
-        signal: withTimeoutSignal(120_000),
+        signal: withTimeoutSignal(180_000),
       });
     } else if (SIMPLE_JSON_MODELS.has(model)) {
       // Google Nano models → only accept { prompt } with no extra params
@@ -448,21 +452,25 @@ async function generateWithCloudflare(
       });
     } else {
       // Classic models use JSON body
+      const skipNegPrompt = SKIP_NEG_PROMPT_MODELS.has(model);
+      const jsonBody: Record<string, unknown> = {
+        prompt: imagePrompt.prompt,
+        width: 512,
+        height: 512,
+        guidance,
+        num_steps: numSteps,
+      };
+      if (!skipNegPrompt && imagePrompt.negative_prompt) {
+        jsonBody.negative_prompt = imagePrompt.negative_prompt;
+      }
       res = await fetch(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${CF_API_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          prompt: imagePrompt.prompt,
-          negative_prompt: imagePrompt.negative_prompt,
-          width: 512,
-          height: 512,
-          guidance,
-          num_steps: numSteps,
-        }),
-        signal: withTimeoutSignal(30_000),
+        body: JSON.stringify(jsonBody),
+        signal: withTimeoutSignal(60_000),
       });
     }
 
@@ -504,7 +512,11 @@ async function generateWithCloudflare(
 
     return { buffer: imageBuffer, mimeType };
   } catch (err) {
-    console.error("[generate-image] Cloudflare fetch error:", err);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.error(`[generate-image] Cloudflare request aborted (timeout) for model: ${model}`);
+    } else {
+      console.error("[generate-image] Cloudflare fetch error:", err);
+    }
     return null;
   }
 }
@@ -592,7 +604,11 @@ async function generateWithSiliconFlow(
       mimeType: normalizeImageMimeType(imageRes.headers.get("content-type"), "image/png"),
     };
   } catch (err) {
-    console.error("[generate-image] SiliconFlow fetch error:", err);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.error(`[generate-image] SiliconFlow request aborted (timeout) for model: ${model}`);
+    } else {
+      console.error("[generate-image] SiliconFlow fetch error:", err);
+    }
     return null;
   }
 }
@@ -703,7 +719,11 @@ async function generateWithGemini(
     console.error("[generate-image] Gemini response did not include an image");
     return null;
   } catch (err) {
-    console.error("[generate-image] Gemini fetch error:", err);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      console.error(`[generate-image] Gemini request aborted (timeout) for model: ${model}`);
+    } else {
+      console.error("[generate-image] Gemini fetch error:", err);
+    }
     return null;
   }
 }

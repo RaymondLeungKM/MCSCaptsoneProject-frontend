@@ -31,6 +31,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# generated test images (keep directory)
+/test-images/*.jpg
+/test-images/*.png
+
 # local editor and OS files
 .vscode/
 .DS_Store

@@ -262,13 +262,13 @@ export default function CozyPageWrapper({
               "absolute transition-all duration-[2000ms]",
               isNight ? "opacity-0 pointer-events-none" : "opacity-100"
             )} style={{ bottom: "18%", right: "3%" }}>
-              <CartoonOwl size={88} animate="float" />
+              <CartoonOwl size={88} animate="float" variant="storybook" />
             </div>
             <div className={cn(
               "absolute transition-all duration-[2000ms]",
               isNight ? "opacity-60" : "opacity-0 pointer-events-none"
             )} style={{ bottom: "22%", right: "4%" }}>
-              <CartoonOwl size={80} animate="float" />
+              <CartoonOwl size={80} animate="float" variant="storybook" />
             </div>
 
             {/* --- HILLS & GARDEN --- */}

@@ -125,11 +125,8 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const activeMascot = useMemo<MascotTier>(() => {
-    return (
-      [...MASCOT_TIERS].reverse().find((tier) => level >= tier.unlockLevel) ??
-      MASCOT_TIERS[0]
-    );
-  }, [level]);
+    return MASCOT_TIERS[0];
+  }, []);
 
   // Reset message rotation when the active mascot changes.
   useEffect(() => {

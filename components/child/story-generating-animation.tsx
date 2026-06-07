@@ -573,7 +573,7 @@ const CHAPTER_SHORT_META: Record<string, ChapterShortMeta> = {
 };
 
 function ActorSprite({ actor }: { actor: ActorSpec }) {
-  if (actor.id === "owl") return <CartoonOwl size={actor.size} animate="scene" />;
+  if (actor.id === "owl") return <CartoonOwl size={actor.size} animate="scene" variant="storybook" />;
   if (actor.id === "dog") return <CartoonDog size={actor.size} animate="scene" />;
   return <CartoonCat size={actor.size} animate="scene" />;
 }

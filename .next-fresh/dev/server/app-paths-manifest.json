@@ -1,0 +1,8 @@
+{
+  "/api/v1/[...path]/route": "app/api/v1/[...path]/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/login/page": "app/login/page.js",
+  "/child/page": "app/child/page.js",
+  "/parent/page": "app/parent/page.js"
+}
