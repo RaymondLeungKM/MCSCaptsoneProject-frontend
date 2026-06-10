@@ -313,11 +313,15 @@ function getPreferredRecordingMimeType(): string | undefined {
     return undefined;
   }
 
+  // Prefer wav > webm so the Hugging Face inference router receives a format
+  // it accepts. MP4/AAC (the macOS Chrome default) triggers a 400 from the HF
+  // ASR endpoint. audio/mp4 is kept as a final fallback for providers that
+  // can handle it (e.g. Cloudflare Workers AI).
   const candidates = [
+    "audio/wav",
     "audio/webm;codecs=opus",
     "audio/webm",
     "audio/mp4",
-    "audio/wav",
   ];
 
   return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
