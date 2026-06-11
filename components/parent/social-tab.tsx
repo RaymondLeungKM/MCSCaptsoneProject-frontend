@@ -17,7 +17,9 @@ import {
   UserPlus,
   Shield,
   Trophy,
+  Award,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   ThumbsUp,
   ThumbsDown,
@@ -63,6 +65,7 @@ import {
   type FriendChallengeMetric,
   type FriendChallengeViewStatus,
 } from "@/lib/api/community";
+import { cn } from "@/lib/utils";
 import { API_BASE_URL } from "@/lib/api/client";
 import { getChildren, type ChildResponse } from "@/lib/api/children";
 
@@ -77,11 +80,22 @@ function resolveImageUrl(url: string): string {
   return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function daysLeft(endAt: string): number {
-  return Math.max(
-    0,
-    Math.ceil((new Date(endAt).getTime() - Date.now()) / 86_400_000),
-  );
+function timeLeftLabel(endAt: string): string {
+  const diffMs = new Date(endAt).getTime() - Date.now();
+  const minute = 60_000;
+  const hour = 3_600_000;
+  const day = 86_400_000;
+
+  if (diffMs <= 0) {
+    return "已結束";
+  }
+  if (diffMs < hour) {
+    return "少於 1 小時";
+  }
+  if (diffMs < day) {
+    return `${Math.ceil(diffMs / hour)} 小時`;
+  }
+  return `${Math.ceil(diffMs / day)} 天`;
 }
 
 function resolveFriendIdentity(
@@ -123,6 +137,87 @@ function friendChallengeStatusLabel(status: FriendChallengeViewStatus): string {
       return "已結束";
     case "declined":
       return "已拒絕";
+  }
+}
+
+type FriendChallengeLifecycleStage =
+  | "invited"
+  | "awaiting_start"
+  | "in_progress"
+  | "sprint"
+  | "completed"
+  | "expired"
+  | "declined";
+
+function resolveFriendChallengeLifecycle(
+  challenge: FriendChallenge,
+): FriendChallengeLifecycleStage {
+  const now = Date.now();
+  const startsAt = new Date(challenge.starts_at).getTime();
+  const endsAt = new Date(challenge.ends_at).getTime();
+  const sprintThresholdMs = 2 * 86_400_000;
+
+  if (challenge.view_status === "pending") return "invited";
+  if (challenge.view_status === "declined") return "declined";
+  if (challenge.view_status === "completed") return "completed";
+  if (challenge.view_status === "expired") return "expired";
+  if (startsAt > now) return "awaiting_start";
+  if (endsAt - now <= sprintThresholdMs) return "sprint";
+  return "in_progress";
+}
+
+function friendChallengeLifecycleLabel(
+  lifecycle: FriendChallengeLifecycleStage,
+): string {
+  switch (lifecycle) {
+    case "invited":
+      return "待回覆";
+    case "awaiting_start":
+      return "即將開始";
+    case "in_progress":
+      return "進行中";
+    case "sprint":
+      return "最後衝刺";
+    case "completed":
+      return "已完成";
+    case "expired":
+      return "已結束";
+    case "declined":
+      return "已拒絕";
+  }
+}
+
+function relativeTimeLabel(dateValue: string): string {
+  const deltaMs = Date.now() - new Date(dateValue).getTime();
+  const minute = 60_000;
+  const hour = 3_600_000;
+  const day = 86_400_000;
+
+  if (deltaMs < hour) {
+    return `${Math.max(1, Math.floor(deltaMs / minute))} 分鐘前`;
+  }
+  if (deltaMs < day) {
+    return `${Math.max(1, Math.floor(deltaMs / hour))} 小時前`;
+  }
+  return `${Math.max(1, Math.floor(deltaMs / day))} 天前`;
+}
+
+function lifecyclePillClass(lifecycle: FriendChallengeLifecycleStage): string {
+  switch (lifecycle) {
+    case "invited":
+      return "bg-amber-100 text-amber-700";
+    case "awaiting_start":
+      return "bg-sky-100 text-sky-700";
+    case "in_progress":
+      return "bg-orange-100 text-orange-700";
+    case "sprint":
+      return "bg-rose-100 text-rose-700";
+    case "completed":
+      return "bg-emerald-100 text-emerald-700";
+    case "expired":
+      return "bg-slate-100 text-slate-600";
+    case "declined":
+      return "bg-zinc-100 text-zinc-600";
   }
 }
 
@@ -320,9 +415,11 @@ const CHILD_GRADIENTS = [
 
 function FriendProfileModal({
   progress,
+  endedFriendChallenges,
   onClose,
 }: {
   progress: FriendProgress;
+  endedFriendChallenges: FriendChallenge[];
   onClose: () => void;
 }) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -522,6 +619,109 @@ function FriendProfileModal({
                 );
               })
             )}
+
+            {endedFriendChallenges.length > 0 && (
+              <div className="bg-white rounded-[20px] overflow-hidden shadow-sm border border-slate-100">
+                <div className="px-4 pt-3 pb-2 border-b border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
+                    最近結束的好友挑戰
+                  </p>
+                </div>
+                <div className="p-3 space-y-2">
+                  {endedFriendChallenges.slice(0, 4).map((challenge) => {
+                    const acceptedParticipants = [...challenge.participants]
+                      .filter(
+                        (participant) =>
+                          participant.invite_status === "accepted",
+                      )
+                      .sort((left, right) => right.progress - left.progress);
+
+                    const topProgress = acceptedParticipants[0]?.progress ?? 0;
+                    const winners = acceptedParticipants.filter(
+                      (participant) =>
+                        topProgress > 0 && participant.progress === topProgress,
+                    );
+                    const winnerNames = winners.map(
+                      (participant) => participant.parent_name ?? "家長",
+                    );
+
+                    const selectedFriendParticipant = acceptedParticipants.find(
+                      (participant) =>
+                        participant.parent_id === progress.friend_id,
+                    );
+                    const selectedFriendRank = selectedFriendParticipant
+                      ? acceptedParticipants.findIndex(
+                          (participant) =>
+                            participant.parent_id === progress.friend_id,
+                        ) + 1
+                      : null;
+                    const selectedFriendWon =
+                      !!selectedFriendParticipant &&
+                      topProgress > 0 &&
+                      selectedFriendParticipant.progress === topProgress;
+
+                    return (
+                      <div
+                        key={challenge.id}
+                        className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-black text-slate-700 truncate">
+                            {challenge.emoji} {challenge.title_zh}
+                          </p>
+                          <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-black text-slate-600">
+                            已結束
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-xs font-bold text-slate-400">
+                          於{" "}
+                          {new Date(challenge.ends_at).toLocaleDateString(
+                            "zh-HK",
+                          )}{" "}
+                          截止
+                        </p>
+
+                        <p className="mt-1 text-xs font-black text-emerald-600">
+                          結果：
+                          {winnerNames.length > 0
+                            ? `勝出：${winnerNames.join("、")}`
+                            : "未有有效成績"}
+                        </p>
+
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {selectedFriendParticipant
+                            ? `${progress.friend_name}${selectedFriendWon ? "勝出" : "未勝出"}（第 ${selectedFriendRank} 名，${selectedFriendParticipant.progress}/${challenge.target_count}）`
+                            : `${progress.friend_name} 未接受此挑戰`}
+                        </p>
+
+                        {acceptedParticipants.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {acceptedParticipants
+                              .slice(0, 3)
+                              .map((participant, idx) => (
+                                <span
+                                  key={participant.id}
+                                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600"
+                                >
+                                  #{idx + 1}
+                                  <span>
+                                    {participant.parent_name ?? "家長"}
+                                  </span>
+                                  <span className="text-slate-400">
+                                    {participant.progress}/
+                                    {challenge.target_count}
+                                  </span>
+                                </span>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -545,6 +745,9 @@ function FriendsPanel() {
   const [selectedFriend, setSelectedFriend] = useState<FriendProgress | null>(
     null,
   );
+  const [friendChallenges, setFriendChallenges] = useState<FriendChallenge[]>(
+    [],
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -567,10 +770,12 @@ function FriendsPanel() {
   const load = async () => {
     setLoading(true);
     try {
-      const [allFriends, progressList] = await Promise.all([
-        getFriends(true),
-        getFriendsProgress().catch(() => [] as FriendProgress[]),
-      ]);
+      const [allFriends, progressList, nextFriendChallenges] =
+        await Promise.all([
+          getFriends(true),
+          getFriendsProgress().catch(() => [] as FriendProgress[]),
+          getFriendChallenges().catch(() => [] as FriendChallenge[]),
+        ]);
       setFriends(allFriends.filter((f) => f.status === "accepted"));
       const pending = allFriends.filter((f) => f.status === "pending");
       setPendingIncoming(
@@ -582,8 +787,10 @@ function FriendsPanel() {
       const map: Record<string, FriendProgress> = {};
       for (const p of progressList) map[p.friend_id] = p;
       setProgressMap(map);
+      setFriendChallenges(nextFriendChallenges);
     } catch (err) {
       console.warn("[Social] Failed to load friends:", err);
+      setFriendChallenges([]);
     } finally {
       setLoading(false);
     }
@@ -665,6 +872,29 @@ function FriendsPanel() {
       setResponding(null);
     }
   };
+
+  const endedFriendChallengesForSelected = selectedFriend
+    ? friendChallenges
+        .filter((challenge) => {
+          const lifecycle = resolveFriendChallengeLifecycle(challenge);
+          if (lifecycle !== "completed" && lifecycle !== "expired") {
+            return false;
+          }
+
+          if (challenge.creator_id === selectedFriend.friend_id) {
+            return true;
+          }
+
+          return challenge.participants.some(
+            (participant) => participant.parent_id === selectedFriend.friend_id,
+          );
+        })
+        .sort(
+          (left, right) =>
+            new Date(right.ends_at).getTime() -
+            new Date(left.ends_at).getTime(),
+        )
+    : [];
 
   if (loading) {
     return (
@@ -1005,8 +1235,368 @@ function FriendsPanel() {
       {selectedFriend && (
         <FriendProfileModal
           progress={selectedFriend}
+          endedFriendChallenges={endedFriendChallengesForSelected}
           onClose={() => setSelectedFriend(null)}
         />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ActivityFeedPanel
+// ---------------------------------------------------------------------------
+
+type ActivityFeedItem = {
+  id: string;
+  title: string;
+  detail: string;
+  createdAt: string;
+  toneClass: string;
+  icon: "flame" | "book" | "trophy" | "star";
+};
+
+function ActivityFeedPanel() {
+  const { user: currentUser } = useAuth();
+  const [progressData, setProgressData] = useState<FriendProgress[]>([]);
+  const [challenges, setChallenges] = useState<FriendChallenge[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setProgressData([]);
+      setChallenges([]);
+      setLoading(false);
+      return;
+    }
+
+    void (async () => {
+      setLoading(true);
+      try {
+        const [progressResult, challengesResult] = await Promise.allSettled([
+          getFriendsProgress(),
+          getFriendChallenges(),
+        ]);
+
+        const progressItems =
+          progressResult.status === "fulfilled" ? progressResult.value : [];
+        const challengeItems =
+          challengesResult.status === "fulfilled" ? challengesResult.value : [];
+
+        setProgressData(progressItems);
+        setChallenges(challengeItems);
+      } catch (err) {
+        console.warn("[ActivityFeed] Failed to load:", err);
+        setProgressData([]);
+        setChallenges([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [currentUser?.id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  // Sort friends by total words learned (descending)
+  const sortedProgress = [...progressData].sort((a, b) => {
+    const totalA = a.children_stats.reduce((s, c) => s + c.words_learned, 0);
+    const totalB = b.children_stats.reduce((s, c) => s + c.words_learned, 0);
+    return totalB - totalA;
+  });
+
+  // Get active challenges
+  const activeChallenges = challenges.filter((c) => {
+    const lifecycle = resolveFriendChallengeLifecycle(c);
+    return lifecycle === "in_progress" || lifecycle === "sprint";
+  });
+
+  // Get completed challenges this week
+  const recentCompleted = challenges.filter((c) => {
+    const lifecycle = resolveFriendChallengeLifecycle(c);
+    const deltaMs = Date.now() - new Date(c.ends_at).getTime();
+    return lifecycle === "completed" && deltaMs < 7 * 86_400_000;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Header card */}
+      <Card className="rounded-[20px] border-none shadow-sm bg-linear-to-br from-sky-50 to-blue-50">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 p-3 rounded-2xl">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-black text-slate-800 text-base">
+                好友社群亮點
+              </p>
+              <p className="text-xs font-bold text-slate-500 mt-1">
+                查看朋友們的學習進度、活躍挑戰和成就
+              </p>
+            </div>
+            <span className="rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-black text-blue-700 shrink-0">
+              {sortedProgress.length} 位朋友
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Learning Leaderboard */}
+      {sortedProgress.length > 0 && (
+        <Card className="rounded-[20px] border-none shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-black text-slate-700">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              本月學習排行
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {sortedProgress.slice(0, 5).map((friend, idx) => {
+              const totalWords = friend.children_stats.reduce(
+                (s, c) => s + c.words_learned,
+                0,
+              );
+              const bestStreak = Math.max(
+                0,
+                ...friend.children_stats.map((c) => c.current_streak),
+              );
+
+              return (
+                <div
+                  key={friend.friend_id}
+                  className="rounded-2xl border border-slate-100 bg-slate-50 p-3 flex items-center gap-3"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white font-black text-sm text-slate-700 border border-slate-100">
+                    #{idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-800 text-sm truncate">
+                      {friend.friend_name}
+                    </p>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
+                      {friend.children_stats.length} 位孩子
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right">
+                      <p className="text-lg font-black text-blue-600">
+                        {totalWords}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        詞彙
+                      </p>
+                    </div>
+                    {bestStreak >= 3 && (
+                      <div className="flex items-center gap-1 bg-orange-50 px-2 py-1.5 rounded-lg border border-orange-100">
+                        <Flame className="w-3 h-3 text-orange-500" />
+                        <span className="text-xs font-black text-orange-600">
+                          {bestStreak}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Challenges */}
+      {activeChallenges.length > 0 && (
+        <Card className="rounded-[20px] border-none shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-black text-slate-700">
+              <Flame className="w-5 h-5 text-orange-500" />
+              進行中的挑戰
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeChallenges.slice(0, 4).map((challenge) => {
+              const lifecycle = resolveFriendChallengeLifecycle(challenge);
+              const timeLeft = timeLeftLabel(challenge.ends_at);
+              const acceptedParticipants = challenge.participants.filter(
+                (p) => p.invite_status === "accepted",
+              );
+              const topProgress = Math.max(
+                0,
+                ...acceptedParticipants.map((p) => p.progress),
+              );
+
+              return (
+                <div
+                  key={challenge.id}
+                  className="rounded-2xl border border-slate-100 bg-white p-3"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-xl leading-none">
+                      {challenge.emoji}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-sm truncate">
+                        {challenge.title_zh}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={cn(
+                            "text-[10px] font-black rounded-full px-2 py-0.5",
+                            lifecycle === "sprint"
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-orange-100 text-orange-700",
+                          )}
+                        >
+                          {lifecycle === "sprint" ? "最後衝刺" : "進行中"}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {timeLeft}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
+                    <div
+                      className="bg-linear-to-r from-orange-400 to-orange-500 h-full transition-all"
+                      style={{
+                        width: `${Math.min(100, (topProgress / challenge.target_count) * 100)}%`,
+                      }}
+                    />
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-500">
+                      最高進度：{topProgress} / {challenge.target_count}{" "}
+                      {friendChallengeTargetUnit(challenge.metric_type)}
+                    </span>
+                    <span className="font-bold text-slate-400">
+                      {acceptedParticipants.length} 人參與
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Achievements */}
+      {sortedProgress.length > 0 && (
+        <Card className="rounded-[20px] border-none shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-black text-slate-700">
+              <Star className="w-5 h-5 text-yellow-500" />
+              朋友的里程碑
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {sortedProgress.map((friend) =>
+              friend.children_stats.map((child) => {
+                const achievements = [];
+
+                if (child.current_streak >= 7) {
+                  achievements.push(
+                    `${child.avatar} ${child.child_name} 保持 ${child.current_streak} 天連勝！`,
+                  );
+                }
+
+                if (
+                  child.words_learned >= 50 &&
+                  child.words_learned % 10 === 0
+                ) {
+                  achievements.push(
+                    `${child.avatar} ${child.child_name} 已掌握 ${child.words_learned} 個詞彙。`,
+                  );
+                }
+
+                if (child.level >= 5) {
+                  achievements.push(
+                    `${child.avatar} ${child.child_name} 晉升到 Lv. ${child.level}！`,
+                  );
+                }
+
+                return achievements.map((msg, i) => (
+                  <div
+                    key={`${friend.friend_id}-${child.child_name}-${i}`}
+                    className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 flex items-start gap-3"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-700">{msg}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {friend.friend_name}
+                      </p>
+                    </div>
+                  </div>
+                ));
+              }),
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Completed Challenges This Week */}
+      {recentCompleted.length > 0 && (
+        <Card className="rounded-[20px] border-none shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-black text-slate-700">
+              <Award className="w-5 h-5 text-purple-500" />
+              本週挑戰成果
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {recentCompleted.slice(0, 3).map((challenge) => {
+              const winners = challenge.participants
+                .filter((p) => p.invite_status === "accepted")
+                .sort((a, b) => b.progress - a.progress)
+                .slice(0, 3);
+
+              return (
+                <div
+                  key={challenge.id}
+                  className="rounded-2xl border border-purple-100 bg-purple-50 p-3"
+                >
+                  <p className="font-bold text-slate-800 text-sm mb-2">
+                    {challenge.emoji} {challenge.title_zh}
+                  </p>
+                  {winners.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {winners.map((winner, idx) => (
+                        <span
+                          key={winner.id}
+                          className="text-xs bg-white border border-purple-100 text-purple-700 font-bold rounded-full px-2 py-1 flex items-center gap-1"
+                        >
+                          {idx === 0 && "🥇"}
+                          {idx === 1 && "🥈"}
+                          {idx === 2 && "🥉"}
+                          {winner.parent_name ?? "家長"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {sortedProgress.length === 0 && activeChallenges.length === 0 && (
+        <div className="text-center py-12 text-slate-400">
+          <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p className="font-bold text-sm mb-2">還沒有好友活動</p>
+          <p className="text-xs">
+            先邀請朋友一起加入學習，就能看到他們的進度和挑戰！
+          </p>
+        </div>
       )}
     </div>
   );
@@ -1023,6 +1613,7 @@ function ChallengesPanel() {
   );
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [children, setChildren] = useState<ChildResponse[]>([]);
+  const [friendsProgress, setFriendsProgress] = useState<FriendProgress[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createMessage, setCreateMessage] = useState<{
@@ -1056,17 +1647,19 @@ function ChallengesPanel() {
       setFriendChallenges([]);
       setFriends([]);
       setChildren([]);
+      setFriendsProgress([]);
       setLoadingFriendChallenges(false);
       return;
     }
 
     setLoadingFriendChallenges(true);
     try {
-      const [challengeResult, friendsResult, childrenResult] =
+      const [challengeResult, friendsResult, childrenResult, progressResult] =
         await Promise.allSettled([
           getFriendChallenges(),
           getFriends(true),
           getChildren(),
+          getFriendsProgress(),
         ]);
 
       const nextChallenges =
@@ -1077,14 +1670,13 @@ function ChallengesPanel() {
           : [];
       const nextChildren =
         childrenResult.status === "fulfilled" ? childrenResult.value : [];
+      const nextProgress =
+        progressResult.status === "fulfilled" ? progressResult.value : [];
 
-      setFriendChallenges(
-        nextChallenges.filter(
-          (challenge) => challenge.view_status !== "declined",
-        ),
-      );
+      setFriendChallenges(nextChallenges);
       setFriends(nextFriends);
       setChildren(nextChildren);
+      setFriendsProgress(nextProgress);
 
       const defaultChildId = nextChildren[0]?.id;
       if (defaultChildId) {
@@ -1104,6 +1696,7 @@ function ChallengesPanel() {
       setFriendChallenges([]);
       setFriends([]);
       setChildren([]);
+      setFriendsProgress([]);
     } finally {
       setLoadingFriendChallenges(false);
     }
@@ -1148,16 +1741,101 @@ function ChallengesPanel() {
     resolveFriendIdentity(friendship, currentUser?.id),
   );
   const pendingInvites = friendChallenges.filter(
-    (challenge) => challenge.view_status === "pending",
+    (challenge) => resolveFriendChallengeLifecycle(challenge) === "invited",
+  );
+  const awaitingStartChallenges = friendChallenges.filter(
+    (challenge) =>
+      resolveFriendChallengeLifecycle(challenge) === "awaiting_start",
   );
   const activeFriendChallenges = friendChallenges.filter(
-    (challenge) => challenge.view_status === "active",
+    (challenge) => resolveFriendChallengeLifecycle(challenge) === "in_progress",
+  );
+  const sprintFriendChallenges = friendChallenges.filter(
+    (challenge) => resolveFriendChallengeLifecycle(challenge) === "sprint",
   );
   const completedFriendChallenges = friendChallenges.filter(
     (challenge) =>
-      challenge.view_status === "completed" ||
-      challenge.view_status === "expired",
+      resolveFriendChallengeLifecycle(challenge) === "completed" ||
+      resolveFriendChallengeLifecycle(challenge) === "expired",
   );
+  const declinedFriendChallenges = friendChallenges.filter(
+    (challenge) => resolveFriendChallengeLifecycle(challenge) === "declined",
+  );
+  const visibleCommunityChallenges = communityChallenges.filter((challenge) => {
+    const now = Date.now();
+    const startsAt = new Date(challenge.starts_at).getTime();
+    const endsAt = new Date(challenge.ends_at).getTime();
+    return startsAt <= now && endsAt > now;
+  });
+
+  const completedCount = completedFriendChallenges.filter(
+    (challenge) => resolveFriendChallengeLifecycle(challenge) === "completed",
+  ).length;
+  const totalFriendChildren = friendsProgress.reduce(
+    (sum, friend) => sum + friend.children_stats.length,
+    0,
+  );
+  const streakChampions = friendsProgress.reduce(
+    (sum, friend) =>
+      sum +
+      friend.children_stats.filter((child) => child.current_streak >= 7).length,
+    0,
+  );
+  const maxWordsLearned = friendsProgress.reduce((best, friend) => {
+    const friendBest = friend.children_stats.reduce(
+      (maxWords, child) => Math.max(maxWords, child.words_learned),
+      0,
+    );
+    return Math.max(best, friendBest);
+  }, 0);
+
+  const badgeCards = [
+    {
+      key: "connector",
+      icon: "🤝",
+      title: "社交連結者",
+      description: "新增至少 3 位好友",
+      unlocked: acceptedFriends.length >= 3,
+      progress: Math.min(acceptedFriends.length, 3),
+      goal: 3,
+    },
+    {
+      key: "challenger",
+      icon: "⚔️",
+      title: "挑戰發起人",
+      description: "參與或發起 3 場私人挑戰",
+      unlocked: friendChallenges.length >= 3,
+      progress: Math.min(friendChallenges.length, 3),
+      goal: 3,
+    },
+    {
+      key: "closer",
+      icon: "🏁",
+      title: "完賽家長",
+      description: "完成 2 場私人挑戰",
+      unlocked: completedCount >= 2,
+      progress: Math.min(completedCount, 2),
+      goal: 2,
+    },
+    {
+      key: "momentum",
+      icon: "🔥",
+      title: "動能守護者",
+      description: "好友圈中出現至少 1 位 7 天連續學習",
+      unlocked: streakChampions >= 1,
+      progress: Math.min(streakChampions, 1),
+      goal: 1,
+    },
+    {
+      key: "word-mentor",
+      icon: "📘",
+      title: "詞彙導師",
+      description: "好友圈最高詞彙累積達到 60",
+      unlocked: maxWordsLearned >= 60,
+      progress: Math.min(maxWordsLearned, 60),
+      goal: 60,
+    },
+  ];
 
   const toggleFriendSelection = (friendId: string) => {
     setSelectedFriendIds((current) =>
@@ -1165,6 +1843,35 @@ function ChallengesPanel() {
         ? current.filter((id) => id !== friendId)
         : [...current, friendId],
     );
+  };
+
+  const toCantoneseCreateChallengeError = (error: unknown): string => {
+    const rawMessage =
+      typeof error === "object" && error !== null && "message" in error
+        ? String((error as { message?: unknown }).message ?? "")
+        : "";
+    const message = rawMessage.toLowerCase();
+
+    if (message.includes("pending invite from you")) {
+      return "你已向部分已選好友發出待回覆邀請，請先等待對方回覆後再發起新挑戰。";
+    }
+    if (message.includes("equivalent active friend challenge already exists")) {
+      return "你已經有一個相同設定的進行中好友挑戰。";
+    }
+    if (message.includes("too many active friend challenges")) {
+      return "你目前進行中的好友挑戰太多，請先完成或等待部分挑戰結束。";
+    }
+    if (message.includes("all invited parents must be accepted friends")) {
+      return "邀請名單中有未成為好友的家長，請先加為好友再發起挑戰。";
+    }
+    if (message.includes("at least one friend must be invited")) {
+      return "請至少邀請一位好友參加挑戰。";
+    }
+    if (message.includes("child not found")) {
+      return "找不到所選小朋友資料，請重新選擇後再試。";
+    }
+
+    return rawMessage || "建立挑戰失敗，請稍後再試。";
   };
 
   const handleCreateChallenge = async () => {
@@ -1214,7 +1921,10 @@ function ChallengesPanel() {
       setCreateOpen(false);
       await loadFriendChallenges();
     } catch (err: any) {
-      setCreateMessage({ ok: false, msg: err?.message ?? "建立挑戰失敗" });
+      setCreateMessage({
+        ok: false,
+        msg: toCantoneseCreateChallengeError(err),
+      });
     } finally {
       setCreating(false);
     }
@@ -1253,6 +1963,66 @@ function ChallengesPanel() {
 
   return (
     <div className="space-y-6">
+      <Card className="rounded-[20px] border-none shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-black text-slate-700 flex items-center gap-2">
+            <Award className="w-4 h-4 text-amber-500" />
+            家長成就與徽章
+          </CardTitle>
+          <p className="text-xs font-bold text-slate-400">
+            透過好友互動與私人挑戰逐步解鎖，提升長期參與感。
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+            {badgeCards.map((badge) => (
+              <div
+                key={badge.key}
+                className={`rounded-2xl border px-3 py-3 ${
+                  badge.unlocked
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-slate-200 bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-black text-slate-700">
+                    {badge.icon} {badge.title}
+                  </p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                      badge.unlocked
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {badge.unlocked ? "已解鎖" : "進行中"}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-slate-500 mt-1.5">
+                  {badge.description}
+                </p>
+                <div className="mt-2">
+                  <Progress
+                    value={(badge.progress / badge.goal) * 100}
+                    className="h-2 rounded-full"
+                  />
+                  <p className="text-[11px] font-black text-slate-400 mt-1">
+                    {badge.progress}/{badge.goal}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Alert className="border-slate-200 bg-slate-50">
+            <AlertDescription className="text-xs font-bold text-slate-500">
+              已追蹤 {acceptedFriends.length} 位好友、{totalFriendChildren}{" "}
+              位小朋友及
+              {friendChallenges.length} 場私人挑戰。
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
       <Card className="rounded-3xl border-none shadow-sm overflow-hidden">
         <button
           onClick={() => setCreateOpen((open) => !open)}
@@ -1548,11 +2318,13 @@ function ChallengesPanel() {
                         </p>
                         <p className="text-sm text-white/85 font-bold">
                           {challenge.creator_name ?? "好友"} 發起 · 還有{" "}
-                          {daysLeft(challenge.ends_at)} 天
+                          {timeLeftLabel(challenge.ends_at)}
                         </p>
                       </div>
                       <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white">
-                        {friendChallengeStatusLabel(challenge.view_status)}
+                        {friendChallengeLifecycleLabel(
+                          resolveFriendChallengeLifecycle(challenge),
+                        )}
                       </span>
                     </div>
 
@@ -1639,6 +2411,80 @@ function ChallengesPanel() {
             </div>
           )}
 
+          {awaitingStartChallenges.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                即將開始
+              </p>
+              {awaitingStartChallenges.map((challenge) => (
+                <Card
+                  key={challenge.id}
+                  className="rounded-[20px] border-none shadow-sm"
+                >
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-black text-slate-700">
+                        {challenge.emoji} {challenge.title_zh}
+                      </p>
+                      <p className="text-sm font-bold text-slate-400 mt-1">
+                        挑戰將於{" "}
+                        {new Date(challenge.starts_at).toLocaleDateString(
+                          "zh-HK",
+                        )}
+                        開始
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${lifecyclePillClass(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}`}
+                    >
+                      {friendChallengeLifecycleLabel(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}
+                    </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {sprintFriendChallenges.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-rose-500 uppercase tracking-wide">
+                最後衝刺（48 小時內截止）
+              </p>
+              {sprintFriendChallenges.map((challenge) => (
+                <Card
+                  key={challenge.id}
+                  className="rounded-[20px] border border-rose-100 bg-rose-50/40 shadow-sm"
+                >
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-black text-slate-700">
+                        {challenge.emoji} {challenge.title_zh}
+                      </p>
+                      <p className="text-sm font-bold text-slate-500 mt-1">
+                        還有 {timeLeftLabel(challenge.ends_at)}，已完成{" "}
+                        {challenge.my_progress}/{challenge.target_count}
+                        {friendChallengeTargetUnit(challenge.metric_type)}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${lifecyclePillClass(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}`}
+                    >
+                      {friendChallengeLifecycleLabel(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}
+                    </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
           {completedFriendChallenges.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
@@ -1655,20 +2501,56 @@ function ChallengesPanel() {
                         {challenge.emoji} {challenge.title_zh}
                       </p>
                       <p className="text-sm font-bold text-slate-400 mt-1">
-                        {friendChallengeStatusLabel(challenge.view_status)} ·
-                        我的成績 {challenge.my_progress}/
+                        {friendChallengeLifecycleLabel(
+                          resolveFriendChallengeLifecycle(challenge),
+                        )}
+                        · 我的成績 {challenge.my_progress}/
                         {challenge.target_count}
                         {friendChallengeTargetUnit(challenge.metric_type)}
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${
-                        challenge.view_status === "completed"
-                          ? "bg-green-50 text-green-600"
-                          : "bg-slate-100 text-slate-500"
-                      }`}
+                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${lifecyclePillClass(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}`}
                     >
-                      {friendChallengeStatusLabel(challenge.view_status)}
+                      {friendChallengeLifecycleLabel(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}
+                    </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {declinedFriendChallenges.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                已拒絕邀請記錄
+              </p>
+              {declinedFriendChallenges.map((challenge) => (
+                <Card
+                  key={challenge.id}
+                  className="rounded-[20px] border-none shadow-sm"
+                >
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-lg font-black text-slate-700">
+                        {challenge.emoji} {challenge.title_zh}
+                      </p>
+                      <p className="text-sm font-bold text-slate-400 mt-1">
+                        你已拒絕這次邀請，可隨時再發起新挑戰。
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${lifecyclePillClass(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}`}
+                    >
+                      {friendChallengeLifecycleLabel(
+                        resolveFriendChallengeLifecycle(challenge),
+                      )}
                     </span>
                   </CardContent>
                 </Card>
@@ -1677,8 +2559,11 @@ function ChallengesPanel() {
           )}
 
           {pendingInvites.length === 0 &&
+            awaitingStartChallenges.length === 0 &&
             activeFriendChallenges.length === 0 &&
-            completedFriendChallenges.length === 0 && (
+            sprintFriendChallenges.length === 0 &&
+            completedFriendChallenges.length === 0 &&
+            declinedFriendChallenges.length === 0 && (
               <div className="text-center py-8 text-slate-400">
                 <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
                 <p className="font-bold text-sm">
@@ -1705,15 +2590,16 @@ function ChallengesPanel() {
           <div className="flex justify-center py-6">
             <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
           </div>
-        ) : communityChallenges.length === 0 ? (
+        ) : visibleCommunityChallenges.length === 0 ? (
           <div className="text-center py-10 text-slate-400">
             <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
             <p className="font-bold text-sm">目前沒有進行中的社群挑戰。</p>
           </div>
         ) : (
-          communityChallenges.map((challenge) => {
+          visibleCommunityChallenges.map((challenge) => {
             const board = leaderboards[challenge.id] ?? [];
             const top5 = board.slice(0, 5);
+
             return (
               <Card
                 key={challenge.id}
@@ -1737,10 +2623,10 @@ function ChallengesPanel() {
                   </div>
                   <div className="text-right rounded-2xl bg-white/90 border border-orange-100 px-3 py-2 shadow-xs shrink-0">
                     <p className="text-orange-500 font-black text-lg leading-none">
-                      {daysLeft(challenge.ends_at)}
+                      {timeLeftLabel(challenge.ends_at)}
                     </p>
                     <p className="text-slate-400 text-xs font-bold mt-1">
-                      天後結束
+                      剩餘時間
                     </p>
                   </div>
                 </div>
@@ -1861,6 +2747,14 @@ export function SocialTab() {
           </TabsTrigger>
 
           <TabsTrigger
+            value="activity"
+            className="flex-1 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm"
+          >
+            <Flame className="w-3.5 h-3.5 mr-1.5" />
+            動態
+          </TabsTrigger>
+
+          <TabsTrigger
             value="friends"
             className="flex-1 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold text-sm"
           >
@@ -1883,6 +2777,10 @@ export function SocialTab() {
 
         <TabsContent value="friends" className="mt-5">
           <FriendsPanel />
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-5">
+          <ActivityFeedPanel />
         </TabsContent>
 
         <TabsContent value="challenges" className="mt-5">

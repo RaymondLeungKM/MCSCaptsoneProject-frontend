@@ -246,6 +246,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
               const completed = isMissionCompleted(mission);
               const isSubmitting = submittingMissionId === mission.id;
               const isOffline = kind === "offline";
+              const isParentAuthored = mission.assignment?.source === "parent";
 
               return (
                 <article
