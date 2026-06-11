@@ -54,13 +54,13 @@ const navItems = [
     activeBg: "bg-teal-400",
     activeText: "text-teal-600",
   },
-  // {
-  //   id: "ai",
-  //   icon: Brain,
-  //   label: "智能",
-  //   activeBg: "bg-violet-400",
-  //   activeText: "text-violet-600",
-  // },
+  {
+    id: "revision",
+    icon: Brain,
+    label: "複習",
+    activeBg: "bg-violet-400",
+    activeText: "text-violet-600",
+  },
   {
     id: "rewards",
     icon: Trophy,
@@ -88,17 +88,16 @@ export function ChildNavigation({ activeTab, onTabChange }: NavigationProps) {
         paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
       }}
     >
-      {/* 🏝️ Floating Glass Island — fluid sizing via clamp so it scales
-          smoothly between phones, tablets and desktops without breakpoint
-          jumps that can clip the active "bubble" on intermediate sizes. */}
+      {/* 🏝️ Floating Glass Island */}
       <nav
         aria-label="兒童主導覽"
-        className="pointer-events-auto isolate grid w-full grid-cols-7 items-end rounded-[26px] border-[3px] border-white/50 bg-white/95 shadow-[0_10px_34px_rgba(0,0,0,0.16)] backdrop-blur-xl sm:rounded-[34px] lg:rounded-[38px]"
+        className="pointer-events-auto isolate grid w-full items-end rounded-[26px] border-[3px] border-white/50 bg-white/95 shadow-[0_10px_34px_rgba(0,0,0,0.16)] backdrop-blur-xl sm:rounded-[34px] lg:rounded-[38px]"
         style={{
           maxWidth: "min(100%, 52rem)",
           paddingInline: "clamp(0.375rem, 1.4vw, 1rem)",
           paddingBlock: "clamp(0.5rem, 1.4vw, 1rem)",
           columnGap: "clamp(0.125rem, 0.4vw, 0.5rem)",
+          gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
         }}
       >
         {navItems.map((item) => {

@@ -15,6 +15,11 @@ import {
   CheckCircle2,
   Shield,
   XCircle,
+  BellRing,
+  SlidersHorizontal,
+  Lightbulb,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import type {
   ChildProfile,
@@ -28,12 +33,22 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/lib/api/client";
+import { getReviewQueue } from "@/lib/api/phase8";
 import {
   approveActiveVocabRequest,
   getPendingActiveVocabRequests,
   rejectActiveVocabRequest,
   type ActiveVocabularyApprovalRequest,
 } from "@/lib/api/vocabulary";
+import {
+  getParentalControls,
+  updateParentalControls,
+} from "@/lib/api/parent-dashboard";
+import {
+  DEFAULT_REVISION_QUESTION_COUNT,
+  getRevisionQuestionCount,
+  setRevisionQuestionCount,
+} from "@/lib/revision-preferences";
 
 interface OverviewTabProps {
   profile: ChildProfile;
@@ -147,6 +162,15 @@ export function OverviewTab({
   weeklyDelta = null,
   onActiveVocabularyApproved,
 }: OverviewTabProps) {
+  const [dueCards, setDueCards] = useState<number | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachSaving, setCoachSaving] = useState(false);
+  const [revisionQuestionCount, setRevisionQuestionCountState] = useState(
+    DEFAULT_REVISION_QUESTION_COUNT,
+  );
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderWindow, setReminderWindow] = useState("18:00");
+
   const dailyProgress =
     profile.dailyGoal > 0
       ? Math.min((profile.todayProgress / profile.dailyGoal) * 100, 100)
@@ -270,6 +294,101 @@ export function OverviewTab({
               : "掌握度會隨著穩定練習逐步建立。",
           },
         ];
+
+  const completionRate =
+    stats.totalWords > 0
+      ? Math.round((stats.masteredWords / stats.totalWords) * 100)
+      : 0;
+  const retentionIndex = Math.round(
+    Math.min(
+      100,
+      completionRate * 0.7 + Math.min(stats.averageExposuresPerWord, 8) * 3.75,
+    ),
+  );
+  const retentionDelta = weeklyDelta?.words_learned.delta ?? 0;
+  const retentionTrendLabel =
+    retentionDelta > 0 ? "上升" : retentionDelta < 0 ? "回落" : "持平";
+
+  const interventionSuggestions = [
+    dueCards !== null && dueCards > revisionQuestionCount
+      ? `待複習卡有 ${dueCards} 張，建議每輪先做 ${revisionQuestionCount} 題，分段完成更容易維持專注。`
+      : dueCards !== null && dueCards > 0
+        ? `今日有 ${dueCards} 張待複習卡，先完成複習再學新詞，可減少遺忘。`
+        : "今日待複習量較輕，可安排 5 分鐘親子快問快答鞏固記憶。",
+    completionRate < 45
+      ? "完成率偏低，建議先聚焦 1 個主題並減少每次新詞數量。"
+      : completionRate < 75
+        ? "完成率穩步上升，可維持目前節奏並加入一次口語輸出練習。"
+        : "完成率表現理想，可把已掌握詞彙放入情境對話，提升主動使用。",
+    retentionIndex < 55
+      ? "保留趨勢偏弱，建議在 24 小時內安排一次短複習，並加入動作提示。"
+      : retentionIndex < 80
+        ? "保留趨勢中等，建議維持固定提醒時段，避免間隔過長。"
+        : "保留趨勢良好，可適度延長間隔並加入跨主題混合練習。",
+  ];
+
+  useEffect(() => {
+    setRevisionQuestionCountState(getRevisionQuestionCount(profile.id));
+  }, [profile.id]);
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      setDueCards(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      setCoachLoading(true);
+      try {
+        const [queue, controls] = await Promise.all([
+          getReviewQueue(profile.id, 30, 8),
+          getParentalControls(profile.id),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setDueCards(
+          queue.total_due ?? queue.cards.filter((card) => !card.is_new).length,
+        );
+        setReminderEnabled(controls.daily_reminder_enabled);
+        setReminderWindow(controls.daily_reminder_time || "18:00");
+      } catch {
+        if (!cancelled) {
+          setDueCards(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setCoachLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id]);
+
+  const handleSaveCoachPreferences = async () => {
+    setRevisionQuestionCount(profile.id, revisionQuestionCount);
+
+    if (!getAuthToken()) {
+      return;
+    }
+
+    setCoachSaving(true);
+    try {
+      await updateParentalControls(profile.id, {
+        daily_reminder_enabled: reminderEnabled,
+        daily_reminder_time: reminderWindow,
+      });
+    } finally {
+      setCoachSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 font-zen">
@@ -599,6 +718,116 @@ export function OverviewTab({
         childId={profile.id}
         onApproved={onActiveVocabularyApproved}
       />
+
+      <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+            <SlidersHorizontal className="h-5 w-5 text-indigo-500" />
+            複習教練面板
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-3 md:grid-cols-3">
+            <MiniMetric
+              icon={<Calendar className="h-4 w-4 text-indigo-500" />}
+              label="待複習卡"
+              value={coachLoading ? "載入中..." : `${dueCards ?? 0} 張`}
+            />
+            <MiniMetric
+              icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+              label="完成率"
+              value={`${completionRate}%`}
+            />
+            <MiniMetric
+              icon={
+                retentionDelta >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4 text-sky-500" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4 text-rose-500" />
+                )
+              }
+              label="保留趨勢"
+              value={`${retentionIndex}% · ${retentionTrendLabel}`}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-3 rounded-3xl bg-slate-50 p-4">
+              <p className="text-sm font-black text-slate-700">偏好調節</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Revision Questions
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map((count) => (
+                    <Button
+                      key={count}
+                      type="button"
+                      size="sm"
+                      variant={
+                        revisionQuestionCount === count ? "default" : "outline"
+                      }
+                      className="rounded-full"
+                      onClick={() => setRevisionQuestionCountState(count)}
+                    >
+                      {count} 題
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Reminder Window
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={reminderEnabled ? "default" : "outline"}
+                    className="rounded-full"
+                    onClick={() => setReminderEnabled((value) => !value)}
+                  >
+                    <BellRing className="mr-1 h-4 w-4" />
+                    {reminderEnabled ? "已啟用" : "已停用"}
+                  </Button>
+                  <input
+                    type="time"
+                    value={reminderWindow}
+                    disabled={!reminderEnabled}
+                    onChange={(event) => setReminderWindow(event.target.value)}
+                    className="h-9 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => void handleSaveCoachPreferences()}
+                disabled={coachSaving || !getAuthToken()}
+                className="rounded-full"
+              >
+                {coachSaving ? "儲存中..." : "儲存偏好"}
+              </Button>
+            </div>
+
+            <div className="space-y-3 rounded-3xl bg-linear-to-br from-amber-50 to-white p-4 ring-1 ring-amber-100">
+              <p className="flex items-center gap-2 text-sm font-black text-slate-700">
+                <Lightbulb className="h-4 w-4 text-amber-500" />
+                介入建議
+              </p>
+              {interventionSuggestions.map((suggestion) => (
+                <div
+                  key={suggestion}
+                  className="rounded-2xl bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-600"
+                >
+                  {suggestion}
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">

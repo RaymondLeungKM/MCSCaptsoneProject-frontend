@@ -63,7 +63,7 @@ import {
 import type { LearningControlStatusResponse } from "@/lib/api/progress";
 import { getWordOfTheDay, getNextActivity } from "@/lib/api/adaptive";
 import type { WordOfTheDayResponse } from "@/lib/api/adaptive";
-import { Phase8View } from "@/components/views/phase8-view";
+import { RevisionLabView } from "@/components/views/revision-lab-view";
 import type {
   Category,
   ChildProfile,
@@ -312,13 +312,18 @@ function ChildDashboardContent() {
   const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
+    if (requestedTab === "ai") {
+      setActiveTab("revision");
+      return;
+    }
+
     if (
       requestedTab === "home" ||
       requestedTab === "learn" ||
       requestedTab === "games" ||
       requestedTab === "stories" ||
       requestedTab === "community" ||
-      requestedTab === "ai" ||
+      requestedTab === "revision" ||
       requestedTab === "profile" ||
       requestedTab === "rewards"
     ) {
@@ -868,7 +873,7 @@ function ChildDashboardContent() {
       return;
     }
 
-    setActiveTab(tab);
+    setActiveTab(tab === "ai" ? "revision" : tab);
   };
 
   const proceedToParentDashboard = async () => {
@@ -1224,9 +1229,12 @@ function ChildDashboardContent() {
             </div>
           )}
 
-          {activeTab === "ai" && profile && (
+          {activeTab === "revision" && profile && (
             <section>
-              <Phase8View profile={profile} onPlayAudio={handlePlayAudio} />
+              <RevisionLabView
+                profile={profile}
+                onPlayAudio={handlePlayAudio}
+              />
             </section>
           )}
 

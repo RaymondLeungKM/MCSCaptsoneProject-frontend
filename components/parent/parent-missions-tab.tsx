@@ -29,9 +29,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthToken } from "@/lib/api/client";
 import {
   completeMission,
+  createParentMicroMission,
   getDailyMissions,
   getMissionSummary,
   getOfflineMissions,
+  type MissionContext,
   type MissionSummaryResponse,
   toOfflineMission,
 } from "@/lib/api/missions";
@@ -49,6 +51,14 @@ type ParentMissionSection = {
   subtitle: string;
   emptyMessage: string;
   missions: OfflineMission[];
+};
+
+type ParentMicroMissionForm = {
+  title: string;
+  description: string;
+  context: MissionContext;
+  targetWordsText: string;
+  promptText: string;
 };
 
 const mockDailyMissions: OfflineMission[] = [
@@ -143,6 +153,25 @@ function updateMissionCompletion(
   );
 }
 
+function parseTargetWords(value: string): string[] {
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,，、]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 8);
+}
+
+function parsePrompts(value: string): string[] {
+  return value
+    .split(/\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 function formatHistoryDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -213,6 +242,21 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
   const [showAllRecentCompletions, setShowAllRecentCompletions] =
     useState(false);
   const [selectedMissionKey, setSelectedMissionKey] = useState<string | null>(
+    null,
+  );
+  const [microMissionForm, setMicroMissionForm] =
+    useState<ParentMicroMissionForm>({
+      title: "",
+      description: "",
+      context: "general",
+      targetWordsText: "",
+      promptText: "",
+    });
+  const [isCreatingMicroMission, setIsCreatingMicroMission] = useState(false);
+  const [microMissionError, setMicroMissionError] = useState<string | null>(
+    null,
+  );
+  const [microMissionSuccess, setMicroMissionSuccess] = useState<string | null>(
     null,
   );
   const [loading, setLoading] = useState(true);
@@ -333,6 +377,54 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
         setDailyMissions(previousDailyMissions);
         setOfflineMissions(previousOfflineMissions);
       }
+    }
+  }
+
+  async function handleCreateMicroMission() {
+    if (isMockData || !childId) {
+      setMicroMissionError("示例模式不可建立自訂任務，請先選擇真實孩子檔案。");
+      return;
+    }
+
+    const title = microMissionForm.title.trim();
+    const description = microMissionForm.description.trim();
+    if (title.length < 2 || description.length < 6) {
+      setMicroMissionError("請填寫任務名稱與簡短說明（最少 2 / 6 個字）。");
+      return;
+    }
+
+    setIsCreatingMicroMission(true);
+    setMicroMissionError(null);
+    setMicroMissionSuccess(null);
+
+    try {
+      await createParentMicroMission(childId, {
+        title,
+        description,
+        context: microMissionForm.context,
+        target_words: parseTargetWords(microMissionForm.targetWordsText),
+        conversation_prompts: parsePrompts(microMissionForm.promptText),
+      });
+
+      setMicroMissionForm({
+        title: "",
+        description: "",
+        context: "general",
+        targetWordsText: "",
+        promptText: "",
+      });
+      setMicroMissionSuccess(
+        "已送出到孩子模式，孩子現在可在今日任務看到這個新挑戰。",
+      );
+      await loadMissionDashboard({ showLoading: false });
+    } catch (createError) {
+      console.error(
+        "[Parent Missions] Could not create micro mission:",
+        createError,
+      );
+      setMicroMissionError("未能建立任務，請稍後再試。");
+    } finally {
+      setIsCreatingMicroMission(false);
     }
   }
 
@@ -547,6 +639,145 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                 {missionSummary.next_reward_label}
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-lg bg-linear-to-br from-emerald-50 via-white to-teal-50 rounded-3xl overflow-hidden">
+        <CardContent className="p-6 md:p-7 space-y-5">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <Target className="w-5 h-5 text-emerald-600" />
+              家長自訂微任務
+            </h3>
+            <p className="text-sm text-slate-500 font-medium">
+              建立「廚房、公園、睡前」等真實情境小任務，立即送到孩子模式。
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <label className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                任務名稱
+              </span>
+              <input
+                value={microMissionForm.title}
+                onChange={(event) =>
+                  setMicroMissionForm((current) => ({
+                    ...current,
+                    title: event.target.value,
+                  }))
+                }
+                maxLength={80}
+                placeholder="例如：廚房找一找三樣食物"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                情境
+              </span>
+              <select
+                value={microMissionForm.context}
+                onChange={(event) =>
+                  setMicroMissionForm((current) => ({
+                    ...current,
+                    context: event.target.value as MissionContext,
+                  }))
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="general">日常對話</option>
+                <option value="mealtime">用餐時間</option>
+                <option value="bedtime">睡前時光</option>
+                <option value="playtime">遊戲時間</option>
+                <option value="outdoor">戶外活動</option>
+                <option value="shopping">購物時間</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="space-y-2 block">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              任務說明
+            </span>
+            <textarea
+              value={microMissionForm.description}
+              onChange={(event) =>
+                setMicroMissionForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              maxLength={240}
+              rows={3}
+              placeholder="例如：請孩子在廚房找出三樣食物，逐一用粵語說出名稱，再用一句話描述它們。"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            />
+          </label>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <label className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                目標詞語（以逗號或換行分隔）
+              </span>
+              <textarea
+                value={microMissionForm.targetWordsText}
+                onChange={(event) =>
+                  setMicroMissionForm((current) => ({
+                    ...current,
+                    targetWordsText: event.target.value,
+                  }))
+                }
+                rows={3}
+                placeholder="蘋果, 雞蛋, 碗"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                提問提示（每行一條）
+              </span>
+              <textarea
+                value={microMissionForm.promptText}
+                onChange={(event) =>
+                  setMicroMissionForm((current) => ({
+                    ...current,
+                    promptText: event.target.value,
+                  }))
+                }
+                rows={3}
+                placeholder={"你見到咩食物？\n你想先講邊一樣？"}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              />
+            </label>
+          </div>
+
+          {microMissionError && (
+            <p className="text-sm font-medium text-rose-600">
+              {microMissionError}
+            </p>
+          )}
+          {microMissionSuccess && (
+            <p className="text-sm font-medium text-emerald-700">
+              {microMissionSuccess}
+            </p>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-xs text-slate-500 font-medium">
+              建立後會直接發佈並指派到今天，孩子可在「今日任務」即時看到。
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCreateMicroMission()}
+              disabled={isCreatingMicroMission}
+              className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreatingMicroMission ? "送出中..." : "送到孩子模式"}
+            </button>
           </div>
         </CardContent>
       </Card>
