@@ -1,79 +1,111 @@
 "use client";
 
-import type { ReactElement } from "react";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { CartoonCat, CartoonDog, CartoonOwl } from "./cartoon-characters";
-import { X } from "lucide-react";
+/**
+ * OwlCompanion — Duolingo / Khan Academy style floating mascot.
+ *
+ * Behaviour goals:
+ *   - Always-present friendly character in the bottom-right corner
+ *   - Periodic idle animations (bob, blink, occasional "wave/jump" attention burst)
+ *   - Notification dot when a fresh tip is waiting; clears once the bubble is read
+ *   - Tap opens a small dialog card with avatar header, name, level badge,
+ *     a contextual tip, and quick actions (next tip / thumbs up / close)
+ *   - Tap outside or press Escape to dismiss
+ *   - Tier unlocks (Lv.3 dog, Lv.6 cat) trigger a one-time celebration with confetti
+ *   - Mood/messages cycle from a tier-specific pool
+ *   - Mascot becomes "alert" (bigger pulse, dot visible) every ~25s when idle
+ */
 
-type MascotTier = {
-  id: "owl" | "dog" | "cat";
+import type { ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import confetti from "canvas-confetti";
+import { ChevronRight, Sparkles, ThumbsUp, X } from "lucide-react";
+import { CartoonCat, CartoonDog, CartoonOwl } from "./cartoon-characters";
+
+type MascotId = "owl" | "dog" | "cat";
+
+interface MascotTier {
+  id: MascotId;
   unlockLevel: number;
   name: string;
+  /** Short role label shown under the name. */
+  role: string;
+  /** Base ring/glow colour (CSS). */
   accent: string;
+  /** Bubble border colour. */
   bubbleBorder: string;
+  /** Bubble title/text colour. */
   bubbleText: string;
+  /** Notification dot colour. */
   dot: string;
-  prompt: string;
+  /** Greeting text shown once when the tier first unlocks. */
   unlockMessage: string;
+  /** Rotating contextual tips/encouragements. */
   messages: string[];
+  /** Renders the SVG mascot at a given pixel size. */
   render: (size: number) => ReactElement;
-};
+}
 
 const MASCOT_TIERS: MascotTier[] = [
   {
     id: "owl",
     unlockLevel: 1,
-    name: "Ollie",
-    accent: "rgba(139, 92, 246, 0.22)",
+    name: "Ollie 貓頭鷹",
+    role: "你嘅學習老師",
+    accent: "rgba(139, 92, 246, 0.55)",
     bubbleBorder: "#c4b5fd",
-    bubbleText: "#6d28d9",
+    bubbleText: "#5b21b6",
     dot: "#facc15",
-    prompt: "點擊貓頭鷹獲得鼓勵",
-    unlockMessage: "貓頭鷹老師會陪你開始學習旅程。",
+    unlockMessage: "你好！我係 Ollie，會喺呢度陪你學廣東話呀。",
     messages: [
-      "你做得好好呀！繼續加油！",
-      "學廣東話好好玩架！",
-      "日日練習，你變得越嚟越叻！",
-      "今日學咗幾多個詞彙呀？",
-      "每個新詞彙都係寶藏嚟著！",
+      "你今日做得好好！再讀多一次，你會記得更清楚。",
+      "提示：大聲讀出嚟，發音會更標準。",
+      "你知唔知？每日學三個新詞，一個月就識九十個！",
+      "覺得難？慢慢嚟，我會陪住你 💜",
+      "完成一個小任務就可以攞星星，加油！",
     ],
-    render: (size) => <CartoonOwl size={size} animate="float" />,
+    render: (size) => <CartoonOwl size={size} animate="scene" variant="storybook" />,
   },
   {
     id: "dog",
     unlockLevel: 3,
-    name: "Bingo",
-    accent: "rgba(251, 146, 60, 0.24)",
+    name: "Bingo 小狗",
+    role: "你嘅冒險隊長",
+    accent: "rgba(251, 146, 60, 0.6)",
     bubbleBorder: "#fdba74",
     bubbleText: "#c2410c",
     dot: "#fb923c",
-    prompt: "點擊小狗獲得鼓勵",
-    unlockMessage: "Lv.3 解鎖小狗 Bingo！之後會陪你一齊衝關。",
+    unlockMessage: "汪！Lv.3 解鎖啦！我係 Bingo，會同你一齊衝關。",
     messages: [
-      "汪！再試一次，你就會成功啦！",
-      "你今日好有衝勁，我陪你一齊學！",
-      "大聲讀出嚟，發音會越嚟越靚！",
-      "做完呢關，我哋一齊去下一級！",
+      "汪汪！再試多一次，你就會成功！",
+      "你今日連續學咗幾日啦？保持落去！",
+      "想拎金獎？挑戰一個新類別啦！",
+      "我哋一齊去探險，搵晒所有詞語！",
     ],
-    render: (size) => <CartoonDog size={size} animate="float" />,
+    render: (size) => <CartoonDog size={size} animate="scene" />,
   },
   {
     id: "cat",
     unlockLevel: 6,
-    name: "Mimi",
-    accent: "rgba(244, 114, 182, 0.22)",
+    name: "Mimi 小貓",
+    role: "你嘅進階導師",
+    accent: "rgba(244, 114, 182, 0.6)",
     bubbleBorder: "#f9a8d4",
     bubbleText: "#be185d",
     dot: "#fb7185",
-    prompt: "點擊小貓獲得鼓勵",
-    unlockMessage: "Lv.6 解鎖小貓 Mimi！你已經升到進階學習隊伍。",
+    unlockMessage: "喵！Lv.6 解鎖！我係 Mimi，跟住我升上更高級。",
     messages: [
-      "喵！你而家越學越快，真係好叻！",
-      "記住節奏慢慢講，會更清楚呀！",
-      "你已經解鎖新朋友啦，繼續努力！",
-      "我最鍾意睇你完成挑戰嗰一刻！",
+      "喵～你已經好叻啦，挑戰故事模式吖？",
+      "記住節奏慢慢講，會更清楚！",
+      "嘗試自己造一個句子，會學得更深！",
+      "你做到嘅 — 我見證緊你進步 💖",
     ],
-    render: (size) => <CartoonCat size={size} animate="float" />,
+    render: (size) => <CartoonCat size={size} animate="scene" />,
   },
 ];
 
@@ -82,24 +114,32 @@ interface OwlCompanionProps {
 }
 
 export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
-  const [showBubble, setShowBubble] = useState(false);
+  const [open, setOpen] = useState(false);
   const [msgIdx, setMsgIdx] = useState(0);
-  const [unlockMessage, setUnlockMessage] = useState<string | null>(null);
-  const previousMascotIdRef = useRef<string | null>(null);
+  const [hasNewTip, setHasNewTip] = useState(true);
+  const [isWaving, setIsWaving] = useState(false);
+  const [unlockGreeting, setUnlockGreeting] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
+  const previousMascotIdRef = useRef<MascotId | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  const activeMascot = useMemo(() => {
-    return [...MASCOT_TIERS]
-      .reverse()
-      .find((tier) => level >= tier.unlockLevel) ?? MASCOT_TIERS[0];
+  const activeMascot = useMemo<MascotTier>(() => {
+    return (
+      [...MASCOT_TIERS].reverse().find((tier) => level >= tier.unlockLevel) ??
+      MASCOT_TIERS[0]
+    );
   }, [level]);
 
+  // Reset message rotation when the active mascot changes.
   useEffect(() => {
     setMsgIdx(0);
+    setLiked(false);
   }, [activeMascot.id]);
 
+  // One-time unlock celebration for newly reached tiers.
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     const storageKey = `mascot-unlock:${activeMascot.id}`;
     const firstAppearance = previousMascotIdRef.current !== activeMascot.id;
     previousMascotIdRef.current = activeMascot.id;
@@ -110,149 +150,264 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
       !window.localStorage.getItem(storageKey)
     ) {
       window.localStorage.setItem(storageKey, "seen");
-      setUnlockMessage(activeMascot.unlockMessage);
-      setShowBubble(true);
+      setUnlockGreeting(activeMascot.unlockMessage);
+      setHasNewTip(true);
+      setOpen(true);
+      // Friendly celebration
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          startVelocity: 38,
+          origin: { x: 0.85, y: 0.85 },
+          colors: ["#a78bfa", "#fbbf24", "#f472b6", "#34d399", "#60a5fa"],
+        });
+      } catch {
+        /* confetti is best-effort */
+      }
     }
   }, [activeMascot]);
 
-  const handleOwlClick = useCallback(() => {
-    setUnlockMessage(null);
-    setShowBubble(true);
-    setMsgIdx((prev) => (prev + 1) % activeMascot.messages.length);
+  // Periodic "wave" attention burst + notification dot when idle.
+  useEffect(() => {
+    if (open) return;
+    const interval = window.setInterval(() => {
+      setIsWaving(true);
+      setHasNewTip(true);
+      window.setTimeout(() => setIsWaving(false), 1800);
+    }, 25_000);
+    return () => window.clearInterval(interval);
+  }, [open]);
 
-    // Trigger haptic feedback if available
-    if (navigator.vibrate) {
-      navigator.vibrate([10, 20, 10]);
+  // Dismiss on outside click / Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (
+        target &&
+        !cardRef.current?.contains(target) &&
+        !buttonRef.current?.contains(target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const openCard = useCallback(() => {
+    setOpen(true);
+    setHasNewTip(false);
+    setIsWaving(false);
+    setLiked(false);
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([10, 18, 10]);
     }
+  }, []);
+
+  const nextTip = useCallback(() => {
+    setUnlockGreeting(null);
+    setLiked(false);
+    setMsgIdx((prev) => (prev + 1) % activeMascot.messages.length);
   }, [activeMascot.messages.length]);
 
+  const handleLike = useCallback(() => {
+    setLiked(true);
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+  }, []);
+
   const bubbleMessage =
-    unlockMessage ?? activeMascot.messages[msgIdx % activeMascot.messages.length];
+    unlockGreeting ?? activeMascot.messages[msgIdx % activeMascot.messages.length];
 
   return (
     <>
       <style>{`
-        @keyframes mascot-bubble-pop {
-          0% {
-            transform: translate3d(0, 14px, 0) scale(0.92);
-            opacity: 0;
-          }
-          60% {
-            transform: translate3d(0, -4px, 0) scale(1.02);
-            opacity: 1;
-          }
-          100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 1;
-          }
+        @keyframes owl-mascot-idle {
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50% { transform: translateY(-7px) rotate(1deg); }
         }
-        @keyframes mascot-idle-float {
-          0%, 100% {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          50% {
-            transform: translate3d(0, -6px, 0) scale(1.025);
-          }
+        @keyframes owl-mascot-wave {
+          0%   { transform: translateY(0) rotate(0deg) scale(1); }
+          15%  { transform: translateY(-18px) rotate(-8deg) scale(1.06); }
+          30%  { transform: translateY(-2px) rotate(6deg) scale(1.02); }
+          45%  { transform: translateY(-22px) rotate(-6deg) scale(1.08); }
+          60%  { transform: translateY(-2px) rotate(4deg) scale(1.02); }
+          80%  { transform: translateY(-10px) rotate(-2deg) scale(1.04); }
+          100% { transform: translateY(0) rotate(0deg) scale(1); }
         }
-        @keyframes mascot-ring-pulse {
-          0%, 100% {
-            opacity: 0.42;
-            transform: scale(0.96);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.04);
-          }
+        @keyframes owl-ring-pulse {
+          0%, 100% { transform: scale(0.95); opacity: 0.5; }
+          50% { transform: scale(1.12); opacity: 0.9; }
         }
-        @keyframes mascot-dot-bob {
-          0%, 100% {
-            transform: translate3d(0, 0, 0) scale(1);
-            opacity: 0.82;
-          }
-          50% {
-            transform: translate3d(0, -4px, 0) scale(1.08);
-            opacity: 1;
-          }
+        @keyframes owl-ring-attention {
+          0% { transform: scale(0.6); opacity: 0.9; }
+          100% { transform: scale(1.7); opacity: 0; }
+        }
+        @keyframes owl-dot-bob {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.95; }
+          50% { transform: translateY(-3px) scale(1.12); opacity: 1; }
+        }
+        @keyframes owl-card-in {
+          0% { transform: translate3d(0, 14px, 0) scale(0.94); opacity: 0; }
+          100% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+        }
+        @keyframes owl-heart-burst {
+          0% { transform: scale(0.4); opacity: 0; }
+          40% { transform: scale(1.4); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
 
-      <div className="fixed bottom-32 right-3 z-40 flex flex-col items-end gap-3 pointer-events-none">
-        {showBubble && (
+      {/* Card / speech bubble */}
+      {open && (
+        <div
+          ref={cardRef}
+          role="dialog"
+          aria-label={`${activeMascot.name} 對話`}
+          className="fixed bottom-[148px] right-3 z-50 w-[280px] sm:w-[300px] rounded-3xl bg-white shadow-[0_24px_50px_rgba(15,23,42,0.22)]"
+          style={{
+            border: `3px solid ${activeMascot.bubbleBorder}`,
+            animation: "owl-card-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both",
+            transformOrigin: "bottom right",
+          }}
+        >
+          {/* Header */}
           <div
-            className="pointer-events-auto bg-white rounded-3xl px-5 py-4 max-w-[220px] relative"
+            className="flex items-center gap-3 rounded-t-3xl px-4 py-3"
             style={{
-              animation: "mascot-bubble-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
-              transformOrigin: "bottom right",
-              border: `2px solid ${activeMascot.bubbleBorder}`,
-              boxShadow: "0 18px 32px rgba(15, 23, 42, 0.18)",
-              willChange: "transform, opacity",
+              background: `linear-gradient(135deg, ${activeMascot.bubbleBorder}55, #ffffff)`,
             }}
           >
+            <div
+              className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-white"
+              style={{ border: `2px solid ${activeMascot.bubbleBorder}` }}
+            >
+              {activeMascot.render(46)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p
+                className="truncate text-base font-black"
+                style={{ color: activeMascot.bubbleText }}
+              >
+                {activeMascot.name}
+              </p>
+              <p className="truncate text-xs font-bold text-slate-500">
+                {activeMascot.role} · Lv.{Math.max(level, activeMascot.unlockLevel)}
+              </p>
+            </div>
             <button
-              onClick={() => {
-                setUnlockMessage(null);
-                setShowBubble(false);
-              }}
-              className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center text-slate-300 hover:text-slate-500 transition-colors hover:scale-110"
+              onClick={() => setOpen(false)}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
               aria-label="關閉"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="h-4 w-4" />
             </button>
+          </div>
+
+          {/* Message */}
+          <div className="px-4 pb-3 pt-2">
             <p
-              className="font-black text-lg leading-snug text-center pr-2"
-              style={{ color: activeMascot.bubbleText }}
+              key={bubbleMessage}
+              className="text-base font-black leading-snug text-slate-800"
+              style={{ animation: "owl-card-in 280ms ease both" }}
             >
               {bubbleMessage}
             </p>
-            <div
-              className="absolute -bottom-2.5 right-8 w-4 h-4 bg-white rotate-45"
-              style={{
-                borderRight: `2px solid ${activeMascot.bubbleBorder}`,
-                borderBottom: `2px solid ${activeMascot.bubbleBorder}`,
-              }}
-            />
           </div>
-        )}
 
-        <button
-          onClick={handleOwlClick}
-          className="pointer-events-auto relative flex items-center justify-center cursor-pointer active:scale-95 transition-transform duration-200"
-          style={{
-            width: 88,
-            height: 88,
-            animation: "mascot-idle-float 2.8s ease-in-out infinite",
-            willChange: "transform",
-          }}
-          aria-label={activeMascot.prompt}
-        >
+          {/* Actions */}
+          <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-3 py-2.5">
+            <button
+              onClick={handleLike}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition active:scale-95"
+              style={{
+                background: liked ? `${activeMascot.bubbleBorder}` : "#f1f5f9",
+                color: liked ? activeMascot.bubbleText : "#475569",
+              }}
+              aria-label="鍾意呢個提示"
+            >
+              {liked ? (
+                <span
+                  className="inline-block"
+                  style={{ animation: "owl-heart-burst 360ms ease both" }}
+                >
+                  💖
+                </span>
+              ) : (
+                <ThumbsUp className="h-4 w-4" />
+              )}
+              <span>{liked ? "多謝你！" : "鍾意"}</span>
+            </button>
+            <button
+              onClick={nextTip}
+              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-black text-white transition active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, ${activeMascot.bubbleText}, ${activeMascot.bubbleBorder})`,
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>下一個提示</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Pointer tail */}
           <div
-            className="absolute inset-0 rounded-full"
+            className="absolute -bottom-2.5 right-9 h-4 w-4 rotate-45 bg-white"
             style={{
-              background: `radial-gradient(circle, ${activeMascot.accent} 0%, rgba(255,255,255,0) 72%)`,
-              animation: "mascot-ring-pulse 2.6s ease-in-out infinite",
-              willChange: "transform, opacity",
+              borderRight: `3px solid ${activeMascot.bubbleBorder}`,
+              borderBottom: `3px solid ${activeMascot.bubbleBorder}`,
             }}
           />
-          {!showBubble && (
-            <span
-              className="absolute top-1 right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm"
-              style={{
-                backgroundColor: activeMascot.dot,
-                animation: "mascot-dot-bob 1.6s ease-in-out infinite",
-                willChange: "transform, opacity",
-              }}
-            />
-          )}
-          <div
-            className="relative rounded-full bg-white/16 backdrop-blur-[2px]"
+        </div>
+      )}
+
+      {/* Mascot button */}
+      <button
+        ref={buttonRef}
+        onClick={openCard}
+        aria-label={`同 ${activeMascot.name} 傾偈`}
+        aria-expanded={open}
+        className="fixed bottom-28 right-3 z-40 flex h-24 w-24 items-center justify-center"
+        style={{ outline: "none" }}
+      >
+        {/* Notification dot */}
+        {hasNewTip && !open && (
+          <span
+            aria-hidden
+            className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[10px] font-black text-white shadow-md"
             style={{
-              boxShadow: "0 14px 28px rgba(15, 23, 42, 0.18)",
+              background: activeMascot.dot,
+              animation: "owl-dot-bob 1.4s ease-in-out infinite",
             }}
           >
-            {activeMascot.render(78)}
-          </div>
-        </button>
-      </div>
+            !
+          </span>
+        )}
+        {/* The mascot itself */}
+        <span
+          className="relative flex items-center justify-center"
+          style={{
+            animation: isWaving
+              ? "owl-mascot-wave 1.8s ease-in-out"
+              : "owl-mascot-idle 3.2s ease-in-out infinite",
+            transformOrigin: "50% 80%",
+            filter: "drop-shadow(0 14px 24px rgba(15, 23, 42, 0.24))",
+          }}
+        >
+          {activeMascot.render(88)}
+        </span>
+      </button>
     </>
   );
 }

@@ -238,8 +238,6 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-500">
               先去學習、玩遊戲或讀故事，稍後再回來看看。
-            </p>
-          </div>
         ) : (
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visibleMissions.map(({ mission, kind }) => {
@@ -251,6 +249,145 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
               return (
                 <article
                   key={mission.id}
+                className={cn(
+                  "rounded-[28px] border border-white/80 bg-white/85 p-4 shadow-sm transition-transform",
+                  completed && "ring-2 ring-emerald-200/80",
+                  isOffline && "bg-emerald-50/70",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        CONTEXT_STYLES[mission.context],
+                      )}
+                    >
+                      {CONTEXT_LABELS[mission.context]}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        isOffline
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                          : "border-amber-200 bg-amber-100 text-amber-700",
+                      )}
+                    >
+                      {isOffline ? "親子任務" : "今日任務"}
+                    </span>
+                    {isParentAuthored && (
+                      <span className="inline-flex rounded-full border border-violet-200 bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
+                        家長自訂
+                      </span>
+                    )}
+                  </div>
+
+                  {completed && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      完成
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="mt-3 text-3xl font-black leading-tight text-slate-800">
+                  {mission.title}
+                </h3>
+                <p className="mt-2 min-h-14 text-xl font-semibold leading-6 text-slate-500">
+                  {mission.description}
+                </p>
+
+                {mission.target_words.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {mission.target_words.slice(0, 4).map((word) => (
+                      <span
+                        key={word}
+                        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {mission.conversation_prompts[0] && (
+                  <div className="mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-base font-semibold leading-6 text-slate-600">
+                    <span className="font-black text-amber-700">小提示：</span>
+                    {mission.conversation_prompts[0]}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={() => void handleCompleteMission(mission.id)}
+                  disabled={completed || isSubmitting}
+                className={cn(
+                  "rounded-[28px] border border-white/80 bg-white/85 p-4 shadow-sm transition-transform",
+                  completed && "ring-2 ring-emerald-200/80",
+                  isOffline && "bg-emerald-50/70",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        CONTEXT_STYLES[mission.context],
+                      )}
+                    >
+                      {CONTEXT_LABELS[mission.context]}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-3 py-1 text-xs font-black",
+                        isOffline
+                          ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                          : "border-amber-200 bg-amber-100 text-amber-700",
+                      )}
+                    >
+                      {isOffline ? "親子任務" : "今日任務"}
+                    </span>
+                  </div>
+
+                  {completed && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      完成
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="child-tab-section-title !mt-3 !text-3xl !leading-tight">
+                  {mission.title}
+                </h3>
+                <p className="child-tab-card-copy !mt-2 !min-h-14 !text-xl !leading-6">
+                  {mission.description}
+                </p>
+
+                {mission.target_words.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {mission.target_words.slice(0, 4).map((word) => (
+                      <span
+                        key={word}
+                        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600"
+                      >
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {mission.conversation_prompts[0] && (
+                  <div className="child-tab-card-copy mt-4 rounded-2xl bg-amber-50 px-3 py-2 !text-base !leading-6 !text-slate-600">
+                    <span className="font-black text-amber-700">小提示：</span>
+                    {mission.conversation_prompts[0]}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={() => void handleCompleteMission(mission.id)}
+                  disabled={completed || isSubmitting}
                   className={cn(
                     "rounded-[28px] border border-white/80 bg-white/85 p-4 shadow-sm transition-transform",
                     completed && "ring-2 ring-emerald-200/80",

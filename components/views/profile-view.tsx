@@ -256,7 +256,7 @@ export function ProfileView({
             </div>
 
             <div className="rounded-[32px] border border-white/70 bg-white/75 p-6 shadow-sm backdrop-blur-md md:w-[360px]">
-              <div className="mb-3 flex items-center justify-between text-base font-bold text-slate-500">
+              <div className="mb-3 flex flex-col gap-1 text-center text-base font-bold text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:text-left">
                 <span>升級進度</span>
                 <span>{xpToNextLevel} XP 到下一級</span>
               </div>

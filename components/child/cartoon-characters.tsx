@@ -9,6 +9,7 @@
 import { cn } from "@/lib/utils";
 
 type MascotAnimation = "bounce" | "float" | "wiggle" | "scene" | "none";
+type CartoonOwlVariant = "classic" | "storybook";
 
 function getRootAnimationStyle(
   animate: MascotAnimation,
@@ -151,9 +152,15 @@ interface CartoonOwlProps {
   size?: number;
   /** Animation variant */
   animate?: MascotAnimation;
+  variant?: CartoonOwlVariant;
 }
 
-export function CartoonOwl({ className, size = 120, animate = "float" }: CartoonOwlProps) {
+export function CartoonOwl({
+  className,
+  size = 120,
+  animate = "float",
+  variant = "classic",
+}: CartoonOwlProps) {
   const isScene = animate === "scene";
   const shouldAnimate = animate !== "none";
   const animStyle = getRootAnimationStyle(animate, {
@@ -192,6 +199,179 @@ export function CartoonOwl({ className, size = 120, animate = "float" }: Cartoon
   const rightLookStyle: React.CSSProperties | undefined = isScene
     ? { animation: "cartoon-pupil-look 6.4s ease-in-out infinite reverse", transformOrigin: "122px 84px" }
     : undefined;
+  const wandStyle: React.CSSProperties | undefined = isScene
+    ? { animation: "cartoon-wiggle 2.8s ease-in-out infinite", transformOrigin: "56px 112px" }
+    : undefined;
+  const sparkleStyle: React.CSSProperties | undefined = shouldAnimate
+    ? { animation: "cartoon-twinkle 1.8s ease-in-out infinite" }
+    : undefined;
+
+  if (variant === "storybook") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 200 200"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={cn("select-none", className)}
+        style={animStyle}
+        data-cartoon-motion={shouldAnimate ? "true" : undefined}
+        aria-hidden="true"
+      >
+        <defs>
+          <radialGradient id="owl-story-shadow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#0f172a" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="owl-story-body-grad" cx="42%" cy="28%" r="60%">
+            <stop offset="0%" stopColor="#f8d8a8" />
+            <stop offset="50%" stopColor="#c58a4c" />
+            <stop offset="100%" stopColor="#7a4a2c" />
+          </radialGradient>
+          <radialGradient id="owl-story-head-grad" cx="45%" cy="30%" r="58%">
+            <stop offset="0%" stopColor="#f8ddb5" />
+            <stop offset="58%" stopColor="#c4915e" />
+            <stop offset="100%" stopColor="#6e452f" />
+          </radialGradient>
+          <radialGradient id="owl-story-face-grad" cx="50%" cy="38%" r="56%">
+            <stop offset="0%" stopColor="#fff9ef" />
+            <stop offset="100%" stopColor="#f3d8af" />
+          </radialGradient>
+          <linearGradient id="owl-story-wing-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#d3a06a" />
+            <stop offset="100%" stopColor="#7b4b30" />
+          </linearGradient>
+          <linearGradient id="owl-story-hat-grad" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="#1e3a8a" />
+          </linearGradient>
+          <linearGradient id="owl-story-hat-band" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#fcd34d" />
+            <stop offset="100%" stopColor="#f59e0b" />
+          </linearGradient>
+          <radialGradient id="owl-story-eye" cx="38%" cy="32%" r="58%">
+            <stop offset="0%" stopColor="#fde68a" />
+            <stop offset="48%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#92400e" />
+          </radialGradient>
+          <radialGradient id="owl-story-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="1" />
+            <stop offset="55%" stopColor="#60a5fa" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#60a5fa" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        <ellipse cx="104" cy="189" rx="52" ry="10" fill="url(#owl-story-shadow)" />
+
+        <g data-cartoon-motion={isScene ? "true" : undefined} style={leftWingStyle}>
+          <path
+            d="M63 92C47 104 39 126 47 150C63 145 79 134 87 117C84 106 76 97 63 92Z"
+            fill="url(#owl-story-wing-grad)"
+            stroke="#73462c"
+            strokeWidth="2.4"
+            strokeLinejoin="round"
+          />
+          <path d="M53 129C61 131 69 136 75 143" stroke="#f6d3a6" strokeWidth="2" strokeLinecap="round" opacity="0.75" />
+          <path d="M57 117C66 119 75 123 82 129" stroke="#f6d3a6" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+        </g>
+
+        <g data-cartoon-motion={isScene ? "true" : undefined} style={rightWingStyle}>
+          <path
+            d="M139 103C150 116 158 135 155 157C140 152 127 143 119 128C121 117 128 108 139 103Z"
+            fill="url(#owl-story-wing-grad)"
+            stroke="#73462c"
+            strokeWidth="2.4"
+            strokeLinejoin="round"
+          />
+          <path d="M146 138C139 140 132 144 126 149" stroke="#f6d3a6" strokeWidth="2" strokeLinecap="round" opacity="0.72" />
+          <path d="M143 126C135 128 128 131 123 136" stroke="#f6d3a6" strokeWidth="2" strokeLinecap="round" opacity="0.58" />
+        </g>
+
+        <g data-cartoon-motion={isScene ? "true" : undefined} style={bodyStyle}>
+          <ellipse cx="101" cy="136" rx="47" ry="53" fill="url(#owl-story-body-grad)" />
+          <ellipse cx="101" cy="148" rx="34" ry="38" fill="url(#owl-story-face-grad)" />
+          <path d="M82 122C89 129 94 137 96 147" stroke="#f8e6c9" strokeWidth="2.4" strokeLinecap="round" opacity="0.78" />
+          <path d="M100 118C102 129 102 141 101 153" stroke="#edd0a0" strokeWidth="2.4" strokeLinecap="round" opacity="0.85" />
+          <path d="M118 123C112 131 108 139 106 149" stroke="#f8e6c9" strokeWidth="2.4" strokeLinecap="round" opacity="0.72" />
+        </g>
+
+        <g data-cartoon-motion={isScene ? "true" : undefined} style={headStyle}>
+          <path
+            d="M86 24C84 14 91 8 100 11C109 7 118 13 116 24"
+            stroke="#8d633d"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <circle cx="100" cy="82" r="50" fill="url(#owl-story-head-grad)" />
+          <ellipse cx="99" cy="83" rx="39" ry="34" fill="url(#owl-story-face-grad)" />
+          <path
+            d="M75 61C82 50 92 44 99 44C106 44 116 49 124 61"
+            stroke="#fff8ef"
+            strokeWidth="4"
+            strokeLinecap="round"
+            opacity="0.65"
+          />
+
+          <g>
+            <ellipse cx="100" cy="29" rx="36" ry="8.5" fill="#17356f" opacity="0.22" />
+            <path
+              d="M71 33C76 13 92 4 113 10C125 13 133 25 131 40C118 36 86 35 71 33Z"
+              fill="url(#owl-story-hat-grad)"
+              stroke="#17356f"
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+            />
+            <ellipse cx="101" cy="35" rx="34" ry="8" fill="#1e2d5b" />
+            <ellipse cx="101" cy="32" rx="28" ry="4.2" fill="url(#owl-story-hat-band)" />
+            <path d="M95 16l2.8 5.5 6 0.9-4.4 4.1 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.1 6-0.9L95 16Z" fill="#fde68a" />
+            <path d="M118 21l1.8 3.5 3.8 0.6-2.8 2.6 0.6 3.8-3.4-1.8-3.4 1.8 0.6-3.8-2.8-2.6 3.8-0.6L118 21Z" fill="#fde68a" opacity="0.92" />
+          </g>
+
+          <g data-cartoon-motion={isScene ? "true" : undefined} style={leftEarStyle}>
+            <path d="M63 45C62 28 72 21 83 26C77 37 72 46 63 45Z" fill="#8d633d" />
+            <path d="M68 42C69 32 75 27 81 29C77 36 74 40 68 42Z" fill="#f3d4a7" />
+          </g>
+          <g data-cartoon-motion={isScene ? "true" : undefined} style={rightEarStyle}>
+            <path d="M137 45C138 28 128 21 117 26C123 37 128 46 137 45Z" fill="#8d633d" />
+            <path d="M132 42C131 32 125 27 119 29C123 36 126 40 132 42Z" fill="#f3d4a7" />
+          </g>
+
+          <g data-cartoon-motion={isScene ? "true" : undefined} style={leftBlinkStyle}>
+            <ellipse cx="78" cy="83" rx="22" ry="24" fill="#fffdf9" />
+            <g data-cartoon-motion={isScene ? "true" : undefined} style={leftLookStyle}>
+              <circle cx="78" cy="84" r="15" fill="url(#owl-story-eye)" />
+              <circle cx="79.5" cy="85.5" r="8" fill="#111827" />
+              <circle cx="84" cy="79" r="3.8" fill="#ffffff" />
+              <circle cx="75" cy="89" r="1.7" fill="#ffffff" fillOpacity="0.7" />
+            </g>
+          </g>
+          <g data-cartoon-motion={isScene ? "true" : undefined} style={rightBlinkStyle}>
+            <ellipse cx="122" cy="83" rx="22" ry="24" fill="#fffdf9" />
+            <g data-cartoon-motion={isScene ? "true" : undefined} style={rightLookStyle}>
+              <circle cx="122" cy="84" r="15" fill="url(#owl-story-eye)" />
+              <circle cx="123.5" cy="85.5" r="8" fill="#111827" />
+              <circle cx="128" cy="79" r="3.8" fill="#ffffff" />
+              <circle cx="119" cy="89" r="1.7" fill="#ffffff" fillOpacity="0.7" />
+            </g>
+          </g>
+
+          <path d="M91 100C96 95 104 95 109 100L100 108L91 100Z" fill="#374151" />
+          <path d="M99 108C105 108 111 112 112 119C106 118 102 122 100 126C98 122 94 118 88 119C89 112 94 108 99 108Z" fill="#5b1f1f" />
+          <path d="M100 116C103 116 105 118 106 121C103 120 101 121 100 123C99 121 97 120 94 121C95 118 97 116 100 116Z" fill="#fca5a5" />
+        </g>
+
+        <g data-cartoon-motion={isScene ? "true" : undefined} style={wandStyle}>
+          <path d="M58 113L44 72" stroke="#6b4f3b" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="42" cy="69" r="16" fill="url(#owl-story-glow)" style={sparkleStyle} data-cartoon-motion={shouldAnimate ? "true" : undefined} />
+          <path d="M42 57l3.2 6.4 6.9 1-5 4.8 1.2 7-6.3-3.4-6.3 3.4 1.2-7-5-4.8 6.9-1L42 57Z" fill="#dbeafe" style={sparkleStyle} data-cartoon-motion={shouldAnimate ? "true" : undefined} />
+        </g>
+
+        <ellipse cx="84" cy="184" rx="12" ry="5.2" fill="#d18941" transform="rotate(-10 84 184)" />
+        <ellipse cx="117" cy="184" rx="12" ry="5.2" fill="#d18941" transform="rotate(10 117 184)" />
+      </svg>
+    );
+  }
 
   return (
     <svg

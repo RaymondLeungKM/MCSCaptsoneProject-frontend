@@ -125,6 +125,10 @@ export function BedtimeStoryGenerator({
     setCurrentError(null);
     setCurrentGeneratedStory(null);
 
+    // Minimum overlay display time so the video transition is visible
+    const MIN_OVERLAY_MS = 3000;
+    const startTime = Date.now();
+
     try {
       if (onGenerateStory) {
         await onGenerateStory(request);
@@ -136,6 +140,11 @@ export function BedtimeStoryGenerator({
       setCurrentGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
     } catch (err) {
+      // Still hold the overlay for minimum time on error
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_OVERLAY_MS) {
+        await new Promise((r) => setTimeout(r, MIN_OVERLAY_MS - elapsed));
+      }
       if (err instanceof Error) {
         setCurrentError(err.message);
       } else {
@@ -148,6 +157,39 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
+      {/* --- STORY GENERATION VIDEO OVERLAY --- */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
+          <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center sm:gap-6 sm:px-8">
+            <div className="rounded-[28px] border border-white/15 bg-white/5 p-1 shadow-[0_24px_80px_rgba(15,23,42,0.45)] sm:rounded-[36px]">
+              <video
+                src="/story-generating.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="block h-auto rounded-[24px] bg-black object-contain sm:rounded-[32px]"
+                style={{
+                  width: "min(94vw, 110vh, 1280px)",
+                  maxHeight: "min(62vh, 720px)",
+                }}
+              />
+            </div>
+            <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin" />
+                <span className="text-2xl font-black text-white sm:text-3xl">正在施展魔法...</span>
+                <Sparkles className="w-7 h-7 text-yellow-300 animate-spin [animation-direction:reverse]" />
+              </div>
+              <p className="text-base font-semibold text-white/80 sm:text-lg">
+                為{childName}創作專屬故事，請稍候
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- GENERATOR CARD --- */}
       <Card className="overflow-hidden border-8 border-white bg-gradient-to-br from-[#F3E5F5] to-[#E1BEE7] rounded-[40px] shadow-lg">
         {/* Header */}

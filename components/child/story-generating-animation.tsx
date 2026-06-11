@@ -1,402 +1,581 @@
 "use client";
 
-import Lottie from "lottie-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+/**
+ * StoryGeneratingAnimation
+ * A ~60-second cinematic "mini-movie" shown while a new story is being generated.
+ * Designed to keep young children entertained while they wait:
+ *   - 6 hand-crafted chapters of ~10s each that auto-advance and loop
+ *   - Each chapter is a full painterly scene with animated cartoon actors
+ *   - Big captions, chapter titles, and a friendly progress meter
+ *   - All-CSS animation (no media files required); respects prefers-reduced-motion
+ */
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CartoonCat,
   CartoonDog,
   CartoonKeyframes,
   CartoonOwl,
 } from "./cartoon-characters";
 import { cn } from "@/lib/utils";
 
-const MASTER_LOOP_MS = 90_000;
+const CHAPTER_DURATION_MS = 10_000;
 
-const ZOO_MESSAGES = [
-  "故事動物園開門啦，動物朋友排好隊等你！",
-  "小火車正送緊靈感入站，故事慢慢成形中。",
-  "飼養員幫你收集今日嘅詞語，準備放入故事！",
-  "獅子、長頸鹿同大象一齊排演精彩場面。",
-  "再等一陣，動物園探險故事就會送到你面前。",
-  "最後整理中，等埋呢一站就可以出發啦！",
-] as const;
+type ActorId = "owl" | "dog" | "cat";
 
-const ZOO_STAGES = [
-  { label: "開園中", emoji: "🎪" },
-  { label: "招呼動物", emoji: "🦒" },
-  { label: "砌故事", emoji: "📚" },
-] as const;
-
-const ZOO_ENCLOSURES = [
-  {
-    id: "lion",
-    emoji: "🦁",
-    title: "獅子山谷",
-    subtitle: "排緊最威風嘅出場",
-    gradient: "from-amber-100 via-yellow-50 to-orange-100",
-    border: "border-orange-300",
-    accent: "text-orange-700",
-    badge: "bg-orange-500",
-    emojiDelay: "0s",
-  },
-  {
-    id: "elephant",
-    emoji: "🐘",
-    title: "大象樂園",
-    subtitle: "用鼻哥運送新點子",
-    gradient: "from-sky-100 via-cyan-50 to-blue-100",
-    border: "border-sky-300",
-    accent: "text-sky-700",
-    badge: "bg-sky-500",
-    emojiDelay: "0.5s",
-  },
-  {
-    id: "giraffe",
-    emoji: "🦒",
-    title: "長頸鹿高塔",
-    subtitle: "伸高頸望住下一頁",
-    gradient: "from-yellow-100 via-amber-50 to-lime-100",
-    border: "border-amber-300",
-    accent: "text-amber-700",
-    badge: "bg-amber-500",
-    emojiDelay: "1s",
-  },
-  {
-    id: "monkey",
-    emoji: "🐵",
-    title: "森林遊樂場",
-    subtitle: "跳上跳落搵緊結尾",
-    gradient: "from-emerald-100 via-lime-50 to-teal-100",
-    border: "border-emerald-300",
-    accent: "text-emerald-700",
-    badge: "bg-emerald-500",
-    emojiDelay: "1.5s",
-  },
-] as const;
-
-const CLOUDS = [
-  { top: "6%", left: "-10%", size: 92, duration: "28s", delay: "0s" },
-  { top: "14%", left: "58%", size: 68, duration: "24s", delay: "-7s" },
-  { top: "27%", left: "12%", size: 78, duration: "31s", delay: "-12s" },
-] as const;
-
-const PEN_SIGNS = ["🪵", "🌿", "🎈", "✨"] as const;
-
-type LottieActorId = "dog" | "owl" | "tram";
-type LottieAnimationData = Record<string, unknown>;
-type LoadedLottieAnimations = Partial<Record<LottieActorId, LottieAnimationData>>;
-
-interface CinematicActorConfig {
-  actor: LottieActorId;
-  className: string;
-  width: number;
-  height: number;
-  speed?: number;
-  style?: CSSProperties;
+interface ActorSpec {
+  id: ActorId;
+  size: number;
+  /** Tailwind absolute-positioning classes */
+  position: string;
+  /** Optional inline transform/animation for this scene */
+  style?: React.CSSProperties;
 }
 
-interface CinematicSceneConfig {
+interface Chapter {
   id: string;
-  badge: string;
   title: string;
-  gradient: string;
-  actors: readonly CinematicActorConfig[];
+  caption: string;
+  /** Background gradient (CSS `background` value). */
+  background: string;
+  /** Foreground decorations (suns, stars, leaves...) drawn before actors. */
+  decor: React.ReactNode;
+  /** Animated actors for this scene. */
+  actors: ActorSpec[];
 }
 
-const LOTTIE_ASSET_PATHS: Record<LottieActorId, string> = {
-  dog: "/animations/cute-dog.json",
-  owl: "/animations/cute-owl.json",
-  tram: "/animations/safari-tram.json",
-};
-
-const VIDEO_LOOP_SOURCES = [
-  "/videos/zoo-background-loop.webm",
-  "/videos/zoo-background-loop.mp4",
-] as const;
-
-const CINEMATIC_SCENES = [
-  {
-    id: "welcome-parade",
-    badge: "故事巡遊",
-    title: "動物朋友入場中",
-    gradient: "from-cyan-100 via-white/80 to-emerald-100",
-    actors: [
-      { actor: "dog", className: "left-3 top-14", width: 132, height: 132 },
-      { actor: "owl", className: "right-4 top-4", width: 108, height: 108 },
-      {
-        actor: "tram",
-        className: "bottom-5 left-[-8%]",
-        width: 176,
-        height: 88,
-        speed: 1,
-        style: { animation: "zoo-tram-run 16s linear infinite" },
-      },
-    ],
-  },
-  {
-    id: "owl-lookout",
-    badge: "高塔觀察",
-    title: "貓頭鷹睇緊下一頁",
-    gradient: "from-sky-100 via-violet-50 to-emerald-100",
-    actors: [
-      { actor: "owl", className: "left-1/2 top-6 -translate-x-1/2", width: 148, height: 148, speed: 0.95 },
-      { actor: "dog", className: "left-4 bottom-10", width: 112, height: 112, speed: 1.05 },
-      {
-        actor: "tram",
-        className: "bottom-3 left-[-6%]",
-        width: 154,
-        height: 76,
-        speed: 0.92,
-        style: { animation: "zoo-tram-run 18s linear infinite" },
-      },
-    ],
-  },
-  {
-    id: "dog-conductor",
-    badge: "靈感收集",
-    title: "小狗隊長搬運點子",
-    gradient: "from-amber-100 via-orange-50 to-sky-100",
-    actors: [
-      { actor: "dog", className: "left-8 top-8", width: 152, height: 152, speed: 1.02 },
-      { actor: "owl", className: "right-8 top-10", width: 96, height: 96, speed: 0.9 },
-      {
-        actor: "tram",
-        className: "bottom-4 left-[-10%]",
-        width: 188,
-        height: 94,
-        speed: 1.08,
-        style: { animation: "zoo-tram-run 15s linear infinite" },
-      },
-    ],
-  },
-  {
-    id: "tram-glide",
-    badge: "園內列車",
-    title: "小火車送故事入站",
-    gradient: "from-emerald-100 via-teal-50 to-cyan-100",
-    actors: [
-      { actor: "owl", className: "right-5 top-6", width: 118, height: 118, speed: 1 },
-      { actor: "dog", className: "left-5 bottom-10", width: 120, height: 120, speed: 0.98 },
-      {
-        actor: "tram",
-        className: "bottom-1 left-[-12%]",
-        width: 214,
-        height: 102,
-        speed: 1,
-        style: { animation: "zoo-tram-run 14s linear infinite" },
-      },
-    ],
-  },
-  {
-    id: "sunset-story",
-    badge: "黃昏排演",
-    title: "準備故事高潮",
-    gradient: "from-yellow-100 via-rose-50 to-sky-100",
-    actors: [
-      { actor: "owl", className: "left-8 top-8", width: 104, height: 104, speed: 0.92 },
-      { actor: "dog", className: "right-5 top-12", width: 138, height: 138, speed: 1.06 },
-      {
-        actor: "tram",
-        className: "bottom-4 left-[-8%]",
-        width: 170,
-        height: 84,
-        speed: 0.95,
-        style: { animation: "zoo-tram-run 17s linear infinite" },
-      },
-    ],
-  },
-  {
-    id: "grand-finale",
-    badge: "最後整理",
-    title: "故事即將出發",
-    gradient: "from-cyan-100 via-white/80 to-lime-100",
-    actors: [
-      { actor: "dog", className: "left-6 top-8", width: 138, height: 138, speed: 1 },
-      { actor: "owl", className: "right-6 top-6", width: 122, height: 122, speed: 1 },
-      {
-        actor: "tram",
-        className: "bottom-4 left-[-9%]",
-        width: 198,
-        height: 96,
-        speed: 1.1,
-        style: { animation: "zoo-tram-run 14.5s linear infinite" },
-      },
-    ],
-  },
-] as const satisfies readonly CinematicSceneConfig[];
-
-async function loadOptionalAnimationData(path: string): Promise<LottieAnimationData | null> {
-  try {
-    const response = await fetch(path, { cache: "force-cache" });
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = (await response.json()) as LottieAnimationData;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-async function hasAvailableMedia(paths: readonly string[]): Promise<boolean> {
-  for (const path of paths) {
-    try {
-      const response = await fetch(path, { method: "HEAD" });
-      if (response.ok) {
-        return true;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return false;
-}
-
-function isLottieEntry(
-  entry: readonly [LottieActorId, LottieAnimationData] | null
-): entry is readonly [LottieActorId, LottieAnimationData] {
-  return entry !== null;
-}
-
-function PulsingDots() {
+function Sun({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <div className="mt-4 flex items-center justify-center gap-2">
-      {[0, 1, 2].map((index) => (
-        <span
-          key={index}
-          data-zoo-motion="true"
-          className="inline-block h-3.5 w-3.5 rounded-full bg-white/85"
-          style={{
-            animation: `zoo-dots-pulse 2.1s ease-in-out ${index * 0.24}s infinite`,
-          }}
-        />
-      ))}
-    </div>
+    <div
+      data-mm-motion="true"
+      className={cn(
+        "pointer-events-none absolute rounded-full bg-yellow-300",
+        className,
+      )}
+      style={{
+        boxShadow: "0 0 60px 20px rgba(253, 224, 71, 0.55)",
+        animation: "mm-sun-pulse 5s ease-in-out infinite",
+        ...style,
+      }}
+    />
   );
 }
 
-function FloatingCloud({
+function Moon({ className }: { className?: string }) {
+  return (
+    <div
+      data-mm-motion="true"
+      className={cn(
+        "pointer-events-none absolute h-20 w-20 rounded-full bg-slate-100",
+        className,
+      )}
+      style={{
+        boxShadow: "0 0 50px 14px rgba(226, 232, 240, 0.5)",
+        animation: "mm-sun-pulse 6s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function Cloud({
   top,
   left,
-  size,
-  duration,
-  delay,
+  scale = 1,
+  duration = "28s",
+  delay = "0s",
 }: {
   top: string;
   left: string;
-  size: number;
-  duration: string;
-  delay: string;
+  scale?: number;
+  duration?: string;
+  delay?: string;
 }) {
   return (
     <div
-      data-zoo-motion="true"
+      data-mm-motion="true"
       className="pointer-events-none absolute"
       style={{
         top,
         left,
-        width: size,
-        height: size * 0.52,
-        animation: `zoo-cloud-drift ${duration} linear ${delay} infinite`,
+        transform: `scale(${scale})`,
+        animation: `mm-cloud-drift ${duration} linear ${delay} infinite`,
       }}
     >
-      <div className="absolute bottom-0 left-[12%] h-[58%] w-[62%] rounded-full bg-white/85 blur-[1px]" />
-      <div className="absolute bottom-[20%] left-0 h-[52%] w-[42%] rounded-full bg-white/85" />
-      <div className="absolute bottom-[24%] right-[8%] h-[48%] w-[42%] rounded-full bg-white/80" />
+      <div className="relative h-12 w-28">
+        <div className="absolute bottom-0 left-2 h-9 w-16 rounded-full bg-white/90" />
+        <div className="absolute bottom-2 left-0 h-7 w-12 rounded-full bg-white/90" />
+        <div className="absolute bottom-2 right-0 h-8 w-14 rounded-full bg-white/90" />
+        <div className="absolute bottom-5 left-6 h-7 w-14 rounded-full bg-white" />
+      </div>
     </div>
   );
 }
 
-function SafariTram() {
+function Tree({
+  className,
+  trunk = "#7c3a0c",
+  canopy = "#16a34a",
+}: {
+  className?: string;
+  trunk?: string;
+  canopy?: string;
+}) {
   return (
-    <div className="relative h-16 w-28">
-      {[0, 1, 2].map((index) => (
-        <span
-          key={index}
-          data-zoo-motion="true"
-          className="absolute bottom-[2.7rem] left-1.5 h-3.5 w-3.5 rounded-full bg-white/65"
+    <div className={cn("pointer-events-none absolute", className)}>
+      <div
+        data-mm-motion="true"
+        className="relative"
+        style={{ animation: "mm-tree-sway 4.6s ease-in-out infinite", transformOrigin: "50% 100%" }}
+      >
+        <div
+          className="absolute left-1/2 bottom-0 h-12 w-4 -translate-x-1/2 rounded-md"
+          style={{ background: trunk }}
+        />
+        <div className="relative">
+          <div
+            className="h-20 w-24 rounded-full"
+            style={{ background: canopy, boxShadow: "inset -6px -8px 0 rgba(0,0,0,0.12)" }}
+          />
+          <div
+            className="absolute -top-6 left-3 h-16 w-16 rounded-full"
+            style={{ background: canopy, boxShadow: "inset -4px -6px 0 rgba(0,0,0,0.12)" }}
+          />
+          <div
+            className="absolute -top-4 right-2 h-14 w-14 rounded-full"
+            style={{ background: canopy, boxShadow: "inset -4px -6px 0 rgba(0,0,0,0.12)" }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Star({
+  top,
+  left,
+  size = 10,
+  delay = "0s",
+}: {
+  top: string;
+  left: string;
+  size?: number;
+  delay?: string;
+}) {
+  return (
+    <span
+      data-mm-motion="true"
+      className="pointer-events-none absolute text-yellow-200"
+      style={{
+        top,
+        left,
+        fontSize: size,
+        animation: `mm-twinkle 2.4s ease-in-out ${delay} infinite`,
+      }}
+    >
+      ✦
+    </span>
+  );
+}
+
+function Hill({
+  className,
+  color = "#16a34a",
+}: {
+  className?: string;
+  color?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute rounded-[50%]",
+        className,
+      )}
+      style={{ background: color }}
+    />
+  );
+}
+
+function BookOpen({ className }: { className?: string }) {
+  return (
+    <div
+      data-mm-motion="true"
+      className={cn("pointer-events-none absolute", className)}
+      style={{ animation: "mm-book-float 3.2s ease-in-out infinite" }}
+    >
+      <div className="relative h-32 w-44">
+        <div
+          className="absolute inset-0 rounded-md bg-amber-100"
           style={{
-            animation: `zoo-tram-puff 2.3s ease-out ${index * 0.42}s infinite`,
+            boxShadow:
+              "0 14px 30px rgba(120, 53, 15, 0.35), inset 0 -6px 0 rgba(180, 83, 9, 0.25)",
           }}
         />
-      ))}
-      <div
-        data-zoo-motion="true"
-        className="absolute bottom-[2.95rem] left-1.5 text-[11px]"
-        style={{ animation: "zoo-flag-wave 1.8s ease-in-out infinite" }}
-      >
-        🚩
-      </div>
-      <div
-        data-zoo-motion="true"
-        className="absolute inset-0"
-        style={{ animation: "zoo-tram-bob 2.4s ease-in-out infinite" }}
-      >
-        <div className="absolute bottom-5 left-3 h-7 w-20 rounded-[18px] border-[3px] border-amber-700 bg-amber-400 shadow-md" />
-        <div className="absolute bottom-10 left-8 h-4 w-10 rounded-t-[12px] border-[3px] border-amber-700 border-b-0 bg-amber-300" />
-        <div className="absolute bottom-[2.1rem] left-[1.15rem] flex gap-1.5">
-          <span className="h-3 w-4 rounded bg-white/70" />
-          <span className="h-3 w-4 rounded bg-white/70" />
-          <span className="h-3 w-4 rounded bg-white/70" />
+        <div className="absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-amber-700/40" />
+        <div className="absolute left-2 top-2 right-1/2 mr-1 space-y-1.5">
+          <div className="h-1.5 w-full rounded bg-amber-700/30" />
+          <div className="h-1.5 w-3/4 rounded bg-amber-700/30" />
+          <div className="h-1.5 w-5/6 rounded bg-amber-700/30" />
+          <div className="h-1.5 w-2/3 rounded bg-amber-700/30" />
         </div>
-        <div className="absolute bottom-[2.8rem] left-[1.4rem] flex gap-[0.6rem]">
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-950/75" />
-          <span className="h-2.5 w-2.5 rounded-full bg-orange-950/70" />
+        <div className="absolute right-2 top-2 left-1/2 ml-1 space-y-1.5">
+          <div className="h-1.5 w-5/6 rounded bg-amber-700/30" />
+          <div className="h-1.5 w-full rounded bg-amber-700/30" />
+          <div className="h-1.5 w-2/3 rounded bg-amber-700/30" />
+          <div className="h-1.5 w-3/4 rounded bg-amber-700/30" />
         </div>
-        <div
-          data-zoo-motion="true"
-          className="absolute bottom-3 left-[1.1rem] h-5 w-5 rounded-full border-[3px] border-slate-700 bg-slate-800"
-          style={{ animation: "zoo-wheel-spin 1.2s linear infinite" }}
-        />
-        <div
-          data-zoo-motion="true"
-          className="absolute bottom-3 right-[1.05rem] h-5 w-5 rounded-full border-[3px] border-slate-700 bg-slate-800"
-          style={{ animation: "zoo-wheel-spin 1.2s linear infinite" }}
-        />
-        <div className="absolute bottom-[2.65rem] right-4 text-lg">🎟️</div>
+        <span
+          data-mm-motion="true"
+          className="absolute -top-3 left-3 text-2xl"
+          style={{ animation: "mm-sparkle 1.8s ease-in-out infinite" }}
+        >
+          ✨
+        </span>
+        <span
+          data-mm-motion="true"
+          className="absolute -top-1 right-2 text-xl"
+          style={{ animation: "mm-sparkle 1.8s ease-in-out 0.4s infinite" }}
+        >
+          ⭐
+        </span>
       </div>
     </div>
   );
 }
 
-function CinematicActorSprite({
-  actor,
-  animations,
-}: {
-  actor: CinematicActorConfig;
-  animations: LoadedLottieAnimations;
-}) {
-  const animationData = animations[actor.actor];
-
-  if (animationData) {
-    return (
-      <Lottie
-        animationData={animationData}
-        loop
-        autoplay
-        style={{ width: actor.width, height: actor.height }}
-      />
-    );
-  }
-
-  if (actor.actor === "dog") {
-    return <CartoonDog size={Math.round(Math.min(actor.width, actor.height))} animate="scene" />;
-  }
-
-  if (actor.actor === "owl") {
-    return <CartoonOwl size={Math.round(Math.min(actor.width, actor.height))} animate="scene" />;
-  }
-
-  const tramScale = Math.min(actor.width / 112, actor.height / 64);
-
+function ScrollMap({ className }: { className?: string }) {
   return (
-    <div className="flex h-full w-full items-end justify-start">
-      <div className="origin-bottom-left" style={{ transform: `scale(${tramScale})` }}>
-        <SafariTram />
+    <div
+      data-mm-motion="true"
+      className={cn("pointer-events-none absolute", className)}
+      style={{ animation: "mm-map-tilt 3.4s ease-in-out infinite" }}
+    >
+      <div className="relative h-24 w-36 rounded-md bg-amber-50 shadow-[0_10px_24px_rgba(120,53,15,0.35)]">
+        <div className="absolute inset-2 rounded-sm border-2 border-dashed border-amber-700/60" />
+        <span className="absolute left-3 top-3 text-lg">🏰</span>
+        <span className="absolute right-3 bottom-3 text-lg">⛰️</span>
+        <span className="absolute right-4 top-4 text-base">⭐</span>
+        <span
+          className="absolute left-4 bottom-4 text-base"
+          data-mm-motion="true"
+          style={{ animation: "mm-sparkle 1.6s ease-in-out infinite" }}
+        >
+          ✨
+        </span>
       </div>
     </div>
   );
+}
+
+function TrainCar({ className }: { className?: string }) {
+  return (
+    <div
+      data-mm-motion="true"
+      className={cn("pointer-events-none absolute", className)}
+      style={{ animation: "mm-train-roll 7.5s linear infinite" }}
+    >
+      <div className="relative h-24 w-44">
+        <div
+          data-mm-motion="true"
+          className="absolute -top-2 left-6 h-3 w-3 rounded-full bg-white/80"
+          style={{ animation: "mm-steam 1.6s ease-out infinite" }}
+        />
+        <div
+          data-mm-motion="true"
+          className="absolute -top-4 left-9 h-4 w-4 rounded-full bg-white/70"
+          style={{ animation: "mm-steam 1.6s ease-out 0.4s infinite" }}
+        />
+        <div className="absolute bottom-3 left-0 h-10 w-32 rounded-lg bg-rose-500 shadow-md" />
+        <div className="absolute bottom-12 left-3 h-6 w-12 rounded-t-md bg-rose-600" />
+        <div className="absolute bottom-3 left-32 h-10 w-12 rounded-r-lg bg-amber-300" />
+        <div className="absolute bottom-0 left-2 h-4 w-4 rounded-full bg-slate-800" />
+        <div className="absolute bottom-0 left-14 h-4 w-4 rounded-full bg-slate-800" />
+        <div className="absolute bottom-0 left-26 h-4 w-4 rounded-full bg-slate-800" />
+        <div className="absolute bottom-0 right-2 h-4 w-4 rounded-full bg-slate-800" />
+      </div>
+    </div>
+  );
+}
+
+const CHAPTERS: Chapter[] = [
+  {
+    id: "dawn",
+    title: "第一章 · 森林清晨",
+    caption: "太陽公公起床啦，貓頭鷹老師準備出發收集故事！",
+    background: "linear-gradient(180deg, #fde68a 0%, #fbbf24 35%, #fcd34d 60%, #65a30d 100%)",
+    decor: (
+      <>
+        <Sun className="left-6 top-8 h-24 w-24" />
+        <Cloud top="14%" left="55%" />
+        <Cloud top="22%" left="20%" scale={0.85} duration="32s" delay="-8s" />
+        <Hill className="-bottom-10 -left-6 h-44 w-72" color="#65a30d" />
+        <Hill className="-bottom-12 right-0 h-40 w-80" color="#4d7c0f" />
+        <Tree className="bottom-16 left-4 scale-90" />
+        <Tree className="bottom-12 right-6 scale-110" canopy="#15803d" />
+      </>
+    ),
+    actors: [
+      {
+        id: "owl",
+        size: 160,
+        position: "bottom-24 left-1/2 -translate-x-1/2",
+        style: { animation: "mm-bob 2.2s ease-in-out infinite" },
+      },
+    ],
+  },
+  {
+    id: "friends",
+    title: "第二章 · 朋友集合",
+    caption: "汪汪！小狗 Bingo 同小貓 Mimi 都嚟啦，一齊去探險！",
+    background: "linear-gradient(180deg, #bae6fd 0%, #7dd3fc 40%, #86efac 100%)",
+    decor: (
+      <>
+        <Sun className="right-8 top-10 h-20 w-20" />
+        <Cloud top="10%" left="10%" />
+        <Cloud top="18%" left="60%" scale={1.15} duration="34s" delay="-6s" />
+        <Hill className="-bottom-12 -left-4 h-48 w-80" color="#4ade80" />
+        <Hill className="-bottom-14 right-0 h-44 w-80" color="#22c55e" />
+        <Tree className="bottom-14 left-2" canopy="#15803d" />
+        <Tree className="bottom-10 right-2 scale-110" canopy="#166534" />
+      </>
+    ),
+    actors: [
+      {
+        id: "dog",
+        size: 130,
+        position: "bottom-20 left-8",
+        style: { animation: "mm-bob 1.8s ease-in-out infinite" },
+      },
+      {
+        id: "owl",
+        size: 140,
+        position: "bottom-24 left-1/2 -translate-x-1/2",
+        style: { animation: "mm-bob 2.1s ease-in-out 0.3s infinite" },
+      },
+      {
+        id: "cat",
+        size: 130,
+        position: "bottom-20 right-8",
+        style: { animation: "mm-bob 1.9s ease-in-out 0.6s infinite" },
+      },
+    ],
+  },
+  {
+    id: "map",
+    title: "第三章 · 神秘地圖",
+    caption: "嘩！佢哋發現一張藏寶圖，今日嘅故事原來係冒險！",
+    background: "linear-gradient(180deg, #fed7aa 0%, #fdba74 45%, #f97316 100%)",
+    decor: (
+      <>
+        <Sun className="right-6 top-6 h-24 w-24" />
+        <Cloud top="14%" left="8%" duration="30s" />
+        <Hill className="-bottom-10 -left-6 h-44 w-72" color="#ca8a04" />
+        <Hill className="-bottom-12 right-0 h-44 w-80" color="#a16207" />
+        <ScrollMap className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+      </>
+    ),
+    actors: [
+      {
+        id: "owl",
+        size: 130,
+        position: "top-1/2 left-6 -translate-y-1/2",
+        style: { animation: "mm-lean-right 2.6s ease-in-out infinite" },
+      },
+      {
+        id: "dog",
+        size: 130,
+        position: "top-1/2 right-6 -translate-y-1/2",
+        style: { animation: "mm-lean-left 2.6s ease-in-out infinite" },
+      },
+    ],
+  },
+  {
+    id: "train",
+    title: "第四章 · 故事火車",
+    caption: "嗚嗚嗚！故事火車經過彩虹隧道，向住下一頁出發！",
+    background: "linear-gradient(180deg, #c4b5fd 0%, #a78bfa 35%, #f0abfc 65%, #fcd34d 100%)",
+    decor: (
+      <>
+        <div
+          data-mm-motion="true"
+          className="pointer-events-none absolute inset-x-0 top-12 mx-auto h-32 w-72 rounded-[100%] border-[10px] border-transparent"
+          style={{
+            borderTopColor: "#f43f5e",
+            borderImage:
+              "linear-gradient(90deg, #f43f5e, #f97316, #facc15, #4ade80, #38bdf8, #a78bfa) 1",
+            animation: "mm-sun-pulse 4s ease-in-out infinite",
+          }}
+        />
+        <Cloud top="10%" left="6%" duration="28s" />
+        <Cloud top="14%" left="65%" scale={0.9} delay="-4s" />
+        <Hill className="-bottom-8 -left-6 h-36 w-72" color="#7c3aed" />
+        <Hill className="-bottom-12 right-0 h-44 w-80" color="#5b21b6" />
+        <div className="absolute inset-x-0 bottom-10 h-1.5 bg-amber-900/40" />
+        <div className="absolute inset-x-0 bottom-12 grid grid-cols-12 gap-0">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span key={i} className="h-3 bg-amber-800/60" />
+          ))}
+        </div>
+        <TrainCar className="bottom-14 left-0" />
+      </>
+    ),
+    actors: [
+      {
+        id: "owl",
+        size: 90,
+        position: "bottom-28 left-[28%]",
+        style: { animation: "mm-bob 2.2s ease-in-out infinite" },
+      },
+      {
+        id: "cat",
+        size: 80,
+        position: "bottom-28 left-[40%]",
+        style: { animation: "mm-bob 2.4s ease-in-out 0.4s infinite" },
+      },
+    ],
+  },
+  {
+    id: "stars",
+    title: "第五章 · 星空奇遇",
+    caption: "夜空下，奇妙嘅故事生物喺度等緊我哋一齊登場。",
+    background: "linear-gradient(180deg, #1e1b4b 0%, #4338ca 45%, #7c3aed 80%, #312e81 100%)",
+    decor: (
+      <>
+        <Moon className="right-10 top-10" />
+        {Array.from({ length: 22 }).map((_, i) => (
+          <Star
+            key={i}
+            top={`${5 + ((i * 17) % 55)}%`}
+            left={`${(i * 47) % 100}%`}
+            size={10 + (i % 4) * 4}
+            delay={`${(i % 7) * 0.25}s`}
+          />
+        ))}
+        <Hill className="-bottom-12 -left-6 h-40 w-72" color="#312e81" />
+        <Hill className="-bottom-14 right-0 h-44 w-80" color="#1e1b4b" />
+      </>
+    ),
+    actors: [
+      {
+        id: "cat",
+        size: 140,
+        position: "bottom-20 left-10",
+        style: { animation: "mm-bob 2.4s ease-in-out infinite" },
+      },
+      {
+        id: "owl",
+        size: 160,
+        position: "bottom-28 left-1/2 -translate-x-1/2",
+        style: { animation: "mm-fly 4s ease-in-out infinite" },
+      },
+      {
+        id: "dog",
+        size: 140,
+        position: "bottom-20 right-10",
+        style: { animation: "mm-bob 2.2s ease-in-out 0.5s infinite" },
+      },
+    ],
+  },
+  {
+    id: "book",
+    title: "第六章 · 故事登場",
+    caption: "鈴鈴！故事準備好啦，揭開書頁就會開始囉！",
+    background: "linear-gradient(180deg, #fef3c7 0%, #fde68a 45%, #fbbf24 100%)",
+    decor: (
+      <>
+        <Sun className="left-1/2 top-4 h-28 w-28 -translate-x-1/2" />
+        {Array.from({ length: 14 }).map((_, i) => (
+          <Star
+            key={i}
+            top={`${10 + ((i * 13) % 60)}%`}
+            left={`${(i * 53) % 100}%`}
+            size={12 + (i % 3) * 4}
+            delay={`${(i % 5) * 0.2}s`}
+          />
+        ))}
+        <BookOpen className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+      </>
+    ),
+    actors: [
+      {
+        id: "owl",
+        size: 110,
+        position: "bottom-12 left-6",
+        style: { animation: "mm-fly 3.4s ease-in-out infinite" },
+      },
+      {
+        id: "dog",
+        size: 110,
+        position: "bottom-12 right-6",
+        style: { animation: "mm-bob 2s ease-in-out 0.3s infinite" },
+      },
+    ],
+  },
+];
+
+interface ChapterShortMeta {
+  emoji: string;
+  sticker: string;
+  cue: string;
+  detail: string;
+  badgeBackground: string;
+  cameraAnimation: string;
+}
+
+const CHAPTER_SHORT_META: Record<string, ChapterShortMeta> = {
+  dawn: {
+    emoji: "🌞",
+    sticker: "晨光開場",
+    cue: "貓頭鷹老師起飛收集今日故事靈感。",
+    detail: "開場畫面生成中",
+    badgeBackground: "linear-gradient(135deg, #facc15, #fb7185)",
+    cameraAnimation: "mm-camera-drift-a 10s ease-in-out both",
+  },
+  friends: {
+    emoji: "🎉",
+    sticker: "朋友集合",
+    cue: "Bingo 同 Mimi 衝入鏡頭，一齊陪你等故事。",
+    detail: "角色入場中",
+    badgeBackground: "linear-gradient(135deg, #38bdf8, #22c55e)",
+    cameraAnimation: "mm-camera-drift-b 10s ease-in-out both",
+  },
+  map: {
+    emoji: "🗺️",
+    sticker: "冒險提示",
+    cue: "地圖放大，故事主線同關鍵詞開始拼接。",
+    detail: "情節路線編排中",
+    badgeBackground: "linear-gradient(135deg, #fb923c, #f97316)",
+    cameraAnimation: "mm-camera-drift-c 10s ease-in-out both",
+  },
+  train: {
+    emoji: "🚂",
+    sticker: "高速過場",
+    cue: "故事火車穿過彩虹，將畫面推向下一幕。",
+    detail: "轉場鏡頭渲染中",
+    badgeBackground: "linear-gradient(135deg, #a78bfa, #f472b6)",
+    cameraAnimation: "mm-camera-drift-d 10s ease-in-out both",
+  },
+  stars: {
+    emoji: "🌙",
+    sticker: "夜空高潮",
+    cue: "星空場景鋪開，奇妙角色準備登場。",
+    detail: "高潮情緒上色中",
+    badgeBackground: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+    cameraAnimation: "mm-camera-drift-e 10s ease-in-out both",
+  },
+  book: {
+    emoji: "📖",
+    sticker: "即將揭曉",
+    cue: "書頁打開，完整故事快要送到你面前。",
+    detail: "最後整理中",
+    badgeBackground: "linear-gradient(135deg, #f59e0b, #f97316)",
+    cameraAnimation: "mm-camera-drift-f 10s ease-in-out both",
+  },
+};
+
+function ActorSprite({ actor }: { actor: ActorSpec }) {
+  if (actor.id === "owl") return <CartoonOwl size={actor.size} animate="scene" />;
+  if (actor.id === "dog") return <CartoonDog size={actor.size} animate="scene" />;
+  return <CartoonCat size={actor.size} animate="scene" />;
 }
 
 interface StoryGeneratingAnimationProps {
@@ -404,443 +583,381 @@ interface StoryGeneratingAnimationProps {
 }
 
 export function StoryGeneratingAnimation({ isVisible }: StoryGeneratingAnimationProps) {
-  const [messageIdx, setMessageIdx] = useState(0);
-  const [stageIdx, setStageIdx] = useState(0);
-  const [activeZoneIdx, setActiveZoneIdx] = useState(0);
-  const [lottieAnimations, setLottieAnimations] = useState<LoadedLottieAnimations>({});
-  const [hasVideoLoop, setHasVideoLoop] = useState(false);
-  const cinematicAssetsResolved = useRef(false);
-  const messageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const zoneTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [chapterIdx, setChapterIdx] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
+    if (!isVisible) return;
+    setChapterIdx(0);
+    setElapsedMs(0);
+    startRef.current = performance.now();
 
-    setMessageIdx(0);
-    setStageIdx(0);
-    setActiveZoneIdx(0);
-
-    const messageDuration = Math.round(MASTER_LOOP_MS / ZOO_MESSAGES.length);
-    const stageDuration = Math.round(MASTER_LOOP_MS / ZOO_STAGES.length);
-
-    messageTimer.current = setInterval(() => {
-      setMessageIdx((previous) => (previous + 1) % ZOO_MESSAGES.length);
-    }, messageDuration);
-
-    stageTimer.current = setInterval(() => {
-      setStageIdx((previous) => (previous + 1) % ZOO_STAGES.length);
-    }, stageDuration);
-
-    zoneTimer.current = setInterval(() => {
-      setActiveZoneIdx((previous) => (previous + 1) % ZOO_ENCLOSURES.length);
-    }, 3_600);
+    const tick = (now: number) => {
+      if (startRef.current == null) return;
+      const elapsed = now - startRef.current;
+      setElapsedMs(elapsed);
+      const idx =
+        Math.floor(elapsed / CHAPTER_DURATION_MS) % CHAPTERS.length;
+      setChapterIdx(idx);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (messageTimer.current) {
-        clearInterval(messageTimer.current);
-      }
-      if (stageTimer.current) {
-        clearInterval(stageTimer.current);
-      }
-      if (zoneTimer.current) {
-        clearInterval(zoneTimer.current);
-      }
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      startRef.current = null;
     };
   }, [isVisible]);
 
-  useEffect(() => {
-    if (!isVisible || cinematicAssetsResolved.current) {
-      return;
-    }
+  const totalMs = CHAPTERS.length * CHAPTER_DURATION_MS;
+  const progress = useMemo(() => {
+    if (!isVisible) return 0;
+    return Math.min(100, ((elapsedMs % totalMs) / totalMs) * 100);
+  }, [elapsedMs, totalMs, isVisible]);
 
-    cinematicAssetsResolved.current = true;
-    let isCancelled = false;
+  if (!isVisible) return null;
 
-    void (async () => {
-      const animationEntries = await Promise.all(
-        (Object.entries(LOTTIE_ASSET_PATHS) as Array<[LottieActorId, string]>).map(
-          async ([actorId, path]) => {
-            const payload = await loadOptionalAnimationData(path);
-            return payload ? ([actorId, payload] as const) : null;
-          }
-        )
-      );
-
-      if (!isCancelled) {
-        setLottieAnimations(
-          Object.fromEntries(animationEntries.filter(isLottieEntry)) as LoadedLottieAnimations
-        );
-      }
-
-      const videoAvailable = await hasAvailableMedia(VIDEO_LOOP_SOURCES);
-      if (!isCancelled) {
-        setHasVideoLoop(videoAvailable);
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [isVisible]);
-
-  if (!isVisible) {
-    return null;
-  }
-
-  const activeEnclosure =
-    ZOO_ENCLOSURES[activeZoneIdx % ZOO_ENCLOSURES.length] ?? ZOO_ENCLOSURES[0];
-  const activeCinematicScene =
-    CINEMATIC_SCENES[messageIdx % CINEMATIC_SCENES.length] ?? CINEMATIC_SCENES[0];
-  const cinematicActors = activeCinematicScene.actors as readonly CinematicActorConfig[];
+  const chapter = CHAPTERS[chapterIdx] ?? CHAPTERS[0];
+  const chapterNumber = chapterIdx + 1;
+  const chapterMeta = CHAPTER_SHORT_META[chapter.id] ?? CHAPTER_SHORT_META.dawn;
+  const loopedElapsedMs = elapsedMs % totalMs;
+  const chapterElapsedMs = loopedElapsedMs % CHAPTER_DURATION_MS;
+  const chapterProgress = Math.min(100, (chapterElapsedMs / CHAPTER_DURATION_MS) * 100);
+  const remainingTotalSeconds = Math.max(1, Math.ceil((totalMs - loopedElapsedMs) / 1000));
+  const elapsedSeconds = Math.min(60, Math.floor(loopedElapsedMs / 1000));
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div
+      className="fixed inset-0 z-[120] overflow-hidden"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="故事製作中"
+    >
       <CartoonKeyframes />
       <style>{`
-        @keyframes zoo-cloud-drift {
-          0% { transform: translate3d(-18px, 0px, 0); }
-          50% { transform: translate3d(22px, -8px, 0); }
-          100% { transform: translate3d(-18px, 0px, 0); }
-        }
-        @keyframes zoo-sun-glow {
-          0%, 100% { transform: scale(1); opacity: 0.9; }
+        @keyframes mm-sun-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.96; }
           50% { transform: scale(1.08); opacity: 1; }
         }
-        @keyframes zoo-banner-wave {
-          0%, 100% { transform: rotate(-2deg); }
-          50% { transform: rotate(2deg); }
+        @keyframes mm-cloud-drift {
+          0%   { transform: translate3d(-30px, 0, 0); }
+          50%  { transform: translate3d(40px, -6px, 0); }
+          100% { transform: translate3d(-30px, 0, 0); }
         }
-        @keyframes zoo-bounce {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
+        @keyframes mm-tree-sway {
+          0%, 100% { transform: rotate(-2.5deg); }
+          50% { transform: rotate(2.5deg); }
         }
-        @keyframes zoo-sway {
-          0%, 100% { transform: rotate(-5deg); }
-          50% { transform: rotate(5deg); }
-        }
-        @keyframes zoo-leaf-sway {
-          0%, 100% { transform: rotate(-4deg) translateY(0px); }
-          50% { transform: rotate(4deg) translateY(-4px); }
-        }
-        @keyframes zoo-mascot-bob {
-          0%, 100% { transform: translateY(0px) rotate(-2deg); }
+        @keyframes mm-bob {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
           50% { transform: translateY(-14px) rotate(2deg); }
         }
-        @keyframes zoo-owl-look {
-          0%, 100% { transform: translateY(0px) rotate(-3deg); }
-          50% { transform: translateY(-8px) rotate(3deg); }
+        @keyframes mm-fly {
+          0%, 100% { transform: translateY(0) rotate(-3deg); }
+          50% { transform: translateY(-26px) rotate(4deg); }
         }
-        @keyframes zoo-tram-run {
-          0% { transform: translateX(-14%); }
-          100% { transform: translateX(112%); }
+        @keyframes mm-lean-left {
+          0%, 100% { transform: translateY(-50%) rotate(0deg); }
+          50% { transform: translateY(-52%) rotate(-6deg); }
         }
-        @keyframes zoo-wheel-spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes mm-lean-right {
+          0%, 100% { transform: translateY(-50%) rotate(0deg); }
+          50% { transform: translateY(-52%) rotate(6deg); }
         }
-        @keyframes zoo-tram-bob {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-4px); }
+        @keyframes mm-sparkle {
+          0%, 100% { transform: scale(0.85) rotate(0deg); opacity: 0.65; }
+          50% { transform: scale(1.25) rotate(20deg); opacity: 1; }
         }
-        @keyframes zoo-flag-wave {
-          0%, 100% { transform: rotate(-10deg) translateY(0px); }
-          50% { transform: rotate(12deg) translateY(-1px); }
+        @keyframes mm-twinkle {
+          0%, 100% { opacity: 0.25; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
         }
-        @keyframes zoo-tram-puff {
-          0% { transform: translate3d(0px, 0px, 0px) scale(0.55); opacity: 0; }
-          20% { opacity: 0.55; }
-          100% { transform: translate3d(-22px, -18px, 0px) scale(1.35); opacity: 0; }
+        @keyframes mm-book-float {
+          0%, 100% { transform: translate(-50%, -50%) rotate(-2deg); }
+          50% { transform: translate(-50%, -54%) rotate(2deg); }
         }
-        @keyframes zoo-card-glow {
-          0%, 100% { box-shadow: 0 0 0 rgba(255,255,255,0); }
-          50% { box-shadow: 0 0 0 10px rgba(255,255,255,0.18); }
+        @keyframes mm-map-tilt {
+          0%, 100% { transform: translate(-50%, -50%) rotate(-4deg); }
+          50% { transform: translate(-50%, -52%) rotate(4deg); }
         }
-        @keyframes zoo-scene-fade {
-          0% { opacity: 0; transform: translateY(10px) scale(0.98); }
-          100% { opacity: 1; transform: translateY(0px) scale(1); }
+        @keyframes mm-train-roll {
+          0%   { transform: translateX(-50%); }
+          100% { transform: translateX(120%); }
         }
-        @keyframes zoo-text-in {
-          0% { transform: translateY(20px) scale(0.92); opacity: 0; }
-          70% { transform: translateY(-6px) scale(1.03); opacity: 1; }
-          100% { transform: translateY(0px) scale(1); opacity: 1; }
+        @keyframes mm-steam {
+          0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
+          25% { opacity: 0.7; }
+          100% { transform: translate3d(-18px, -28px, 0) scale(1.5); opacity: 0; }
         }
-        @keyframes zoo-dots-pulse {
-          0%, 100% { transform: translateY(0px) scale(0.84); opacity: 0.48; }
-          50% { transform: translateY(-5px) scale(1); opacity: 1; }
+        @keyframes mm-scene-in {
+          0% { opacity: 0; transform: scale(1.05); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes mm-caption-in {
+          0% { opacity: 0; transform: translateY(16px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes mm-progress-shine {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        @keyframes mm-camera-drift-a {
+          0% { transform: scale(1.02) translate3d(0, 0, 0); }
+          50% { transform: scale(1.08) translate3d(0, -20px, 0); }
+          100% { transform: scale(1.04) translate3d(0, -8px, 0); }
+        }
+        @keyframes mm-camera-drift-b {
+          0% { transform: scale(1.04) translate3d(-10px, 0, 0); }
+          50% { transform: scale(1.1) translate3d(12px, -12px, 0); }
+          100% { transform: scale(1.06) translate3d(0, -6px, 0); }
+        }
+        @keyframes mm-camera-drift-c {
+          0% { transform: scale(1.02) translate3d(0, 6px, 0); }
+          50% { transform: scale(1.09) translate3d(0, -10px, 0); }
+          100% { transform: scale(1.05) translate3d(-6px, -4px, 0); }
+        }
+        @keyframes mm-camera-drift-d {
+          0% { transform: scale(1.03) translate3d(-14px, 0, 0); }
+          50% { transform: scale(1.1) translate3d(8px, -10px, 0); }
+          100% { transform: scale(1.06) translate3d(0, -4px, 0); }
+        }
+        @keyframes mm-camera-drift-e {
+          0% { transform: scale(1.01) translate3d(0, 0, 0); }
+          50% { transform: scale(1.08) translate3d(0, -16px, 0); }
+          100% { transform: scale(1.05) translate3d(6px, -8px, 0); }
+        }
+        @keyframes mm-camera-drift-f {
+          0% { transform: scale(1.02) translate3d(0, 0, 0); }
+          50% { transform: scale(1.1) translate3d(0, -18px, 0); }
+          100% { transform: scale(1.06) translate3d(0, -8px, 0); }
+        }
+        @keyframes mm-chip-in {
+          0% { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.92); }
+          100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes mm-frame-glow {
+          0%, 100% { box-shadow: 0 28px 80px rgba(15, 23, 42, 0.36), 0 0 0 rgba(255,255,255,0); }
+          50% { box-shadow: 0 34px 90px rgba(15, 23, 42, 0.42), 0 0 32px rgba(255,255,255,0.22); }
+        }
+        @keyframes mm-orb-float {
+          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+          50% { transform: translate3d(0, -18px, 0) scale(1.08); }
+        }
+        @keyframes mm-pill-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.92; }
+          50% { transform: scale(1.05); opacity: 1; }
         }
         @media (prefers-reduced-motion: reduce) {
-          [data-zoo-motion="true"] {
-            animation: none !important;
-            transform: none !important;
-          }
+          [data-mm-motion="true"] { animation: none !important; }
         }
       `}</style>
 
+      <div className="absolute inset-0" style={{ background: chapter.background }} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_46%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(15,23,42,0.1))]" />
       <div
-        className="fixed inset-0 overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(180deg, #72d5ff 0%, #b3ecff 36%, #dff9f2 62%, #88d17b 100%)",
-        }}
-        aria-live="polite"
-        aria-busy="true"
-        aria-label="故事動物園準備中，請稍候"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_40%)]" />
+        data-mm-motion="true"
+        className="pointer-events-none absolute -left-10 top-16 h-56 w-56 rounded-full bg-white/20 blur-3xl"
+        style={{ animation: "mm-orb-float 6.8s ease-in-out infinite" }}
+      />
+      <div
+        data-mm-motion="true"
+        className="pointer-events-none absolute -right-10 bottom-20 h-72 w-72 rounded-full bg-fuchsia-300/20 blur-3xl"
+        style={{ animation: "mm-orb-float 8s ease-in-out infinite reverse" }}
+      />
+      <div
+        data-mm-motion="true"
+        className="pointer-events-none absolute left-[10%] top-[18%] h-16 w-16 rounded-full bg-white/18 blur-xl"
+        style={{ animation: "mm-orb-float 5.5s ease-in-out infinite" }}
+      />
+      <div
+        data-mm-motion="true"
+        className="pointer-events-none absolute right-[12%] top-[38%] h-20 w-20 rounded-full bg-cyan-200/20 blur-xl"
+        style={{ animation: "mm-orb-float 7.1s ease-in-out infinite reverse" }}
+      />
 
-        <div
-          className="pointer-events-none absolute left-[-3rem] top-[-2.5rem] h-48 w-48 rounded-full bg-yellow-300/95 blur-[1px]"
-          style={{ animation: "zoo-sun-glow 6s ease-in-out infinite" }}
-        />
-        <div className="pointer-events-none absolute left-[-1rem] top-[-0.5rem] h-56 w-56 rounded-full bg-yellow-200/35 blur-2xl" />
+      <div className="relative flex h-full items-center justify-center px-4 py-4 sm:px-8">
+        <div className="relative h-[78vh] max-h-[820px] w-full max-w-[430px]">
+          <div className="absolute inset-0 rounded-[42px] bg-slate-950/35 blur-2xl scale-[0.96]" />
 
-        {CLOUDS.map((cloud, index) => (
-          <FloatingCloud key={`${cloud.top}-${index}`} {...cloud} />
-        ))}
+          <div
+            data-mm-motion="true"
+            className="relative h-full overflow-hidden rounded-[42px] border-[6px] border-white/85 bg-white/12 shadow-[0_30px_90px_rgba(15,23,42,0.38)]"
+            style={{ animation: "mm-frame-glow 5.4s ease-in-out infinite" }}
+          >
+            <div
+              key={chapter.id}
+              data-mm-motion="true"
+              className="absolute inset-0 origin-center"
+              style={{
+                background: chapter.background,
+                animation: `mm-scene-in 0.7s ease both, ${chapterMeta.cameraAnimation}`,
+              }}
+            >
+              {chapter.decor}
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(255,255,255,0.5),transparent_38%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(17,24,39,0.06)_48%,rgba(17,24,39,0.2)_100%)]" />
 
-        <div className="pointer-events-none absolute bottom-[-8%] left-[-12%] h-56 w-72 rounded-[50%] bg-emerald-300/70 blur-sm" />
-        <div className="pointer-events-none absolute bottom-[-9%] right-[-12%] h-64 w-80 rounded-[50%] bg-lime-300/70 blur-sm" />
-
-        <div className="relative mx-auto flex h-full w-full max-w-[520px] items-center justify-center px-4 py-6">
-          <div className="relative w-full rounded-[36px] border-[4px] border-white/70 bg-white/30 px-4 py-5 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-md sm:px-6 sm:py-6">
-            <div className="pt-4 text-center">
-              <div className="inline-flex items-center justify-center rounded-full bg-white/85 px-4 py-2 text-sm font-black text-sky-700 shadow-sm">
-                動物園故事製作中
-              </div>
-              <div
-                className="mx-auto mt-3 inline-flex items-center gap-2 rounded-[24px] border-[4px] border-emerald-300 bg-emerald-100 px-5 py-3 text-slate-800 shadow-md"
-                style={{ animation: "zoo-banner-wave 3.8s ease-in-out infinite" }}
-              >
-                <span className="text-2xl">🎡</span>
-                <span className="text-xl font-black sm:text-2xl">歡迎嚟到故事動物園</span>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-[30px] border-[3px] border-sky-200/80 bg-white/72 p-3 shadow-[0_18px_34px_rgba(8,145,178,0.16)]">
-              <div
-                key={activeCinematicScene.id}
-                data-zoo-motion="true"
-                className={cn(
-                  "relative h-[258px] overflow-hidden rounded-[28px] border-[3px] border-white/90 bg-gradient-to-br p-4 shadow-inner",
-                  activeCinematicScene.gradient
-                )}
-                style={{ animation: "zoo-scene-fade 0.7s ease both" }}
-              >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.72),transparent_52%)]" />
-                {hasVideoLoop ? (
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    className="absolute inset-0 h-full w-full object-cover opacity-30"
-                  >
-                    {VIDEO_LOOP_SOURCES.map((source) => (
-                      <source
-                        key={source}
-                        src={source}
-                        type={source.endsWith(".webm") ? "video/webm" : "video/mp4"}
-                      />
-                    ))}
-                  </video>
-                ) : null}
-
-                <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-white/88 px-3 py-1 text-xs font-black text-emerald-700 shadow-sm">
-                    {activeCinematicScene.badge}
-                  </span>
-                  <span className="rounded-full bg-slate-900/10 px-3 py-1 text-xs font-black text-slate-700 backdrop-blur-sm">
-                    {activeCinematicScene.title}
-                  </span>
-                </div>
-
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(255,255,255,0))]" />
-                <div className="absolute inset-x-5 bottom-5 h-4 rounded-full border-[3px] border-dashed border-amber-600/70 bg-amber-100/70" />
-
-                {cinematicActors.map((actor) => (
-                  <div
-                    key={`${activeCinematicScene.id}-${actor.actor}-${actor.className}`}
-                    data-zoo-motion="true"
-                    className={cn(
-                      "absolute flex items-end justify-center transition-all duration-700",
-                      actor.className
-                    )}
-                    style={actor.style}
-                    aria-hidden="true"
-                  >
-                    <CinematicActorSprite actor={actor} animations={lottieAnimations} />
-                  </div>
-                ))}
-
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-[linear-gradient(180deg,rgba(17,24,39,0),rgba(20,83,45,0.16))]" />
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-[30px] border-[3px] border-emerald-200/90 bg-white/78 p-3 shadow-inner sm:p-4">
-              <div className="rounded-[24px] border-[3px] border-white/90 bg-gradient-to-b from-sky-100 via-[#f2fff4] to-emerald-100 p-3 sm:p-4">
-                <div className="rounded-[22px] border-[2px] border-emerald-200 bg-white/80 px-4 py-3 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-500">
-                        今日焦點區域
-                      </p>
-                      <p className={cn("mt-1 text-lg font-black sm:text-xl", activeEnclosure.accent)}>
-                        {activeEnclosure.title}
-                      </p>
-                      <p className="text-sm font-bold text-slate-500">
-                        {activeEnclosure.subtitle}
-                      </p>
-                    </div>
-                    <div
-                      className="text-5xl"
-                      style={{ animation: "zoo-bounce 3.4s ease-in-out infinite" }}
-                    >
-                      {activeEnclosure.emoji}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative mt-4 overflow-hidden rounded-[28px] border-[3px] border-emerald-200 bg-gradient-to-b from-sky-200 via-[#ddfff0] to-[#95da7d] px-3 pb-16 pt-4 sm:px-4">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),transparent_70%)]" />
-                  <div
-                    data-zoo-motion="true"
-                    className="absolute left-1/2 top-3 w-40 -translate-x-1/2 rounded-[22px] border-[3px] border-emerald-500 bg-yellow-100 px-4 py-2 text-center shadow-sm"
-                    style={{ animation: "zoo-banner-wave 4.4s ease-in-out infinite" }}
-                  >
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">
-                      動物園大門
-                    </p>
-                    <p className="text-base font-black text-emerald-700">歡迎入場</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-14 sm:gap-4">
-                    {ZOO_ENCLOSURES.map((enclosure, index) => {
-                      const isActive = index === activeZoneIdx;
-
-                      return (
-                        <div
-                          key={enclosure.id}
-                          className={cn(
-                            "relative overflow-hidden rounded-[24px] border-[3px] p-3 transition-all duration-500",
-                            enclosure.border,
-                            `bg-gradient-to-br ${enclosure.gradient}`,
-                            isActive
-                              ? "scale-[1.02] shadow-[0_18px_35px_rgba(34,197,94,0.22)]"
-                              : "shadow-[0_10px_18px_rgba(148,163,184,0.16)]"
-                          )}
-                          style={
-                            isActive
-                              ? { animation: "zoo-card-glow 2.8s ease-in-out infinite" }
-                              : undefined
-                          }
-                        >
-                          <div
-                            className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/45 blur-md"
-                            style={{ animation: "zoo-sun-glow 4.4s ease-in-out infinite" }}
-                          />
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className={cn("text-base font-black sm:text-lg", enclosure.accent)}>
-                                {enclosure.title}
-                              </p>
-                              <p className="mt-1 text-xs font-bold leading-snug text-slate-500 sm:text-sm">
-                                {enclosure.subtitle}
-                              </p>
-                            </div>
-                            <span
-                              className={cn(
-                                "rounded-full px-2 py-1 text-xs font-black text-white",
-                                enclosure.badge
-                              )}
-                            >
-                              {PEN_SIGNS[index]}
-                            </span>
-                          </div>
-
-                          <div className="mt-4 flex items-center justify-between gap-2">
-                            <div
-                              className="text-5xl sm:text-6xl"
-                              style={{
-                                animation: isActive
-                                  ? `zoo-bounce 1.9s ease-in-out ${enclosure.emojiDelay} infinite`
-                                  : `zoo-sway 4.8s ease-in-out ${enclosure.emojiDelay} infinite`,
-                              }}
-                            >
-                              {enclosure.emoji}
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="rounded-full bg-white/75 px-2.5 py-1 text-[11px] font-black text-slate-500">
-                                觀察中
-                              </span>
-                              <span
-                                className="text-lg"
-                                style={{ animation: "zoo-leaf-sway 3.8s ease-in-out infinite" }}
-                              >
-                                🌿
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="absolute inset-x-6 bottom-11 h-4 rounded-full border-[3px] border-dashed border-amber-600/70 bg-amber-100/70" />
-                  <div
-                    data-zoo-motion="true"
-                    className="absolute bottom-[1.6rem] left-0"
-                    style={{ width: "32%", animation: "zoo-tram-run 18s linear infinite" }}
-                  >
-                    <SafariTram />
-                  </div>
-
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-[linear-gradient(180deg,rgba(17,24,39,0),rgba(20,83,45,0.12))]" />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 text-center">
-              <p
-                key={messageIdx}
-                className="text-xl font-black leading-snug text-white drop-shadow-[0_3px_10px_rgba(14,116,144,0.35)] sm:text-2xl"
-                style={{
-                  animation:
-                    "zoo-text-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-                }}
-              >
-                {ZOO_MESSAGES[messageIdx]}
-              </p>
-              <PulsingDots />
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-              {ZOO_STAGES.map((stage, index) => (
-                <div key={stage.label} className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-black transition-all duration-500 sm:text-base",
-                      index === stageIdx
-                        ? "bg-white text-emerald-700 shadow-lg"
-                        : "bg-white/30 text-white/80"
-                    )}
-                  >
-                    <span className="text-lg">{stage.emoji}</span>
-                    <span>{stage.label}</span>
-                  </div>
-                  {index < ZOO_STAGES.length - 1 ? (
-                    <span className="text-white/80">•</span>
-                  ) : null}
+              {chapter.actors.map((actor, i) => (
+                <div
+                  key={`${chapter.id}-${actor.id}-${i}`}
+                  className={cn("absolute", actor.position)}
+                  style={actor.style}
+                >
+                  <ActorSprite actor={actor} />
                 </div>
               ))}
+
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_54%,rgba(0,0,0,0.2)_100%)]" />
             </div>
 
-            <p className="mt-4 text-center text-sm font-black text-white/90">
-              小火車正喺動物園收集靈感，故事好快就會送到你面前。
-            </p>
+            <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
+              <div className="rounded-full bg-black/32 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.24em] text-white backdrop-blur-sm">
+                <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-rose-400 align-middle animate-pulse" />
+                Story Reel
+              </div>
+              <div className="rounded-full bg-white/88 px-3 py-1.5 text-xs font-black text-violet-700 shadow-md">
+                {elapsedSeconds}s / 60s
+              </div>
+            </div>
+
+            <div className="absolute left-4 top-20 flex flex-col items-center gap-2 rounded-full bg-black/18 px-2 py-3 backdrop-blur-sm">
+              <span className="text-xl">{chapterMeta.emoji}</span>
+              {CHAPTERS.map((item, index) => {
+                const isActive = index === chapterIdx;
+                const isComplete = index < chapterIdx;
+
+                return (
+                  <span
+                    key={item.id}
+                    className={cn(
+                      "block h-2.5 w-2.5 rounded-full transition-all duration-300",
+                      isActive
+                        ? "h-8 bg-white shadow-[0_0_14px_rgba(255,255,255,0.85)]"
+                        : isComplete
+                          ? "bg-white/85"
+                          : "bg-white/35",
+                    )}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="absolute right-4 top-20 left-16 flex justify-end">
+              <div
+                key={`${chapter.id}-sticker`}
+                data-mm-motion="true"
+                className="max-w-[54%] rounded-[24px] border border-white/80 bg-white/88 px-4 py-3 shadow-[0_14px_38px_rgba(15,23,42,0.16)]"
+                style={{ animation: "mm-chip-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
+              >
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-fuchsia-500">
+                  Reel Moment
+                </p>
+                <p className="mt-1 text-sm font-black leading-tight text-slate-800">
+                  {chapterMeta.sticker}
+                </p>
+              </div>
+            </div>
+
+            <div className="absolute inset-x-0 top-[5.8rem] flex justify-center px-4">
+              <div
+                data-mm-motion="true"
+                className="rounded-full border border-white/70 bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-white backdrop-blur-sm"
+                style={{ animation: "mm-pill-pulse 3.2s ease-in-out infinite" }}
+              >
+                9:16 Story Short Mode
+              </div>
+            </div>
+
+            <div className="absolute inset-x-4 bottom-24">
+              <div
+                key={`${chapter.id}-text`}
+                data-mm-motion="true"
+                className="rounded-[28px] border-4 border-white/85 bg-white/92 p-4 shadow-[0_20px_55px_rgba(15,23,42,0.26)] backdrop-blur-md"
+                style={{ animation: "mm-caption-in 0.55s cubic-bezier(0.34,1.56,0.64,1) both" }}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-md"
+                    style={{ background: chapterMeta.badgeBackground }}
+                  >
+                    {chapterMeta.emoji}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-500">
+                      {chapter.title}
+                    </p>
+                    <p className="mt-1 text-xl font-black leading-snug text-slate-800">
+                      {chapter.caption}
+                    </p>
+                    <p className="mt-2 text-sm font-bold leading-relaxed text-slate-500">
+                      {chapterMeta.cue}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute inset-x-4 bottom-4">
+              <div className="rounded-[24px] border border-white/45 bg-black/22 px-4 py-3 text-white shadow-[0_12px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/70">
+                      生成狀態
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white">
+                      {chapterMeta.detail}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
+                      剩餘時間
+                    </p>
+                    <p className="mt-1 text-lg font-black text-white">
+                      {remainingTotalSeconds}s
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/20 shadow-inner">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-200 ease-linear"
+                    style={{
+                      width: `${progress}%`,
+                      background:
+                        "linear-gradient(90deg, #f97316, #facc15, #84cc16, #38bdf8, #a78bfa, #f472b6)",
+                      backgroundSize: "200% 100%",
+                      animation: "mm-progress-shine 3s linear infinite",
+                    }}
+                  />
+                </div>
+
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-white/80 transition-[width] duration-200 ease-linear"
+                    style={{ width: `${chapterProgress}%` }}
+                  />
+                </div>
+
+                <div className="mt-3 grid grid-cols-6 gap-1.5">
+                  {CHAPTERS.map((item, index) => (
+                    <span
+                      key={item.id}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all duration-300",
+                        index === chapterIdx
+                          ? "bg-white"
+                          : index < chapterIdx
+                            ? "bg-white/75"
+                            : "bg-white/20",
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
