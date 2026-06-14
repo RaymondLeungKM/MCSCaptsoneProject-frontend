@@ -17,6 +17,13 @@ import {
   Lock,
   ShieldCheck,
   Trash2,
+  SlidersHorizontal,
+  BellRing,
+  CheckCircle2,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  Lightbulb,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +32,14 @@ import {
   getParentalControls,
   updateParentalControls,
 } from "@/lib/api/parent-dashboard";
+import { getReviewQueue } from "@/lib/api/phase8";
 import { getCategories } from "@/lib/api/vocabulary";
+import { getAuthToken } from "@/lib/api/client";
+import {
+  DEFAULT_REVISION_QUESTION_COUNT,
+  getRevisionQuestionCount,
+  setRevisionQuestionCount,
+} from "@/lib/revision-preferences";
 import type {
   ChildProfile,
   LanguagePreference,
@@ -260,6 +274,13 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   const [confirmPinDraft, setConfirmPinDraft] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [editingPin, setEditingPin] = useState(false);
+  const [dueCards, setDueCards] = useState<number | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachSaving, setCoachSaving] = useState(false);
+  const [revisionQuestionCount, setRevisionQuestionCountState] = useState(
+    DEFAULT_REVISION_QUESTION_COUNT,
+  );
+  const [reminderWindow, setReminderWindow] = useState("18:00");
 
   const handleCommunitySharingChange = async (enabled: boolean) => {
     setCommunitySharing(enabled);
@@ -360,12 +381,73 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     };
   }, [isMockData, profile.id, profile.interests, toast]);
 
+  useEffect(() => {
+    setRevisionQuestionCountState(getRevisionQuestionCount(profile.id));
+  }, [profile.id]);
+
+  useEffect(() => {
+    if (!getAuthToken()) {
+      setDueCards(0);
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      setCoachLoading(true);
+      try {
+        const [queue, controls] = await Promise.all([
+          getReviewQueue(profile.id, 30, 8),
+          getParentalControls(profile.id),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setDueCards(
+          queue.total_due ?? queue.cards.filter((card) => !card.is_new).length,
+        );
+        setReminderWindow(controls.daily_reminder_time || "18:00");
+      } catch {
+        if (!cancelled) {
+          setDueCards(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setCoachLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id]);
+
   const toggleInterest = (interestId: string) => {
     setInterests((prev) =>
       prev.includes(interestId)
         ? prev.filter((interest) => interest !== interestId)
         : [...prev, interestId],
     );
+  };
+
+  const handleSaveCoachPreferences = async () => {
+    setRevisionQuestionCount(profile.id, revisionQuestionCount);
+
+    if (!getAuthToken()) {
+      return;
+    }
+
+    setCoachSaving(true);
+    try {
+      await updateParentalControls(profile.id, {
+        daily_reminder_time: reminderWindow,
+      });
+    } finally {
+      setCoachSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -515,7 +597,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
@@ -578,9 +660,6 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                   ▼
                 </div>
               </div>
-              <p className="text-xs leading-relaxed text-slate-400">
-                設定後，系統可更準確地隨時間更新年齡；留空則只會按出生年份推算。
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -591,7 +670,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
               <div className="p-2 bg-green-100 rounded-xl text-green-600">
                 <Target className="w-5 h-5" />
               </div>
-              學習目標
+              每日目標
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -613,143 +692,6 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
               <p className="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl leading-relaxed">
                 💡 建議幼兒每天學習 3-5 個新詞彙，以保持學習興趣並加深記憶。
               </p>
-            </div>
-
-            <div className="border-t border-slate-100 pt-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-violet-100 rounded-xl text-violet-600 shrink-0">
-                  <Brain className="w-5 h-5" />
-                </div>
-                <div>
-                  <Label className="text-slate-600 font-bold">學習風格</Label>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    選擇目前最貼近孩子的學習偏好，系統會依此調整推薦活動。
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {LEARNING_STYLE_OPTIONS.map((option) => {
-                  const isSelected = learningStyle === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={settingsLoading}
-                      onClick={() => setLearningStyle(option.value)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left transition-all",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200",
-                        settingsLoading && "cursor-not-allowed opacity-60",
-                        isSelected
-                          ? "border-violet-300 bg-violet-50 shadow-sm"
-                          : "border-slate-200 bg-slate-50 hover:border-violet-200 hover:bg-violet-50/40",
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="text-2xl leading-none">
-                          {option.emoji}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-bold text-slate-800">
-                            {option.label}
-                          </p>
-                          <p className="text-xs text-slate-500 leading-relaxed">
-                            {option.description}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 pt-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shrink-0">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <div>
-                  <Label className="text-slate-600 font-bold">
-                    偏好練習時段
-                  </Label>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    這個設定會影響家長頁面的短練習建議與個人化任務推薦。
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {PREFERRED_TIME_OPTIONS.map((option) => {
-                  const isSelected = preferredTimeOfDay === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={settingsLoading}
-                      onClick={() => setPreferredTimeOfDay(option.value)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left transition-all",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200",
-                        settingsLoading && "cursor-not-allowed opacity-60",
-                        isSelected
-                          ? "border-sky-300 bg-sky-50 shadow-sm"
-                          : "border-slate-200 bg-slate-50 hover:border-sky-200 hover:bg-sky-50/40",
-                      )}
-                    >
-                      <p className="font-bold text-slate-800">{option.label}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                        {option.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 pt-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-cyan-100 rounded-xl text-cyan-600 shrink-0">
-                  <Globe2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <Label className="text-slate-600 font-bold">語言模式</Label>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    這個設定會影響孩子頁面顯示的主要語言，以及部分推薦內容的呈現方式。
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {LANGUAGE_PREFERENCE_OPTIONS.map((option) => {
-                  const isSelected = languagePreference === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={settingsLoading}
-                      onClick={() => setLanguagePreference(option.value)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left transition-all",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200",
-                        settingsLoading && "cursor-not-allowed opacity-60",
-                        isSelected
-                          ? "border-cyan-300 bg-cyan-50 shadow-sm"
-                          : "border-slate-200 bg-slate-50 hover:border-cyan-200 hover:bg-cyan-50/40",
-                      )}
-                    >
-                      <p className="font-bold text-slate-800">{option.label}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                        {option.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
             <div className="border-t border-slate-100 pt-5 space-y-4">
@@ -784,9 +726,145 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                 <span>{MAX_ATTENTION_SPAN} 分鐘</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
-              已掌握詞彙和今日目標完成度會按孩子的實際學習紀錄自動更新，這裡只需要設定可調整的學習偏好。
+        <Card className="border-none shadow-sm bg-white rounded-[28px] h-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+              <div className="p-2 bg-purple-100 rounded-xl text-purple-600">
+                <Brain className="w-5 h-5" />
+              </div>
+              學習偏好
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl leading-none">👀</div>
+                <div>
+                  <Label className="text-slate-600 font-bold">學習風格</Label>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    選擇目前最貼近孩子的學習偏好。
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {LEARNING_STYLE_OPTIONS.map((option) => {
+                  const isSelected = learningStyle === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setLearningStyle(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-3 text-left transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-violet-300 bg-violet-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-violet-200 hover:bg-violet-50/40",
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl leading-none">
+                          {option.emoji}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">
+                            {option.label}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <Label className="text-slate-600 font-bold text-sm">
+                    偏好練習時段
+                  </Label>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    影響短練習建議
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {PREFERRED_TIME_OPTIONS.map((option) => {
+                  const isSelected = preferredTimeOfDay === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setPreferredTimeOfDay(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-3 text-left text-sm transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-sky-300 bg-sky-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-sky-200 hover:bg-sky-50/40",
+                      )}
+                    >
+                      <p className="font-bold text-slate-800">{option.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-cyan-100 rounded-xl text-cyan-600 shrink-0">
+                  <Globe2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <Label className="text-slate-600 font-bold text-sm">
+                    語言模式
+                  </Label>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    孩子頁面顯示語言
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {LANGUAGE_PREFERENCE_OPTIONS.map((option) => {
+                  const isSelected = languagePreference === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={settingsLoading}
+                      onClick={() => setLanguagePreference(option.value)}
+                      className={cn(
+                        "rounded-2xl border p-3 text-left text-sm transition-all",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200",
+                        settingsLoading && "cursor-not-allowed opacity-60",
+                        isSelected
+                          ? "border-cyan-300 bg-cyan-50 shadow-sm"
+                          : "border-slate-200 bg-slate-50 hover:border-cyan-200 hover:bg-cyan-50/40",
+                      )}
+                    >
+                      <p className="font-bold text-slate-800">{option.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1091,6 +1169,90 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         </CardContent>
       </Card>
 
+      <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+            <SlidersHorizontal className="h-5 w-5 text-indigo-500" />
+            複習教練面板
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-3 md:grid-cols-3">
+            <MiniMetric
+              icon={<Calendar className="h-4 w-4 text-indigo-500" />}
+              label="待複習卡"
+              value={coachLoading ? "載入中..." : `${dueCards ?? 0} 張`}
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-3 rounded-3xl bg-slate-50 p-4">
+              <p className="text-sm font-black text-slate-700">偏好調節</p>
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Revision Questions
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map((count) => (
+                    <Button
+                      key={count}
+                      type="button"
+                      size="sm"
+                      variant={
+                        revisionQuestionCount === count ? "default" : "outline"
+                      }
+                      className="rounded-full"
+                      onClick={() => setRevisionQuestionCountState(count)}
+                    >
+                      {count} 題
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                  Reminder Window
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="time"
+                    value={reminderWindow}
+                    onChange={(event) => setReminderWindow(event.target.value)}
+                    className="h-9 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => void handleSaveCoachPreferences()}
+                disabled={coachSaving || !getAuthToken()}
+                className="rounded-full"
+              >
+                {coachSaving ? "儲存中..." : "儲存複習偏好"}
+              </Button>
+            </div>
+
+            <div className="space-y-3 rounded-3xl bg-linear-to-br from-amber-50 to-white p-4 ring-1 ring-amber-100">
+              <p className="flex items-center gap-2 text-sm font-black text-slate-700">
+                <Lightbulb className="h-4 w-4 text-amber-500" />
+                複習建議
+              </p>
+              <div className="rounded-2xl bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-600">
+                每日複習有助於鞏固記憶。建議在固定時間進行複習練習。
+              </div>
+              <div className="rounded-2xl bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-600">
+                分段完成複習更容易維持孩子的專注力。
+              </div>
+              <div className="rounded-2xl bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-600">
+                結合多感官提示（圖片、動作、實物）可提升複習效果。
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="sticky bottom-4 z-10 pt-4">
         <Button
           onClick={handleSave}
@@ -1106,6 +1268,43 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           {saving ? "儲存中..." : "儲存所有設定"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function MiniMetric({
+  icon,
+  label,
+  value,
+  className,
+  labelClassName,
+  valueClassName,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  className?: string;
+  labelClassName?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className={cn("rounded-3xl bg-slate-50 p-4", className)}>
+      <div className="mb-3 inline-flex rounded-2xl bg-white p-2 shadow-sm">
+        {icon}
+      </div>
+      <p
+        className={cn(
+          "text-xs font-bold uppercase tracking-[0.18em] text-slate-400",
+          labelClassName,
+        )}
+      >
+        {label}
+      </p>
+      <p
+        className={cn("mt-1 text-lg font-black text-slate-800", valueClassName)}
+      >
+        {value}
+      </p>
     </div>
   );
 }

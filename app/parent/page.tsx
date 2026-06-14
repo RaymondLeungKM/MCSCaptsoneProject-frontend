@@ -7,6 +7,7 @@ import {
   BarChart3,
   LayoutGrid,
   Loader2,
+  LogOut,
   PieChart,
   Settings,
   Target,
@@ -190,7 +191,7 @@ function ParentDashboardContent() {
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const requestedChildId = searchParams.get("childId");
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [availableChildren, setAvailableChildren] = useState<ChildProfile[]>(
@@ -355,6 +356,10 @@ function ParentDashboardContent() {
       )
     : "";
 
+  const handleSignOut = () => {
+    logout();
+  };
+
   if (isLoadingProfile) {
     return (
       <CozyPageWrapper type="dashboard">
@@ -445,20 +450,32 @@ function ParentDashboardContent() {
                 </div>
               </div>
 
-              <button
-                onClick={() =>
-                  router.push(
-                    profile?.id ? `/child?childId=${profile.id}` : "/child",
-                  )
-                }
-                className="group flex items-center gap-1.5 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-1.5 pr-2.5 py-1.5 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-xs md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 shrink-0 whitespace-nowrap"
-              >
-                <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
-                  <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                </span>
-                <span>兒童模式</span>
-                <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleSignOut}
+                  className="group flex items-center gap-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-sm transition-all hover:scale-105 active:scale-95"
+                >
+                  <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-slate-100 rounded-full shrink-0">
+                    <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  </span>
+                  <span>登出</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    router.push(
+                      profile?.id ? `/child?childId=${profile.id}` : "/child",
+                    )
+                  }
+                  className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95"
+                >
+                  <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
+                    <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  </span>
+                  <span>兒童模式</span>
+                  <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </div>
 
             {/* Divider */}

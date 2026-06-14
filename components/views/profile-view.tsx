@@ -226,29 +226,29 @@ export function ProfileView({
       <div className="overflow-hidden rounded-[40px] border border-white/60 bg-white/80 shadow-sm backdrop-blur-md">
         <div className="bg-linear-to-r from-[#FDE68A]/50 via-[#FDBA74]/35 to-[#7DD3FC]/35 px-6 py-8 md:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:text-left">
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-5">
               <ProfileAvatar avatar={selectedAvatar} name={profile.name} />
-              <div className="min-w-0 space-y-3">
+              <div className="space-y-2 min-w-0 w-full sm:flex-1 text-center sm:text-left">
                 <div>
                   <p className="child-tab-caption !text-slate-400">
                     我的檔案
                   </p>
-                  <h2 className="child-tab-hero-title !mt-1">
+                  <h2 className="child-tab-hero-title !mt-1 !text-3xl sm:!text-4xl">
                     {profile.name}
                   </h2>
-                  <p className="child-tab-hero-copy !max-w-none">
+                  <p className="child-tab-hero-copy !max-w-none !text-sm sm:!text-base">
                     {profile.age} 歲 ・ Lv.{profile.level} ・ {profile.xp} XP
                   </p>
                 </div>
 
-                <div className="grid w-full gap-2 sm:flex sm:flex-wrap">
-                  <Badge className="w-full min-w-0 justify-center rounded-full bg-sky-500 px-3 py-1.5 text-center text-sm font-bold leading-tight text-white hover:bg-sky-500 sm:w-auto sm:px-4 sm:py-2 sm:text-base whitespace-normal shrink break-words">
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  <Badge className="rounded-full bg-sky-500 px-4 py-2 text-sm text-white hover:bg-sky-500 font-bold whitespace-nowrap">
                     {languageLabels[profile.languagePreference || "cantonese"]}
                   </Badge>
-                  <Badge className="w-full min-w-0 justify-center rounded-full bg-emerald-500 px-3 py-1.5 text-center text-sm font-bold leading-tight text-white hover:bg-emerald-500 sm:w-auto sm:px-4 sm:py-2 sm:text-base whitespace-normal shrink break-words">
+                  <Badge className="rounded-full bg-emerald-500 px-4 py-2 text-sm text-white hover:bg-emerald-500 font-bold whitespace-nowrap">
                     {learningStyle.label}
                   </Badge>
-                  <Badge className="w-full min-w-0 justify-center rounded-full bg-violet-500 px-3 py-1.5 text-center text-sm font-bold leading-tight text-white hover:bg-violet-500 sm:w-auto sm:px-4 sm:py-2 sm:text-base whitespace-normal shrink break-words">
+                  <Badge className="rounded-full bg-violet-500 px-4 py-2 text-sm text-white hover:bg-violet-500 font-bold whitespace-nowrap">
                     專注 {profile.attentionSpan} 分鐘
                   </Badge>
                 </div>

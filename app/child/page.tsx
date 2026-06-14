@@ -19,7 +19,10 @@ import CozyPageWrapper from "@/components/CozyPageWrapper";
 import { ProfileHeader } from "@/components/child/profile-header";
 import { DailyWordsViewer } from "@/components/child/daily-words-viewer";
 import { CategoryGrid } from "@/components/child/category-grid";
-import { BedtimeStoryGenerator } from "@/components/child/bedtime-story";
+import {
+  BedtimeStoryGenerator,
+  type BedtimeStoryTheme,
+} from "@/components/child/bedtime-story";
 import { GamesList } from "@/components/child/game-card";
 import { ChildMissionsPanel } from "@/components/child/child-missions-panel";
 import { CartoonKeyframes } from "@/components/child/cartoon-characters";
@@ -47,7 +50,12 @@ import {
   toCategory,
   toChildProfile,
 } from "@/lib/api";
-import { getChildStories, getStory } from "@/lib/api/bedtime-stories";
+import {
+  generateStoryWithExternalProgram,
+  getChildStories,
+  getStory,
+} from "@/lib/api/bedtime-stories";
+import { listPublicCuratedStories } from "@/lib/api/stories";
 import {
   endLearningSession,
   getLearningControlStatus,
@@ -56,13 +64,14 @@ import {
 import type { LearningControlStatusResponse } from "@/lib/api/progress";
 import { getWordOfTheDay, getNextActivity } from "@/lib/api/adaptive";
 import type { WordOfTheDayResponse } from "@/lib/api/adaptive";
-import { Phase8View } from "@/components/views/phase8-view";
+import { RevisionLabView } from "@/components/views/revision-lab-view";
 import type {
   Category,
   ChildProfile,
   Game,
   GeneratedStory,
   LearningControlStatus,
+  StoryGenerationRequest,
 } from "@/lib/types";
 import type { StoryCardData } from "@/components/child/story-card";
 import { API_BASE_URL } from "@/lib/api/client";
@@ -258,12 +267,25 @@ function ChildDashboardContent() {
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [storyGenerationTheme, setStoryGenerationTheme] =
+    useState<BedtimeStoryTheme>("bedtime");
+  const [isStoryGenerating, setIsStoryGenerating] = useState(false);
+  const [latestGeneratedStory, setLatestGeneratedStory] =
+    useState<GeneratedStory | null>(null);
+  const [storyGenerationError, setStoryGenerationError] = useState<
+    string | null
+  >(null);
   const [stories, setStories] = useState<GeneratedStory[]>([]);
+  const [curatedStories, setCuratedStories] = useState<GeneratedStory[]>([]);
   const [selectedStory, setSelectedStory] = useState<GeneratedStory | null>(
     null,
   );
   const [storiesLoading, setStoriesLoading] = useState(false);
+  const [curatedStoriesLoading, setCuratedStoriesLoading] = useState(false);
   const [storiesError, setStoriesError] = useState<string | null>(null);
+  const [curatedStoriesError, setCuratedStoriesError] = useState<string | null>(
+    null,
+  );
   const [playingStoryId, setPlayingStoryId] = useState<string | null>(null);
   const [storyAudioLoadingId, setStoryAudioLoadingId] = useState<string | null>(
     null,
@@ -271,6 +293,7 @@ function ChildDashboardContent() {
   const storyAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const sessionChildIdRef = useRef<string | null>(null);
+  const currentChildIdRef = useRef<string | null>(null);
   const sessionStartPendingRef = useRef(false);
   const sessionShouldRemainOpenRef = useRef(false);
   const lastInteractionAtRef = useRef<number>(Date.now());
@@ -295,13 +318,18 @@ function ChildDashboardContent() {
   const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
+    if (requestedTab === "ai") {
+      setActiveTab("revision");
+      return;
+    }
+
     if (
       requestedTab === "home" ||
       requestedTab === "learn" ||
       requestedTab === "games" ||
       requestedTab === "stories" ||
       requestedTab === "community" ||
-      requestedTab === "ai" ||
+      requestedTab === "revision" ||
       requestedTab === "profile" ||
       requestedTab === "rewards"
     ) {
@@ -438,8 +466,16 @@ function ChildDashboardContent() {
         children.find((child) => child.id === storedChildId) ||
         children[0];
       const selectedChild = toChildProfile(selectedChildRecord);
+      const childChanged = currentChildIdRef.current !== selectedChild.id;
       persistSelectedChildId(selectedChild.id);
       setProfile(selectedChild);
+      currentChildIdRef.current = selectedChild.id;
+      if (childChanged) {
+        setStoryGenerationTheme("bedtime");
+        setIsStoryGenerating(false);
+        setLatestGeneratedStory(null);
+        setStoryGenerationError(null);
+      }
       lastInteractionAtRef.current = Date.now();
       setIsIdle(true);
 
@@ -473,24 +509,45 @@ function ChildDashboardContent() {
 
   const loadStories = async (childId: string) => {
     setStoriesLoading(true);
+    setCuratedStoriesLoading(true);
     setStoriesError(null);
+    setCuratedStoriesError(null);
+
     try {
-      const response = await getChildStories(childId, 20);
-      setStories(response || []);
+      const [childStories, curated] = await Promise.all([
+        getChildStories(childId, 20),
+        listPublicCuratedStories(),
+      ]);
+
+      setStories(childStories || []);
+      setCuratedStories(
+        (curated || []).map((story) => ({
+          ...story,
+          child_id: story.child_id ?? null,
+        })),
+      );
     } catch (err) {
       setStoriesError(err instanceof Error ? err.message : "載入故事失敗");
       setStories([]);
+      setCuratedStoriesError(
+        err instanceof Error ? err.message : "載入精選故事失敗",
+      );
+      setCuratedStories([]);
     } finally {
       setStoriesLoading(false);
+      setCuratedStoriesLoading(false);
     }
   };
 
-  const toStoryCard = (story: GeneratedStory): StoryCardData => ({
+  const toStoryCard = (
+    story: GeneratedStory,
+    color: StoryCardData["color"] = "blue",
+  ): StoryCardData => ({
     id: story.id,
     title: story.title,
     duration: `${story.reading_time_minutes || 5} min`,
     completed: (story.read_count || 0) > 0,
-    color: "blue",
+    color,
     emoji: "📖",
   });
 
@@ -513,7 +570,9 @@ function ChildDashboardContent() {
   };
 
   const handlePlayStoryAudio = async (storyId: string) => {
-    const targetStory = stories.find((story) => story.id === storyId);
+    const targetStory =
+      stories.find((story) => story.id === storyId) ||
+      curatedStories.find((story) => story.id === storyId);
     if (!targetStory?.audio_url) return;
 
     if (playingStoryId === storyId) {
@@ -591,7 +650,9 @@ function ChildDashboardContent() {
   const handleReadStory = async (storyId: string) => {
     if (!profile) return;
     try {
-      const existing = stories.find((s) => s.id === storyId);
+      const existing =
+        stories.find((s) => s.id === storyId) ||
+        curatedStories.find((s) => s.id === storyId);
       if (existing?.content_cantonese) {
         setSelectedStory(existing);
         setIsReaderOpen(true);
@@ -608,6 +669,22 @@ function ChildDashboardContent() {
 
   const handleStoryGenerated = (story: GeneratedStory) => {
     setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)]);
+    setSelectedStory(story);
+    setIsReaderOpen(true);
+  };
+
+  const handleGenerateStory = async (request: StoryGenerationRequest) => {
+    const story = await generateStoryWithExternalProgram(request);
+
+    if (currentChildIdRef.current !== request.child_id) {
+      return;
+    }
+
+    setLatestGeneratedStory(story);
+    handleStoryGenerated(story);
+  };
+
+  const handleReadGeneratedStory = (story: GeneratedStory) => {
     setSelectedStory(story);
     setIsReaderOpen(true);
   };
@@ -827,7 +904,7 @@ function ChildDashboardContent() {
       return;
     }
 
-    setActiveTab(tab);
+    setActiveTab(tab === "ai" ? "revision" : tab);
   };
 
   const proceedToParentDashboard = async () => {
@@ -939,7 +1016,9 @@ function ChildDashboardContent() {
       <OwlCompanion level={profile.level} />
       <div
         className="w-full min-h-screen px-4"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10.5rem)" }}
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10.5rem)",
+        }}
       >
         {showDashboardHeader && (
           <header className="flex flex-row items-center gap-2 py-4">
@@ -994,10 +1073,10 @@ function ChildDashboardContent() {
                       <Brain className="h-5 w-5" />
                     </div>
                     <div>
-                        <p className="child-tab-section-title !text-sm !text-violet-700">
+                      <p className="child-tab-section-title !text-sm !text-violet-700">
                         AI 今日推薦
                       </p>
-                        <p className="child-tab-section-copy !text-xs !text-slate-400">
+                      <p className="child-tab-section-copy !text-xs !text-slate-400">
                         幫你揀好今日最值得先開始的內容
                       </p>
                     </div>
@@ -1106,7 +1185,16 @@ function ChildDashboardContent() {
                   childId={profile.id}
                   childName={profile.name}
                   languagePreference="cantonese"
-                  onStoryGenerated={handleStoryGenerated}
+                  selectedTheme={storyGenerationTheme}
+                  isGenerating={isStoryGenerating}
+                  generatedStory={latestGeneratedStory}
+                  error={storyGenerationError}
+                  onSelectedThemeChange={setStoryGenerationTheme}
+                  onIsGeneratingChange={setIsStoryGenerating}
+                  onGeneratedStoryChange={setLatestGeneratedStory}
+                  onErrorChange={setStoryGenerationError}
+                  onGenerateStory={handleGenerateStory}
+                  onReadStory={handleReadGeneratedStory}
                 />
               </section>
 
@@ -1132,7 +1220,7 @@ function ChildDashboardContent() {
                     stories.map((story) => (
                       <StoryCard
                         key={story.id}
-                        story={toStoryCard(story)}
+                        story={toStoryCard(story, "blue")}
                         onRead={(cardStory) =>
                           void handleReadStory(cardStory.id)
                         }
@@ -1162,6 +1250,59 @@ function ChildDashboardContent() {
                   )}
                 </div>
               </section>
+
+              <section className="px-2">
+                <div className="flex items-center gap-3 mb-4 pl-2">
+                  <div className="bg-amber-400 p-2 rounded-xl rotate-3 shadow-sm">
+                    <BookMarked className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-3xl font-black text-slate-700">
+                    精選故事
+                  </h2>
+                </div>
+
+                {curatedStoriesError && (
+                  <Alert variant="destructive" className="mb-3 rounded-2xl">
+                    <AlertDescription>{curatedStoriesError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {!curatedStoriesLoading &&
+                    curatedStories.length > 0 &&
+                    curatedStories.map((story) => (
+                      <StoryCard
+                        key={story.id}
+                        story={toStoryCard(story, "yellow")}
+                        onRead={(cardStory) =>
+                          void handleReadStory(cardStory.id)
+                        }
+                        onPlayAudio={
+                          story.audio_url
+                            ? () => void handlePlayStoryAudio(story.id)
+                            : undefined
+                        }
+                        isAudioPlaying={playingStoryId === story.id}
+                        isAudioLoading={storyAudioLoadingId === story.id}
+                      />
+                    ))}
+
+                  {!curatedStoriesLoading && curatedStories.length === 0 && (
+                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <BookMarked className="w-10 h-10 mb-3 opacity-50" />
+                      <span className="font-bold text-base">未有精選故事</span>
+                    </div>
+                  )}
+
+                  {curatedStoriesLoading && (
+                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <span className="font-bold text-base">
+                        載入精選故事中...
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           )}
 
@@ -1174,9 +1315,12 @@ function ChildDashboardContent() {
             </div>
           )}
 
-          {activeTab === "ai" && profile && (
+          {activeTab === "revision" && profile && (
             <section>
-              <Phase8View profile={profile} onPlayAudio={handlePlayAudio} />
+              <RevisionLabView
+                profile={profile}
+                onPlayAudio={handlePlayAudio}
+              />
             </section>
           )}
 

@@ -155,7 +155,7 @@ export interface DailyWordSummary {
 
 export interface GeneratedStory {
   id: string;
-  child_id: string;
+  child_id?: string | null;
   title: string;
   title_english?: string;
   theme?: string;

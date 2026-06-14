@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   Shield,
   XCircle,
+  Lightbulb,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import type {
   ChildProfile,
@@ -34,6 +37,10 @@ import {
   rejectActiveVocabRequest,
   type ActiveVocabularyApprovalRequest,
 } from "@/lib/api/vocabulary";
+import {
+  getParentalControls,
+  updateParentalControls,
+} from "@/lib/api/parent-dashboard";
 
 interface OverviewTabProps {
   profile: ChildProfile;
@@ -270,6 +277,20 @@ export function OverviewTab({
               : "掌握度會隨著穩定練習逐步建立。",
           },
         ];
+
+  const completionRate =
+    stats.totalWords > 0
+      ? Math.round((stats.masteredWords / stats.totalWords) * 100)
+      : 0;
+  const retentionIndex = Math.round(
+    Math.min(
+      100,
+      completionRate * 0.7 + Math.min(stats.averageExposuresPerWord, 8) * 3.75,
+    ),
+  );
+  const retentionDelta = weeklyDelta?.words_learned.delta ?? 0;
+  const retentionTrendLabel =
+    retentionDelta > 0 ? "上升" : retentionDelta < 0 ? "回落" : "持平";
 
   return (
     <div className="space-y-6 font-zen">

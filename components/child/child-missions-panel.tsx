@@ -61,14 +61,18 @@ function pickVisibleMissions(
     return visible;
   }
 
-  const extraDaily = dailyMissions.slice(preferredDaily.length).map((mission) => ({
-    mission,
-    kind: "daily" as const,
-  }));
-  const extraParent = parentMissions.slice(preferredParent.length).map((mission) => ({
-    mission,
-    kind: "offline" as const,
-  }));
+  const extraDaily = dailyMissions
+    .slice(preferredDaily.length)
+    .map((mission) => ({
+      mission,
+      kind: "daily" as const,
+    }));
+  const extraParent = parentMissions
+    .slice(preferredParent.length)
+    .map((mission) => ({
+      mission,
+      kind: "offline" as const,
+    }));
 
   return [...visible, ...extraDaily, ...extraParent].slice(0, 3);
 }
@@ -94,8 +98,12 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
           getOfflineMissions(childId),
         ]);
         if (missionList.status === "fulfilled") setMissions(missionList.value);
-        if (offlineList.status === "fulfilled") setOfflineMissions(offlineList.value);
-        if (missionList.status === "rejected" && offlineList.status === "rejected") {
+        if (offlineList.status === "fulfilled")
+          setOfflineMissions(offlineList.value);
+        if (
+          missionList.status === "rejected" &&
+          offlineList.status === "rejected"
+        ) {
           setError("暫時未能載入今日任務，請稍後再試。");
         }
       } catch (loadError) {
@@ -168,10 +176,11 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
   }
 
   const visibleMissions = pickVisibleMissions(missions, offlineMissions);
-  const completedCount = visibleMissions.filter(({ mission }) => isMissionCompleted(mission)).length;
+  const completedCount = visibleMissions.filter(({ mission }) =>
+    isMissionCompleted(mission),
+  ).length;
 
   return (
-    <>
     <section className="rounded-4xl border border-amber-200/70 bg-linear-to-br from-amber-50/95 via-white/95 to-orange-50/90 p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -179,15 +188,15 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             <Target className="h-5 w-5" />
           </div>
           <div>
-            <p className="child-tab-section-title !text-xl !text-amber-700">今日任務</p>
-            <p className="child-tab-section-copy !text-base !text-slate-400">
+            <p className="text-xl font-black text-amber-700">今日任務</p>
+            <p className="text-base font-semibold text-slate-400">
               完成小挑戰，將今天的詞彙用出來
             </p>
           </div>
         </div>
 
         {!loading && visibleMissions.length > 0 && (
-          <div className="child-tab-chip self-start !px-3 !py-1.5 text-slate-600">
+          <div className="inline-flex items-center gap-2 self-start rounded-full bg-white/80 px-3 py-1.5 text-sm font-black text-slate-600 shadow-sm">
             <Sparkles className="h-4 w-4 text-amber-500" />
             {`${completedCount}/${visibleMissions.length} 已完成`}
           </div>
@@ -223,10 +232,10 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
             🌟
           </div>
-          <p className="child-tab-card-title !mt-3 !text-lg !text-slate-700">
+          <p className="mt-3 text-lg font-black text-slate-700">
             今天暫時沒有新任務
           </p>
-          <p className="child-tab-card-copy">
+          <p className="mt-1 text-sm font-semibold text-slate-500">
             先去學習、玩遊戲或讀故事，稍後再回來看看。
           </p>
         </div>
@@ -236,6 +245,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             const completed = isMissionCompleted(mission);
             const isSubmitting = submittingMissionId === mission.id;
             const isOffline = kind === "offline";
+            const isParentAuthored = mission.assignment?.source === "parent";
 
             return (
               <article
@@ -266,6 +276,11 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                     >
                       {isOffline ? "親子任務" : "今日任務"}
                     </span>
+                    {isParentAuthored && (
+                      <span className="inline-flex rounded-full border border-violet-200 bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
+                        家長自訂
+                      </span>
+                    )}
                   </div>
 
                   {completed && (
@@ -344,6 +359,5 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
         </div>
       )}
     </section>
-  </>
   );
 }

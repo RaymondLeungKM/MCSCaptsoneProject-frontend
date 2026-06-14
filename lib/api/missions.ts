@@ -88,6 +88,14 @@ export interface MissionMutationRequest {
   is_active?: boolean;
 }
 
+export interface ParentMicroMissionCreateRequest {
+  title: string;
+  description: string;
+  context: MissionContext;
+  target_words: string[];
+  conversation_prompts: string[];
+}
+
 export interface MissionProgressResponse {
   mission_id: string;
   completed: boolean;
@@ -234,6 +242,19 @@ export async function updateAdminMission(
 ): Promise<MissionResponse> {
   return apiRequest<MissionResponse>(`/missions/admin/catalog/${missionId}`, {
     method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Create a short parent-authored micro-mission and deliver it to child mode today.
+ */
+export async function createParentMicroMission(
+  childId: string,
+  data: ParentMicroMissionCreateRequest,
+): Promise<MissionResponse> {
+  return apiRequest<MissionResponse>(`/missions/parent/${childId}/micro`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
