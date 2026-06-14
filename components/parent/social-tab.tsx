@@ -1908,7 +1908,7 @@ function ChallengesPanel() {
     {
       key: "closer",
       icon: "🏁",
-      title: "完賽家長",
+      title: "挑戰達人",
       description: "完成 2 場私人挑戰",
       unlocked: completedCount >= 2,
       progress: Math.min(completedCount, 2),
