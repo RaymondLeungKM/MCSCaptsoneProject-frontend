@@ -51,6 +51,7 @@ export function BedtimeStoryReader({
 
   const { speak, stop } = useSpeech();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastPlayedPageRef = useRef<number | null>(null);
   const STORY_PAGE_TARGET_CHARS = 120;
 
   // Thematic decorations shown when no AI image has been generated yet
@@ -68,6 +69,7 @@ export function BedtimeStoryReader({
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
+    lastPlayedPageRef.current = null;
     setIsPlaying(false);
   };
 
@@ -77,6 +79,7 @@ export function BedtimeStoryReader({
     } else {
       stop();
     }
+    lastPlayedPageRef.current = null;
     setIsPlaying(false);
   };
 
@@ -94,7 +97,9 @@ export function BedtimeStoryReader({
   if (!story) return null;
 
   const pages = useMemo(() => {
-    const getNarrativeChunks = (text: string): { chunks: string[]; joiner: string } => {
+    const getNarrativeChunks = (
+      text: string,
+    ): { chunks: string[]; joiner: string } => {
       if (!text.trim()) {
         return { chunks: [], joiner: " " };
       }
@@ -235,6 +240,78 @@ export function BedtimeStoryReader({
   const totalPages = pages.length + 1;
   const isStatsPage = currentPage === pages.length;
 
+  const pageStartRatios = useMemo(() => {
+    if (pages.length === 0) {
+      return [] as number[];
+    }
+
+    const pageCharCounts = pages.map((page) => page.cantonese.trim().length);
+    const totalChars = pageCharCounts.reduce((sum, count) => sum + count, 0);
+
+    if (totalChars <= 0) {
+      return Array(pages.length).fill(0);
+    }
+
+    let cumulativeChars = 0;
+    return pageCharCounts.map((count) => {
+      const startRatio = cumulativeChars / totalChars;
+      cumulativeChars += count;
+      return startRatio;
+    });
+  }, [pages]);
+
+  const waitForAudioMetadata = (audio: HTMLAudioElement) =>
+    new Promise<void>((resolve, reject) => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        resolve();
+        return;
+      }
+
+      const handleLoadedMetadata = () => {
+        cleanup();
+        resolve();
+      };
+
+      const handleError = () => {
+        cleanup();
+        reject(new Error("Failed to load story audio metadata"));
+      };
+
+      const cleanup = () => {
+        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.removeEventListener("error", handleError);
+      };
+
+      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.addEventListener("error", handleError);
+
+      if (audio.readyState >= 1) {
+        cleanup();
+        resolve();
+      }
+    });
+
+  const seekAudioToCurrentPage = async (audio: HTMLAudioElement) => {
+    await waitForAudioMetadata(audio);
+
+    if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+      return;
+    }
+
+    const safePageIndex = Math.max(
+      0,
+      Math.min(currentPage, pageStartRatios.length - 1),
+    );
+    const targetRatio = pageStartRatios[safePageIndex] ?? 0;
+    const targetTime = Math.min(
+      Math.max(targetRatio * audio.duration, 0),
+      Math.max(audio.duration - 0.05, 0),
+    );
+
+    audio.currentTime = targetTime;
+    lastPlayedPageRef.current = safePageIndex;
+  };
+
   const createStoryAudio = () => {
     if (!story?.audio_url) {
       return null;
@@ -247,8 +324,12 @@ export function BedtimeStoryReader({
     audio.onended = () => {
       setIsPlaying(false);
       audio.currentTime = 0;
+      lastPlayedPageRef.current = null;
     };
-    audio.onerror = () => setIsPlaying(false);
+    audio.onerror = () => {
+      setIsPlaying(false);
+      lastPlayedPageRef.current = null;
+    };
     return audio;
   };
 
@@ -269,11 +350,8 @@ export function BedtimeStoryReader({
             throw new Error("Story audio is not available");
           }
 
-          if (
-            audio.duration &&
-            audio.currentTime >= Math.max(audio.duration - 0.25, 0)
-          ) {
-            audio.currentTime = 0;
+          if (lastPlayedPageRef.current !== currentPage) {
+            await seekAudioToCurrentPage(audio);
           }
 
           await audio.play();
@@ -400,9 +478,7 @@ export function BedtimeStoryReader({
                 className="flex flex-col h-full min-h-0 animate-in fade-in duration-500"
               >
                 {/* Illustration Area */}
-                <div
-                  className="shrink-0 w-full rounded-2xl overflow-hidden relative mb-4 shadow-md h-36 sm:h-44 md:h-[210px]"
-                >
+                <div className="shrink-0 w-full rounded-2xl overflow-hidden relative mb-4 shadow-md h-36 sm:h-44 md:h-[210px]">
                   {pages[currentPage]?.imageUrl ? (
                     <img
                       src={pages[currentPage].imageUrl}
@@ -419,8 +495,9 @@ export function BedtimeStoryReader({
                     >
                       <span className="text-8xl select-none drop-shadow-sm">
                         {
-                          PAGE_DECORATIONS[currentPage % PAGE_DECORATIONS.length]
-                            ?.emoji
+                          PAGE_DECORATIONS[
+                            currentPage % PAGE_DECORATIONS.length
+                          ]?.emoji
                         }
                       </span>
                     </div>
@@ -456,9 +533,7 @@ export function BedtimeStoryReader({
                   <h2 className="text-3xl font-black text-slate-800">
                     故事讀完了！
                   </h2>
-                  <p className="text-slate-500 font-bold">
-                    做得好！
-                  </p>
+                  <p className="text-slate-500 font-bold">做得好！</p>
                 </div>
 
                 {/* Cultural References */}
