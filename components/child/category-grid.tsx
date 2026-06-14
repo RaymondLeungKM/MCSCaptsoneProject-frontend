@@ -14,6 +14,7 @@ import { getWords, getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
+import { updateWordProgress } from "@/lib/api/vocabulary";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -162,6 +163,33 @@ export function CategoryGrid({
   const handlePlayWord = (e: MouseEvent<HTMLButtonElement>, word: Word) => {
     e.stopPropagation();
     void playWord(word, { languagePreference, speechRate: 0.75 });
+
+    if (!childId) {
+      return;
+    }
+
+    const nextExposureCount = (word.exposureCount || 0) + 1;
+
+    void updateWordProgress(word.id, childId, {
+      exposure_count: nextExposureCount,
+    })
+      .then((progress) => {
+        setCategoryWords((prev) =>
+          prev.map((candidate) =>
+            candidate.id === word.id
+              ? {
+                  ...candidate,
+                  mastered: progress.mastered,
+                  exposureCount: progress.exposure_count,
+                }
+              : candidate,
+          ),
+        );
+        onWordLearned?.();
+      })
+      .catch(() => {
+        // Keep audio playback non-blocking when progress sync fails.
+      });
   };
 
   const headerText = "探索主題";
@@ -195,7 +223,9 @@ export function CategoryGrid({
             </button>
 
             <div className="flex items-center gap-2 sm:gap-2.5">
-              <span className="text-4xl sm:text-5xl">{selectedCategory.icon}</span>
+              <span className="text-4xl sm:text-5xl">
+                {selectedCategory.icon}
+              </span>
               <div>
                 <h2 className="child-tab-hero-title !text-2xl sm:!text-4xl !text-slate-700">
                   {catName}
@@ -225,7 +255,9 @@ export function CategoryGrid({
           {wordsError && !isLoadingWords && (
             <div className="text-center py-12">
               <p className="text-4xl mb-3">😕</p>
-              <p className="child-tab-card-copy !mt-0 !font-bold">{wordsError}</p>
+              <p className="child-tab-card-copy !mt-0 !font-bold">
+                {wordsError}
+              </p>
             </div>
           )}
 
@@ -233,7 +265,9 @@ export function CategoryGrid({
           {!isLoadingWords && !wordsError && categoryWords.length === 0 && (
             <div className="text-center py-12">
               <p className="text-5xl mb-3">🔍</p>
-              <p className="child-tab-card-copy !mt-0 !font-bold">暫時還沒有詞語</p>
+              <p className="child-tab-card-copy !mt-0 !font-bold">
+                暫時還沒有詞語
+              </p>
             </div>
           )}
 
@@ -261,10 +295,7 @@ export function CategoryGrid({
                     {/* Mastered badge */}
                     {word.mastered && (
                       <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-green-400 flex items-center justify-center shadow-sm">
-                        <Check
-                          className="w-4 h-4 text-white"
-                          strokeWidth={3}
-                        />
+                        <Check className="w-4 h-4 text-white" strokeWidth={3} />
                       </div>
                     )}
                     {/* Image / Emoji */}
@@ -287,7 +318,9 @@ export function CategoryGrid({
                           }}
                         />
                       ) : (
-                        <span className="text-5xl drop-shadow-sm filter sm:text-7xl">{word.image || "📝"}</span>
+                        <span className="text-5xl drop-shadow-sm filter sm:text-7xl">
+                          {word.image || "📝"}
+                        </span>
                       )}
                     </div>
 
@@ -353,9 +386,7 @@ export function CategoryGrid({
             <Sparkles className="h-5 w-5 fill-white text-white sm:h-6 sm:w-6" />
           </div>
           <div>
-            <h2 className="child-tab-compact-title">
-              {headerText}
-            </h2>
+            <h2 className="child-tab-compact-title">{headerText}</h2>
             <p className="child-tab-compact-copy">{subHeaderText}</p>
           </div>
         </div>
