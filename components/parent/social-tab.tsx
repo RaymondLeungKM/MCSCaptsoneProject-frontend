@@ -881,10 +881,6 @@ function FriendsPanel() {
             return false;
           }
 
-          if (challenge.creator_id === selectedFriend.friend_id) {
-            return true;
-          }
-
           return challenge.participants.some(
             (participant) => participant.parent_id === selectedFriend.friend_id,
           );
@@ -1259,12 +1255,14 @@ type ActivityFeedItem = {
 function ActivityFeedPanel() {
   const { user: currentUser } = useAuth();
   const [progressData, setProgressData] = useState<FriendProgress[]>([]);
+  const [myChildren, setMyChildren] = useState<ChildResponse[]>([]);
   const [challenges, setChallenges] = useState<FriendChallenge[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!currentUser) {
       setProgressData([]);
+      setMyChildren([]);
       setChallenges([]);
       setLoading(false);
       return;
@@ -1273,21 +1271,27 @@ function ActivityFeedPanel() {
     void (async () => {
       setLoading(true);
       try {
-        const [progressResult, challengesResult] = await Promise.allSettled([
-          getFriendsProgress(),
-          getFriendChallenges(),
-        ]);
+        const [progressResult, childrenResult, challengesResult] =
+          await Promise.allSettled([
+            getFriendsProgress(),
+            getChildren(),
+            getFriendChallenges(),
+          ]);
 
         const progressItems =
           progressResult.status === "fulfilled" ? progressResult.value : [];
+        const childrenItems =
+          childrenResult.status === "fulfilled" ? childrenResult.value : [];
         const challengeItems =
           challengesResult.status === "fulfilled" ? challengesResult.value : [];
 
         setProgressData(progressItems);
+        setMyChildren(childrenItems);
         setChallenges(challengeItems);
       } catch (err) {
         console.warn("[ActivityFeed] Failed to load:", err);
         setProgressData([]);
+        setMyChildren([]);
         setChallenges([]);
       } finally {
         setLoading(false);
@@ -1310,6 +1314,47 @@ function ActivityFeedPanel() {
     return totalB - totalA;
   });
 
+  const leaderboardRows = [
+    ...sortedProgress.map((entry) => ({
+      id: entry.friend_id,
+      familyName: entry.friend_name,
+      isCurrentUser: false,
+      children: entry.children_stats.map((child) => ({
+        name: child.child_name,
+        avatar: child.avatar,
+        wordsLearned: child.words_learned,
+        currentStreak: child.current_streak,
+      })),
+    })),
+    ...(myChildren.length > 0
+      ? [
+          {
+            id: currentUser?.id ?? "me",
+            familyName: currentUser?.full_name ?? "你",
+            isCurrentUser: true,
+            children: myChildren.map((child) => ({
+              name: child.name,
+              avatar: child.avatar,
+              wordsLearned: child.words_learned,
+              currentStreak: child.current_streak,
+            })),
+          },
+        ]
+      : []),
+  ]
+    .sort((a, b) => {
+      const totalA = a.children.reduce(
+        (sum, child) => sum + child.wordsLearned,
+        0,
+      );
+      const totalB = b.children.reduce(
+        (sum, child) => sum + child.wordsLearned,
+        0,
+      );
+      return totalB - totalA;
+    })
+    .slice(0, 6);
+
   // Get active challenges
   const activeChallenges = challenges.filter((c) => {
     const lifecycle = resolveFriendChallengeLifecycle(c);
@@ -1322,6 +1367,42 @@ function ActivityFeedPanel() {
     const deltaMs = Date.now() - new Date(c.ends_at).getTime();
     return lifecycle === "completed" && deltaMs < 7 * 86_400_000;
   });
+
+  const milestoneItems = sortedProgress.flatMap((friend) =>
+    friend.children_stats.flatMap((child) => {
+      const achievements: Array<{
+        key: string;
+        msg: string;
+        friendName: string;
+      }> = [];
+
+      if (child.current_streak >= 1) {
+        achievements.push({
+          key: `${friend.friend_id}-${child.child_name}-streak`,
+          msg: `${child.avatar} ${child.child_name} 保持 ${child.current_streak} 天連勝！`,
+          friendName: friend.friend_name,
+        });
+      }
+
+      if (child.words_learned >= 10 && child.words_learned % 10 === 0) {
+        achievements.push({
+          key: `${friend.friend_id}-${child.child_name}-words`,
+          msg: `${child.avatar} ${child.child_name} 已掌握 ${child.words_learned} 個詞彙。`,
+          friendName: friend.friend_name,
+        });
+      }
+
+      if (child.level >= 2) {
+        achievements.push({
+          key: `${friend.friend_id}-${child.child_name}-level`,
+          msg: `${child.avatar} ${child.child_name} 晉升到 Lv. ${child.level}！`,
+          friendName: friend.friend_name,
+        });
+      }
+
+      return achievements;
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -1348,7 +1429,7 @@ function ActivityFeedPanel() {
       </Card>
 
       {/* Learning Leaderboard */}
-      {sortedProgress.length > 0 && (
+      {leaderboardRows.length > 0 && (
         <Card className="rounded-[20px] border-none shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base font-black text-slate-700">
@@ -1357,31 +1438,61 @@ function ActivityFeedPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {sortedProgress.slice(0, 5).map((friend, idx) => {
-              const totalWords = friend.children_stats.reduce(
-                (s, c) => s + c.words_learned,
+            {leaderboardRows.map((row, idx) => {
+              const totalWords = row.children.reduce(
+                (s, c) => s + c.wordsLearned,
                 0,
               );
               const bestStreak = Math.max(
                 0,
-                ...friend.children_stats.map((c) => c.current_streak),
+                ...row.children.map((c) => c.currentStreak),
               );
 
               return (
                 <div
-                  key={friend.friend_id}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-3 flex items-center gap-3"
+                  key={row.id}
+                  className={cn(
+                    "rounded-2xl border p-3 flex items-center gap-3",
+                    row.isCurrentUser
+                      ? "border-blue-200 bg-blue-50"
+                      : "border-slate-100 bg-slate-50",
+                  )}
                 >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white font-black text-sm text-slate-700 border border-slate-100">
                     #{idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-slate-800 text-sm truncate">
-                      {friend.friend_name}
+                      {row.familyName}
+                      {row.isCurrentUser && (
+                        <span className="ml-2 text-[10px] font-black rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 align-middle">
+                          你
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-slate-400 font-medium mt-0.5">
-                      {friend.children_stats.length} 位孩子
+                      {row.children.length} 位孩子
                     </p>
+                    {row.children.length > 0 && (
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        {row.children.slice(0, 3).map((child) => (
+                          <span
+                            key={`${row.id}-${child.name}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-white bg-white px-2 py-0.5 text-[10px] font-bold text-slate-500"
+                          >
+                            <span>{child.avatar || "👧"}</span>
+                            <span className="truncate max-w-14">
+                              {child.name}
+                            </span>
+                          </span>
+                        ))}
+                        {row.children.length > 3 && (
+                          <span className="text-[10px] font-black text-slate-400">
+                            +{row.children.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
@@ -1497,46 +1608,32 @@ function ActivityFeedPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {sortedProgress.map((friend) =>
-              friend.children_stats.map((child) => {
-                const achievements = [];
-
-                if (child.current_streak >= 7) {
-                  achievements.push(
-                    `${child.avatar} ${child.child_name} 保持 ${child.current_streak} 天連勝！`,
-                  );
-                }
-
-                if (
-                  child.words_learned >= 50 &&
-                  child.words_learned % 10 === 0
-                ) {
-                  achievements.push(
-                    `${child.avatar} ${child.child_name} 已掌握 ${child.words_learned} 個詞彙。`,
-                  );
-                }
-
-                if (child.level >= 5) {
-                  achievements.push(
-                    `${child.avatar} ${child.child_name} 晉升到 Lv. ${child.level}！`,
-                  );
-                }
-
-                return achievements.map((msg, i) => (
-                  <div
-                    key={`${friend.friend_id}-${child.child_name}-${i}`}
-                    className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 flex items-start gap-3"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-700">{msg}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {friend.friend_name}
-                      </p>
-                    </div>
+            {milestoneItems.length > 0 ? (
+              milestoneItems.map((item) => (
+                <div
+                  key={item.key}
+                  className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 flex items-start gap-3"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-700">
+                      {item.msg}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {item.friendName}
+                    </p>
                   </div>
-                ));
-              }),
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                <p className="text-sm font-bold text-slate-500">
+                  暫時未有符合條件的里程碑。
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  目前會在連勝 3 天、詞彙達 20+（每 10）或等級達 Lv.2 時顯示。
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
