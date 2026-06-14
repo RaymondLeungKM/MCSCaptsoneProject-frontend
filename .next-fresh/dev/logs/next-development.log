@@ -68,3 +68,909 @@
 [00:02:23.843] Server  LOG     [generate-image] result=ok 652978b image/jpeg
 [00:02:45.306] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
 [00:02:45.312] Server  LOG     [generate-image] result=ok 132390b image/jpeg
+[01:20:07.161] Browser LOG     [Speech] Voices loaded: 223
+[01:20:07.161] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[01:20:07.335] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:20:07.335] Browser LOG     [API] Unauthorized (401) - clearing token 
+[01:20:07.335] Browser LOG     [API] Token cleared 
+[01:20:07.335] Browser ERROR   Auth check failed: {"detail":"Could not validate credentials","name":"APIError","status":401}
+[01:20:11.162] Browser LOG     [API] Request [1/3]: POST /auth/login 
+[01:20:11.741] Browser LOG     [API] Response successful: /auth/login 
+[01:20:11.741] Browser LOG     [API] Token stored 
+[01:20:11.741] Browser LOG     [API] Token stored 
+[01:20:11.741] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:20:11.741] Browser LOG     [API] Response successful: /users/me 
+[01:20:15.753] Browser LOG     [Speech] Voices loaded: 223
+[01:20:15.753] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[01:20:41.541] Browser LOG     [API] Request [1/3]: POST /auth/login 
+[01:20:42.336] Browser LOG     [API] Response successful: /auth/login 
+[01:20:42.336] Browser LOG     [API] Token stored 
+[01:20:42.336] Browser LOG     [API] Token stored 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:20:42.336] Browser LOG     [API] Response successful: /users/me 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:20:42.336] Browser LOG     [API] Response successful: /children/ 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Response successful: /children/ 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:20:42.336] Browser LOG     [API] Response successful: /children/ 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:20:42.336] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:20:42.336] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:20:42.336] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:20:42.336] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:21:46.622] Browser LOG     [API] Response successful: /children/ 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:21:46.622] Browser LOG     [API] Response successful: /children/ 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:21:46.622] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:21:46.622] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:21:46.622] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:21:46.622] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:21:46.622] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:21:55.165] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:21:55.165] Browser LOG     [API] Response successful: /children/ 
+[01:21:55.165] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:21:55.165] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:21:55.165] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:21:55.165] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:21:59.835] Browser LOG     [API] Response successful: /children/ 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:21:59.835] Browser LOG     [API] Response successful: /children/ 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:21:59.835] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:21:59.835] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:21:59.835] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:21:59.835] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:21:59.835] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:13.146] Browser LOG     [Speech] Voices loaded: 223
+[01:22:13.146] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:22:13.263] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:22:13.497] Browser LOG     [API] Response successful: /users/me 
+[01:22:14.391] Browser LOG     [Speech] Voices loaded: 223
+[01:22:14.391] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:22:14.737] Browser LOG     [Speech] Voices loaded: 223
+[01:22:14.738] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[01:22:15.193] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:22:15.193] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:22:15.193] Browser LOG     [API] Response successful: /users/me 
+[01:22:15.193] Browser LOG     [API] Response successful: /children/ 
+[01:22:15.193] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:22:15.194] Browser LOG     [API] Response successful: /children/ 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:22:15.194] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:22:15.194] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:15.194] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:15.194] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:15.194] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:15.194] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:15.194] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:24.259] Browser LOG     [API] Request [1/3]: POST /auth/login 
+[01:22:24.654] Browser LOG     [API] Response successful: /auth/login 
+[01:22:24.654] Browser LOG     [API] Token stored 
+[01:22:24.654] Browser LOG     [API] Token stored 
+[01:22:24.654] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:22:24.654] Browser LOG     [API] Response successful: /users/me 
+[01:22:25.128] Browser LOG     [Speech] Voices loaded: 223
+[01:22:25.128] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:22:25.128] Browser LOG     [API] Response successful: /children/ 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.128] Browser LOG     [API] Response successful: /children/ 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:22:25.128] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:22:25.128] Browser LOG     [API] Response successful: /children/ 
+[01:22:25.128] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:22:25.129] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.129] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:22:25.129] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.129] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.129] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:22:25.129] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:25.129] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:25.129] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:22:25.129] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:25.129] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:22:36.321] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:36.321] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:22:36.323] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:36.323] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:22:37.894] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:22:37.899] Server  LOG     [generate-image] result=ok 30638b image/png
+[01:22:37.938] Server  LOG     [generate-image] model=@cf/lykon/dreamshaper-8-lcm provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:37.938] Server  LOG     [generate-image] CF request: model=@cf/lykon/dreamshaper-8-lcm multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:22:40.246] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:22:40.356] Server  LOG     [generate-image] result=ok 251009b image/png
+[01:22:40.400] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:40.400] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:22:40.680] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:22:40.770] Server  LOG     [generate-image] result=ok 305693b image/png
+[01:22:40.818] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:40.819] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:22:42.193] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[01:22:42.522] Server  LOG     [generate-image] result=ok 120567b image/jpeg
+[01:22:42.713] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:49.570] Server  LOG     [generate-image] result=ok 1368353b image/png
+[01:22:49.607] Server  LOG     [generate-image] result=ok 1240805b image/png
+[01:22:51.352] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:51.352] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:22:52.638] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:22:52.662] Server  LOG     [generate-image] result=ok 74782b image/jpeg
+[01:22:53.858] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:53.858] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[01:22:53.859] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:22:53.859] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:23:00.728] Server  LOG     [generate-image] result=ok 1125666b image/png
+[01:23:05.233] Server  LOG     [generate-image] result=ok 499160b image/jpeg
+[01:29:59.808] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:29:59.809] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:29:59.999] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:30:00.000] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:30:09.410] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:30:09.473] Server  LOG     [generate-image] result=ok 113176b image/jpeg
+[01:30:10.323] Server  LOG     [generate-image] model=@cf/leonardo/lucid-origin provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[01:30:10.324] Server  LOG     [generate-image] CF request: model=@cf/leonardo/lucid-origin multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[01:30:11.639] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:30:11.660] Server  LOG     [generate-image] result=ok 55497b image/jpeg
+[01:30:45.550] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:30:45.592] Server  LOG     [generate-image] result=ok 126610b image/jpeg
+[01:33:27.232] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:27.232] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:27.233] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:27.233] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:28.521] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:33:28.545] Server  LOG     [generate-image] result=ok 39558b image/png
+[01:33:29.497] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:29.497] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:31.164] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:33:31.249] Server  LOG     [generate-image] result=ok 239018b image/png
+[01:33:31.379] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:31.380] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:32.561] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:33:32.568] Server  LOG     [generate-image] result=ok 66082b image/jpeg
+[01:33:32.633] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:32.634] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:40.446] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:33:40.454] Server  LOG     [generate-image] result=ok 106362b image/jpeg
+[01:33:40.620] Server  LOG     [generate-image] model=@cf/leonardo/lucid-origin provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:40.621] Server  LOG     [generate-image] CF request: model=@cf/leonardo/lucid-origin multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:41.774] Server  LOG     [generate-image] CF response: status=400 content-type=application/json
+[01:33:41.779] Server  ERROR   [generate-image] Cloudflare error 400: {"errors":[{"message":"AiError: AiError: Input prompt contains NSFW content. (77cb9a11-50a9-4077-ac8f-cdf817d77ff1)","code":3030}],"success":false,"result":{},"messages":[]}
+[01:33:41.779] Server  LOG     [generate-image] result=null
+[01:33:41.779] Server  WARN    [generate-image] cloudflare returned no image, falling back to emoji
+[01:33:41.873] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:41.873] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:33:43.074] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[01:33:43.621] Server  LOG     [generate-image] result=ok 91800b image/jpeg
+[01:33:43.767] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:51.128] Server  LOG     [generate-image] result=ok 1301460b image/png
+[01:33:51.239] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:33:51.239] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:34:01.378] Server  LOG     [generate-image] result=ok 1392735b image/png
+[01:34:14.604] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:34:14.604] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:34:22.406] Server  LOG     [generate-image] result=ok 1312070b image/png
+[01:34:23.427] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:34:23.427] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[01:34:33.284] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:34:33.342] Server  LOG     [generate-image] result=ok 157722b image/jpeg
+[01:34:33.877] Server  LOG     [generate-image] result=ok 658269b image/jpeg
+[01:34:48.744] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:34:48.744] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:34:49.038] Browser LOG     [API] Response successful: /children/ 
+[01:34:49.038] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:34:49.038] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:34:49.038] Browser LOG     [API] Response successful: /children/ 
+[01:34:49.038] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:34:49.038] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:34:49.038] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:34:49.038] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:34:49.038] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:34:49.038] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:38:29.123] Server  LOG     [generate-image] model=google/nano-banana-2 provider=gemini prompt="test word..." neg="no text..."
+[01:38:29.123] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: google/nano-banana-2
+[01:38:30.079] Server  ERROR   [generate-image] Gemini error 404: 
+[01:38:30.079] Server  LOG     [generate-image] result=null
+[01:38:30.079] Server  WARN    [generate-image] gemini returned no image, falling back to emoji
+[01:38:30.111] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="test word..." neg="no text..."
+[01:38:30.111] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:38:38.208] Server  LOG     [generate-image] result=ok 1616344b image/png
+[01:38:38.242] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="test word..." neg="no text..."
+[01:38:38.243] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[01:38:51.572] Server  LOG     [generate-image] result=ok 1032413b image/jpeg
+[01:38:51.620] Server  LOG     [generate-image] model=@cf/lykon/dreamshaper-8-lcm provider=cloudflare prompt="test word..." neg="no text..."
+[01:38:51.620] Server  LOG     [generate-image] CF request: model=@cf/lykon/dreamshaper-8-lcm multipart=false prompt="test word..."
+[01:38:54.004] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:38:54.267] Server  LOG     [generate-image] result=ok 433680b image/png
+[01:48:39.347] Browser LOG     [Speech] Voices loaded: 223
+[01:48:39.347] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:48:39.574] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:48:40.877] Browser LOG     [API] Response successful: /users/me 
+[01:48:45.769] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:48:45.769] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:48:45.770] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:48:45.770] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:48:47.103] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:48:47.106] Server  LOG     [generate-image] result=ok 32879b image/png
+[01:48:48.350] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:48:48.350] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:48:49.964] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:48:50.145] Server  LOG     [generate-image] result=ok 325714b image/png
+[01:48:50.365] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:48:50.366] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:48:51.916] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:48:51.923] Server  LOG     [generate-image] result=ok 110108b image/jpeg
+[01:48:52.043] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:48:52.043] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:49:01.239] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:49:01.251] Server  LOG     [generate-image] result=ok 122192b image/jpeg
+[01:49:01.987] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:49:01.989] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:49:09.674] Server  LOG     [generate-image] result=ok 1302972b image/png
+[01:49:09.943] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:49:16.003] Server  LOG     [generate-image] result=ok 1702918b image/png
+[01:49:18.921] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:49:18.922] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[01:49:29.835] Server  LOG     [generate-image] result=ok 615627b image/jpeg
+[01:49:30.615] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:49:30.616] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[01:49:37.917] Server  LOG     [generate-image] result=ok 1414014b image/png
+[01:49:38.123] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[01:49:38.123] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[01:49:39.499] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[01:49:39.798] Server  LOG     [generate-image] result=ok 98587b image/jpeg
+[01:49:47.007] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:49:47.053] Server  LOG     [generate-image] result=ok 83591b image/jpeg
+[01:50:17.248] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[01:50:18.797] Browser LOG     [Speech] Voices loaded: 223
+[01:50:18.797] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:50:18.940] Browser LOG     [Speech] Voices loaded: 223
+[01:50:18.940] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[01:50:19.224] Browser LOG     [Speech] Voices loaded: 223
+[01:50:19.224] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[01:50:19.427] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:50:19.528] Browser LOG     [API] Response successful: /users/me 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /users/me 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:50:19.726] Browser LOG     [API] Response successful: /users/me 
+[01:50:19.726] Browser LOG     [API] Response successful: /children/ 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /children/ 
+[01:50:19.726] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:50:19.726] Browser LOG     [API] Response successful: /children/ 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[01:50:19.726] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:50:19.726] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:50:19.726] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:50:19.726] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[01:50:19.726] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:50:19.726] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[01:53:03.285] Server  LOG     [generate-image] model=@cf/leonardo/lucid-origin provider=cloudflare prompt="test word..." neg="no text..."
+[01:53:03.285] Server  LOG     [generate-image] CF request: model=@cf/leonardo/lucid-origin multipart=false prompt="test word..."
+[01:53:04.641] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:53:04.751] Server  LOG     [generate-image] result=ok 52778b image/jpeg
+[01:53:04.782] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-1-schnell provider=cloudflare prompt="test word..." neg="no text..."
+[01:53:04.782] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-1-schnell multipart=false prompt="test word..."
+[01:53:05.817] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:53:06.008] Server  LOG     [generate-image] result=ok 126381b image/jpeg
+[01:53:06.045] Server  LOG     [generate-image] model=@cf/lykon/dreamshaper-8-lcm provider=cloudflare prompt="test word..." neg="no text..."
+[01:53:06.046] Server  LOG     [generate-image] CF request: model=@cf/lykon/dreamshaper-8-lcm multipart=false prompt="test word..."
+[01:53:08.667] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:53:08.901] Server  LOG     [generate-image] result=ok 247917b image/png
+[01:56:35.430] Server  LOG     [generate-image] model=@cf/leonardo/lucid-origin provider=cloudflare prompt="test word..." neg="no text..."
+[01:56:35.430] Server  LOG     [generate-image] CF request: model=@cf/leonardo/lucid-origin multipart=false prompt="test word..."
+[01:56:36.528] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:56:36.536] Server  LOG     [generate-image] result=ok 53485b image/jpeg
+[01:56:36.565] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-1-schnell provider=cloudflare prompt="test word..." neg="no text..."
+[01:56:36.566] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-1-schnell multipart=false prompt="test word..."
+[01:56:36.999] Server  LOG     [generate-image] CF response: status=400 content-type=application/json
+[01:56:37.001] Server  ERROR   [generate-image] Cloudflare error 400: {"errors":[{"message":"AiError: AiError: Input prompt contains NSFW content. (b9f825d2-e31d-4b53-867c-1ebcb34b240a)","code":3030}],"success":false,"result":{},"messages":[]}
+[01:56:37.001] Server  LOG     [generate-image] result=null
+[01:56:37.001] Server  WARN    [generate-image] cloudflare returned no image, falling back to emoji
+[01:56:37.031] Server  LOG     [generate-image] model=@cf/lykon/dreamshaper-8-lcm provider=cloudflare prompt="test word..." neg="no text..."
+[01:56:37.031] Server  LOG     [generate-image] CF request: model=@cf/lykon/dreamshaper-8-lcm multipart=false prompt="test word..."
+[01:56:39.700] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[01:56:39.796] Server  LOG     [generate-image] result=ok 236796b image/png
+[01:57:24.771] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-1-schnell provider=cloudflare prompt="test word..." neg="no text..."
+[01:57:24.771] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-1-schnell multipart=false prompt="test word..."
+[01:57:26.802] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[01:57:26.945] Server  LOG     [generate-image] result=ok 628672b image/jpeg
+[01:58:01.152] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:58:01.336] Browser LOG     [Speech] Voices loaded: 191
+[01:58:01.336] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[02:13:03.973] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:13:03.973] Browser LOG     [Speech] Voices loaded: 191
+[02:13:03.973] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[02:15:40.652] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[02:15:40.653] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/test-images. Falling back to browser navigation. {}
+[02:15:40.668] Server  ERROR   Error: aborted
+[02:15:44.011] Browser LOG     [Speech] Voices loaded: 223
+[02:15:44.011] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[02:15:44.074] Browser LOG     [API] Request [1/3]: GET /users/me 
+[02:15:44.685] Browser LOG     [API] Unauthorized (401) - clearing token 
+[02:15:44.685] Browser LOG     [API] Token cleared 
+[02:15:44.685] Browser ERROR   Auth check failed: {"detail":"Could not validate credentials","name":"APIError","status":401}
+[02:15:44.688] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[02:15:45.476] Browser LOG     [Speech] Voices loaded: 223
+[02:15:45.476] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[02:15:45.546] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:15:45.680] Browser LOG     [Speech] Voices loaded: 191
+[02:15:45.680] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[02:16:26.982] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[02:16:27.023] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/parent. Falling back to browser navigation. {}
+[02:16:27.269] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[02:16:27.269] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/test-images. Falling back to browser navigation. {}
+[02:16:29.380] Browser LOG     [Speech] Voices loaded: 223
+[02:16:29.380] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[02:16:29.464] Browser LOG     [Speech] Voices loaded: 223
+[02:16:29.464] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[02:17:04.954] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:04.954] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:04.955] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:04.955] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:06.403] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[02:17:06.410] Server  LOG     [generate-image] result=ok 31304b image/png
+[02:17:07.000] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:07.000] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:09.374] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[02:17:09.708] Server  LOG     [generate-image] result=ok 378306b image/png
+[02:17:09.733] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:09.733] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:11.013] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:17:11.118] Server  LOG     [generate-image] result=ok 106072b image/jpeg
+[02:17:11.241] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:11.241] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:21.251] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:17:21.254] Server  LOG     [generate-image] result=ok 53716b image/jpeg
+[02:17:21.587] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:21.588] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[02:17:22.991] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[02:17:23.504] Server  LOG     [generate-image] result=ok 83685b image/jpeg
+[02:17:23.686] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:30.505] Server  LOG     [generate-image] result=ok 1476520b image/png
+[02:17:30.612] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:30.613] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[02:17:38.903] Server  LOG     [generate-image] result=ok 1429636b image/png
+[02:17:39.511] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:39.512] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[02:17:47.172] Server  LOG     [generate-image] result=ok 1348275b image/png
+[02:17:47.322] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[02:17:47.322] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[02:17:57.984] Server  LOG     [generate-image] result=ok 506755b image/jpeg
+[02:18:40.868] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:18:41.056] Server  LOG     [generate-image] result=ok 162058b image/jpeg
+[02:39:27.197] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[02:39:27.197] Browser LOG     [Speech] Voices loaded: 191
+[02:39:27.197] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[02:40:57.633] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[02:40:57.634] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/test-images. Falling back to browser navigation. {}
+[02:40:57.634] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/test-images. Falling back to browser navigation. {}
+[02:40:58.371] Browser LOG     [Speech] Voices loaded: 223
+[02:40:58.371] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[02:41:04.134] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:04.134] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:04.136] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:04.136] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:05.956] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[02:41:05.971] Server  LOG     [generate-image] result=ok 65471b image/png
+[02:41:05.996] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:05.996] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:08.266] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[02:41:08.762] Server  LOG     [generate-image] result=ok 324767b image/png
+[02:41:08.935] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:08.935] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:10.275] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:41:10.300] Server  LOG     [generate-image] result=ok 87919b image/jpeg
+[02:41:10.404] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:10.404] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:19.639] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:41:19.675] Server  LOG     [generate-image] result=ok 75348b image/jpeg
+[02:41:19.866] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:19.867] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a single orange, realistic, high quality product photo, centered on a pure white..."
+[02:41:21.377] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[02:41:21.777] Server  LOG     [generate-image] result=ok 103119b image/jpeg
+[02:41:21.970] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:28.038] Server  LOG     [generate-image] result=ok 1207750b image/png
+[02:41:28.263] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:28.263] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[02:41:36.815] Server  LOG     [generate-image] result=ok 1149560b image/png
+[02:41:36.872] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:36.873] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[02:41:45.999] Server  LOG     [generate-image] result=ok 1166348b image/png
+[02:41:46.107] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a single orange, realistic, high quality product photo, centered on a pure white..." neg="cartoon, emoji, vector, flat, illustration, drawing, sketch,..."
+[02:41:46.107] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[02:41:56.930] Server  LOG     [generate-image] result=ok 502288b image/jpeg
+[02:42:08.175] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[02:42:08.178] Server  LOG     [generate-image] result=ok 97549b image/jpeg
+[03:01:21.517] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[03:01:21.518] Browser LOG     [Speech] Voices loaded: 191
+[03:01:21.518] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[03:01:22.149] Browser LOG     [Speech] Voices loaded: 223
+[03:01:22.149] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[03:25:52.417] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:25:52.417] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:25:52.419] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:25:52.419] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:25:54.087] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:25:54.100] Server  LOG     [generate-image] result=ok 46015b image/png
+[03:25:54.193] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:25:54.194] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:25:56.102] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:25:56.199] Server  LOG     [generate-image] result=ok 312539b image/png
+[03:25:56.363] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:25:56.363] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:25:57.947] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:25:57.997] Server  LOG     [generate-image] result=ok 119334b image/jpeg
+[03:25:58.041] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:25:58.041] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:26:07.594] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:26:07.779] Server  LOG     [generate-image] result=ok 75234b image/jpeg
+[03:26:07.916] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:26:07.916] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[03:26:09.753] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[03:26:10.124] Server  LOG     [generate-image] result=ok 104286b image/jpeg
+[03:26:10.220] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:26:16.259] Server  LOG     [generate-image] result=ok 1324705b image/png
+[03:26:16.320] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:26:16.320] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:26:53.417] Server  LOG     [generate-image] result=ok 1413603b image/png
+[03:26:59.886] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:26:59.886] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[03:27:01.260] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:27:01.309] Server  LOG     [generate-image] result=ok 167196b image/jpeg
+[03:27:01.349] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:27:01.350] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:27:09.819] Server  LOG     [generate-image] result=ok 1518592b image/png
+[03:27:11.796] Server  LOG     [generate-image] result=ok 624809b image/jpeg
+[03:31:40.830] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[03:31:40.830] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/parent. Falling back to browser navigation. {}
+[03:31:41.080] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/parent. Falling back to browser navigation. {}
+[03:31:41.080] Browser ERROR   Failed to fetch RSC payload for http://localhost:3000/parent. Falling back to browser navigation. {}
+[03:31:41.888] Browser LOG     [Speech] Voices loaded: 223
+[03:31:41.888] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[03:33:26.638] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:26.639] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:26.639] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:26.639] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:28.285] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:33:28.291] Server  LOG     [generate-image] result=ok 28842b image/png
+[03:33:28.431] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:28.431] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:30.501] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:33:30.779] Server  LOG     [generate-image] result=ok 304682b image/png
+[03:33:30.952] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:30.952] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:32.068] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:33:32.075] Server  LOG     [generate-image] result=ok 63888b image/jpeg
+[03:33:32.211] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:32.211] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:42.619] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:33:42.625] Server  LOG     [generate-image] result=ok 128519b image/jpeg
+[03:33:43.377] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:43.377] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:33:44.763] Server  LOG     [generate-image] CF response: status=400 content-type=application/json
+[03:33:44.764] Server  ERROR   [generate-image] Cloudflare error 400: {"errors":[{"message":"AiError: AiError: Input prompt contains NSFW content. (691549d8-bc01-42c0-96bc-a9374dde43fa)","code":3030}],"success":false,"result":{},"messages":[]}
+[03:33:44.764] Server  LOG     [generate-image] result=null
+[03:33:44.764] Server  WARN    [generate-image] cloudflare returned no image, falling back to emoji
+[03:33:46.005] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:51.675] Server  LOG     [generate-image] result=ok 1331143b image/png
+[03:33:51.742] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:33:51.742] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:34:01.743] Server  LOG     [generate-image] result=ok 1472482b image/png
+[03:34:30.642] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:34:30.690] Server  LOG     [generate-image] result=ok 133865b image/jpeg
+[03:39:04.242] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:39:04.243] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:39:04.866] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:39:04.867] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[03:39:14.202] Server  LOG     [generate-image] result=ok 1397803b image/png
+[03:39:21.255] Server  LOG     [generate-image] result=ok 624762b image/jpeg
+[03:43:30.221] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single duck for a children's vocabul..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:43:30.221] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single duck for a children's vocabul..."
+[03:43:31.791] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[03:43:32.148] Server  LOG     [generate-image] result=ok 115666b image/jpeg
+[03:51:07.617] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:07.617] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:51:07.620] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:07.620] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:51:08.841] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:51:08.860] Server  LOG     [generate-image] result=ok 24150b image/png
+[03:51:08.934] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:08.934] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:51:12.484] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[03:51:12.853] Server  LOG     [generate-image] result=ok 250144b image/png
+[03:51:12.985] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:12.986] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:51:21.819] Server  LOG     [generate-image] result=ok 1364946b image/png
+[03:51:22.697] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:22.698] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[03:51:31.423] Server  LOG     [generate-image] result=ok 1517673b image/png
+[03:51:31.532] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:31.532] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:51:33.063] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:51:33.110] Server  LOG     [generate-image] result=ok 109212b image/jpeg
+[03:51:33.207] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:33.207] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[03:51:49.078] Server  LOG     [generate-image] result=ok 629010b image/jpeg
+[03:51:49.224] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:54.549] Server  LOG     [generate-image] result=ok 1066608b image/png
+[03:51:54.896] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[03:51:54.896] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[03:52:03.319] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[03:52:03.401] Server  LOG     [generate-image] result=ok 144902b image/jpeg
+[03:54:09.069] Server  ERROR   [generate-image] Cloudflare fetch error: TimeoutError: The operation was aborted due to timeout
+[03:54:09.069] Server  LOG     [generate-image] result=null
+[03:54:09.069] Server  WARN    [generate-image] cloudflare returned no image, falling back to emoji
+[04:01:30.399] Server  LOG     [generate-image] model=@cf/bytedance/stable-diffusion-xl-lightning provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:30.399] Server  LOG     [generate-image] CF request: model=@cf/bytedance/stable-diffusion-xl-lightning multipart=false prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:30.402] Server  LOG     [generate-image] model=@cf/stabilityai/stable-diffusion-xl-base-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:30.402] Server  LOG     [generate-image] CF request: model=@cf/stabilityai/stable-diffusion-xl-base-1.0 multipart=false prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:32.490] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[04:01:32.496] Server  LOG     [generate-image] result=ok 31987b image/png
+[04:01:32.541] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-dev provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:32.541] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-dev multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:34.201] Server  LOG     [generate-image] CF response: status=200 content-type=image/png
+[04:01:34.290] Server  LOG     [generate-image] result=ok 186135b image/png
+[04:01:34.464] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:34.465] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:35.839] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[04:01:36.041] Server  LOG     [generate-image] result=ok 42340b image/jpeg
+[04:01:36.171] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-4b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:36.171] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-4b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:48.844] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[04:01:48.873] Server  LOG     [generate-image] result=ok 119736b image/jpeg
+[04:01:48.985] Server  LOG     [generate-image] model=@cf/leonardo/phoenix-1.0 provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:48.985] Server  LOG     [generate-image] CF request: model=@cf/leonardo/phoenix-1.0 multipart=false prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[04:01:50.993] Server  LOG     [generate-image] CF response: status=200 content-type=image/jpeg
+[04:01:51.041] Server  LOG     [generate-image] result=ok 67252b image/jpeg
+[04:01:51.083] Server  LOG     [generate-image] model=Kwai-Kolors/Kolors provider=siliconflow prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:57.132] Server  LOG     [generate-image] result=ok 1393603b image/png
+[04:01:57.195] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:01:57.196] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[04:02:06.725] Server  LOG     [generate-image] result=ok 1442171b image/png
+[04:02:06.867] Server  LOG     [generate-image] model=gemini-2.5-flash-image provider=gemini prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:02:06.867] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-2.5-flash-image
+[04:02:17.147] Server  LOG     [generate-image] result=ok 1367558b image/png
+[04:02:17.372] Server  LOG     [generate-image] model=gemini-3.1-flash-image-preview provider=gemini prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[04:02:17.373] Server  LOG     [generate-image] Using Cloudflare AI Gateway for Gemini model: gemini-3.1-flash-image-preview
+[04:02:29.244] Server  LOG     [generate-image] result=ok 580920b image/jpeg
+[04:02:39.018] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[04:02:39.324] Server  LOG     [generate-image] result=ok 119244b image/jpeg
+[04:18:41.123] Browser LOG     [API] Request [1/3]: POST /auth/login 
+[04:18:43.351] Browser LOG     [API] Response successful: /auth/login 
+[04:18:43.351] Browser LOG     [API] Token stored 
+[04:18:43.351] Browser LOG     [API] Token stored 
+[04:18:43.351] Browser LOG     [API] Request [1/3]: GET /users/me 
+[04:18:43.351] Browser LOG     [API] Response successful: /users/me 
+[04:18:43.523] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:18:43.523] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:18:43.755] Browser LOG     [API] Response successful: /children/ 
+[04:18:43.758] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:18:43.758] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[04:18:43.758] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:18:43.758] Browser LOG     [API] Response successful: /children/ 
+[04:18:43.758] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:18:43.758] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[04:18:44.238] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:18:44.238] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[04:18:44.238] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:18:44.238] Browser LOG     [API] Response successful: /children/ 
+[04:18:44.238] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:18:44.238] Browser LOG     [API] Request [1/3]: GET /parent-dashboard/sample-child-community-1/summary 
+[04:18:44.238] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[04:18:44.238] Browser LOG     [API] Request [1/3]: GET /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[04:18:44.238] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[04:18:44.238] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[04:18:44.238] Browser LOG     [API] Response successful: /vocabulary/child/sample-child-community-1/active-vocab/pending 
+[04:18:44.238] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:18:44.238] Browser LOG     [API] Response successful: /parent-dashboard/sample-child-community-1/summary 
+[04:18:47.451] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:18:47.451] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:18:47.601] Browser LOG     [API] Response successful: /children/ 
+[04:18:47.601] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
+[04:18:47.601] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:18:47.601] Browser LOG     [API] Response successful: /children/ 
+[04:18:47.601] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
+[04:18:47.601] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:18:48.291] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:18:48.291] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:18:48.291] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
+[04:18:48.291] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:18:48.291] Browser LOG     [Speech] stop() called
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
+[04:18:48.291] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:18:48.291] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
+[04:18:48.291] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
+[04:18:48.291] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
+[04:18:48.291] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
+[04:18:48.291] Browser LOG     [API] Response successful: /children/sample-child-community-1 
+[04:18:48.520] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:18:51.224] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:18:51.224] Browser LOG     [Speech] stop() called
+[04:18:51.224] Browser LOG     [API] Response successful: /children/sample-child-community-1 
+[04:18:51.224] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
+[04:18:51.224] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
+[04:18:51.224] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:18:51.224] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
+[04:18:53.180] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:18:53.180] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
+[04:18:57.034] Browser LOG     [API] Request [1/3]: POST /progress/session 
+[04:18:57.034] Browser LOG     [API] Response successful: /progress/session 
+[04:18:57.034] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:18:57.034] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:20:02.691] Browser LOG     [API] Request [1/3]: PATCH /progress/session/94f3c0a1-3402-41cc-963d-7e519ee05b8a 
+[04:20:02.691] Browser LOG     [API] Response successful: /progress/session/94f3c0a1-3402-41cc-963d-7e519ee05b8a 
+[04:23:10.418] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[04:23:10.696] Browser ERROR   unhandledRejection: {"isTrusted":true}
+[04:23:11.220] Browser LOG     [Speech] Voices loaded: 223
+[04:23:11.220] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[04:23:11.925] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[04:23:12.059] Browser LOG     [Speech] Voices loaded: 191
+[04:23:12.059] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[04:24:46.783] Browser LOG     [API] Request [1/3]: POST /progress/session 
+[04:24:47.191] Browser LOG     [API] Network error on attempt 1: Load failed
+[04:24:47.778] Browser LOG     [Speech] Voices loaded: 223
+[04:24:47.778] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[04:24:48.135] Browser LOG     [Speech] Voices loaded: 223
+[04:24:48.135] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /users/me 
+[04:24:48.232] Browser LOG     [API] Response successful: /users/me 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /children/ 
+[04:24:48.232] Browser LOG     [API] Response successful: /children/ 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /categories/?child_id=sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:24:48.232] Browser LOG     [API] Response successful: /categories/?child_id=sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Response successful: /progress/sample-child-community-1/usage-status?local_date=2026-06-07&timezone_offset_minutes=-480 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:24:48.232] Browser LOG     [API] Response successful: /bedtime-stories/list/sample-child-community-1?limit=20 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/word-of-the-day 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /adaptive/sample-child-community-1/next-activity 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:24:48.232] Browser LOG     [Speech] stop() called
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /children/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /progress/sample-child-community-1/stats 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /missions/daily/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /missions/offline/sample-child-community-1 
+[04:24:48.232] Browser LOG     [API] Request [1/3]: GET /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:24:48.232] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/next-activity 
+[04:24:48.232] Browser LOG     [API] Response successful: /adaptive/sample-child-community-1/word-of-the-day 
+[04:24:48.356] Browser LOG     [API] Request [1/3]: GET /users/me 
+[04:24:50.433] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
+[04:24:50.433] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
+[04:24:50.433] Browser LOG     [API] Response successful: /children/sample-child-community-1 
+[04:24:50.433] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:24:50.433] Browser LOG     [Speech] stop() called
+[04:24:50.433] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:24:52.575] Browser LOG     [API] Response successful: /users/me 
+[04:24:52.592] Browser LOG     [API] Response successful: /vocabulary/external/captured/sample-child-community-1?limit=30&include_mongodb=true 
+[04:24:52.592] Browser LOG     [API] Response successful: /missions/offline/sample-child-community-1 
+[04:24:52.592] Browser LOG     [API] Response successful: /missions/daily/sample-child-community-1 
+[04:24:52.592] Browser LOG     [API] Response successful: /progress/sample-child-community-1/stats 
+[04:24:52.592] Browser LOG     [API] Response successful: /children/sample-child-community-1 
+[05:15:10.346] Browser LOG     [API] Request [1/3]: POST /progress/session 
+[05:15:10.479] Browser LOG     [API] Unauthorized (401) - clearing token 
+[05:15:10.479] Browser LOG     [API] Token cleared 
+[05:15:10.479] Browser WARN    [Session] Could not start: {"detail":"Could not validate credentials","name":"APIError","status":401}
+[05:35:05.425] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:35:05.425] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[05:35:07.206] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:35:07.239] Server  LOG     [generate-image] result=ok 86392b image/jpeg
+[05:36:11.469] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:36:11.469] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single toy duck for a children's voc..."
+[05:36:12.656] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:36:12.854] Server  LOG     [generate-image] result=ok 51957b image/jpeg
+[05:36:32.780] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:36:32.780] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[05:36:34.161] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:36:34.368] Server  LOG     [generate-image] result=ok 70153b image/jpeg
+[05:37:13.663] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:37:13.663] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..."
+[05:37:15.334] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:37:15.587] Server  LOG     [generate-image] result=ok 68330b image/jpeg
+[05:37:40.466] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:37:40.466] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[05:37:42.006] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:37:42.053] Server  LOG     [generate-image] result=ok 118606b image/jpeg
+[05:38:25.044] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:38:25.044] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..."
+[05:38:26.420] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:38:26.763] Server  LOG     [generate-image] result=ok 142157b image/jpeg
+[05:39:28.401] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:39:28.401] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..."
+[05:39:29.745] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:39:30.020] Server  LOG     [generate-image] result=ok 123157b image/jpeg
+[05:39:59.418] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:39:59.418] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..."
+[05:40:00.723] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:40:00.766] Server  LOG     [generate-image] result=ok 91866b image/jpeg
+[05:40:29.174] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:40:29.175] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[05:40:30.574] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:40:30.610] Server  LOG     [generate-image] result=ok 117471b image/jpeg
+[05:41:56.419] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:41:56.419] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[05:41:58.095] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:41:58.165] Server  LOG     [generate-image] result=ok 113261b image/jpeg
+[05:42:25.589] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:42:25.589] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..."
+[05:42:26.930] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:42:26.976] Server  LOG     [generate-image] result=ok 111369b image/jpeg
+[05:42:55.644] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:42:55.644] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..."
+[05:42:57.420] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:42:57.463] Server  LOG     [generate-image] result=ok 128504b image/jpeg
+[05:43:18.636] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:43:18.636] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[05:43:20.561] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:43:20.696] Server  LOG     [generate-image] result=ok 61763b image/jpeg
+[05:43:39.922] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:43:39.922] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[05:43:41.056] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:43:41.063] Server  LOG     [generate-image] result=ok 46696b image/jpeg
+[05:46:50.809] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:46:50.810] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[05:46:51.862] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:46:51.872] Server  LOG     [generate-image] result=ok 33272b image/jpeg
+[05:47:10.975] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:47:10.976] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[05:47:12.446] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:47:12.492] Server  LOG     [generate-image] result=ok 130475b image/jpeg
+[05:47:38.432] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:47:38.432] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..."
+[05:47:39.669] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:47:40.016] Server  LOG     [generate-image] result=ok 104532b image/jpeg
+[05:47:58.599] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:47:58.599] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..."
+[05:47:59.872] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:47:59.925] Server  LOG     [generate-image] result=ok 88688b image/jpeg
+[05:48:20.098] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:48:20.099] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[05:48:21.482] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:48:21.530] Server  LOG     [generate-image] result=ok 99830b image/jpeg
+[05:50:34.852] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:50:34.852] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[05:50:36.188] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:50:36.249] Server  LOG     [generate-image] result=ok 101702b image/jpeg
+[05:50:53.308] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:50:53.308] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single quilt for a children's vocabu..."
+[05:50:54.631] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:50:54.678] Server  LOG     [generate-image] result=ok 132167b image/jpeg
+[05:51:12.484] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:51:12.484] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single pillow for a children's vocab..."
+[05:51:13.779] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:51:14.097] Server  LOG     [generate-image] result=ok 66562b image/jpeg
+[05:51:40.362] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:51:40.362] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[05:51:41.481] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:51:41.525] Server  LOG     [generate-image] result=ok 114598b image/jpeg
+[05:52:21.936] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[05:52:21.936] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single spoon for a children's vocabu..."
+[05:52:23.203] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[05:52:23.546] Server  LOG     [generate-image] result=ok 101987b image/jpeg
+[06:06:26.367] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single shower for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[06:06:26.367] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single shower for a children's vocab..."
+[06:06:27.852] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[06:06:27.915] Server  LOG     [generate-image] result=ok 91589b image/jpeg
+[06:15:39.896] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[06:15:39.896] Browser LOG     [Speech] Voices loaded: 191
+[06:15:39.896] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[52:25:21.499] Browser LOG     [Speech] Voices loaded: 223
+[52:25:21.499] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[52:27:13.627] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:27:13.627] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:27:16.923] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:27:17.163] Server  LOG     [generate-image] result=ok 129107b image/jpeg
+[52:27:32.971] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:27:32.971] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:27:34.224] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:27:34.301] Server  LOG     [generate-image] result=ok 120534b image/jpeg
+[52:27:55.401] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:27:55.401] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:27:57.325] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:27:57.364] Server  LOG     [generate-image] result=ok 116171b image/jpeg
+[52:28:11.466] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:28:11.466] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:28:13.198] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:28:13.369] Server  LOG     [generate-image] result=ok 119935b image/jpeg
+[52:28:31.668] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:28:31.668] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:28:32.963] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:28:33.170] Server  LOG     [generate-image] result=ok 61470b image/jpeg
+[52:28:41.580] Server  LOG     [generate-image] model=@cf/black-forest-labs/flux-2-klein-9b provider=cloudflare prompt="a high-quality watercolor illustration of a single orange for a children's vocab..." neg="photo, photograph, realistic, 3D render, scary, violent, tex..."
+[52:28:41.580] Server  LOG     [generate-image] CF request: model=@cf/black-forest-labs/flux-2-klein-9b multipart=true prompt="a high-quality watercolor illustration of a single orange for a children's vocab..."
+[52:28:42.997] Server  LOG     [generate-image] CF response: status=200 content-type=application/json
+[52:28:43.069] Server  LOG     [generate-image] result=ok 68369b image/jpeg
+[53:06:05.906] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[53:06:06.052] Browser LOG     [Speech] Voices loaded: 191
+[53:06:06.053] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[76:58:32.720] Browser LOG     [Speech] Voices loaded: 223
+[76:58:32.720] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[76:58:34.713] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[76:58:34.713] Browser LOG     [Speech] Voices loaded: 191
+[76:58:34.713] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[76:58:42.354] Browser LOG     [Speech] Voices loaded: 223
+[76:58:42.354] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[76:58:43.077] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[76:58:43.077] Browser LOG     [Speech] Voices loaded: 191
+[76:58:43.077] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[77:00:56.977] Browser LOG     [Speech] Voices loaded: 223
+[77:00:56.977] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[77:00:57.255] Browser LOG     [Speech] Voices loaded: 223
+[77:00:57.255] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[77:00:57.528] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[77:00:57.528] Browser LOG     [Speech] Voices loaded: 191
+[77:00:57.528] Browser LOG     [Speech] Chinese voices available: ["Eddy (Chinese (China mainland)) (zh-CN)","Eddy (Chinese (Taiwan)) (zh-TW)","Flo (Chinese (China mainland)) (zh-CN)","Flo (Chinese (Taiwan)) (zh-TW)","Grandma (Chinese (China mainland)) (zh-CN)","Grandma (Chinese (Taiwan)) (zh-TW)","Grandpa (Chinese (China mainland)) (zh-CN)","Grandpa (Chinese (Taiwan)) (zh-TW)","Li-Mu (zh-CN)","Meijia (zh-TW)","Reed (Chinese (China mainland)) (zh-CN)","Reed (Chinese (Taiwan)) (zh-TW)","Rocko (Chinese (China mainland)) (zh-CN)","Rocko (Chinese (Taiwan)) (zh-TW)","Sandy (Chinese (China mainland)) (zh-CN)","Sandy (Chinese (Taiwan)) (zh-TW)","Shelley (Chinese (China mainland)) (zh-CN)","Shelley (Chinese (Taiwan)) (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Yu-shu (zh-CN)"]
+[77:27:08.166] Browser LOG     [Speech] Voices loaded: 223
+[77:27:08.166] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[77:27:17.068] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[77:27:17.068] Server  WARN     ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[77:27:19.248] Browser LOG     [Speech] Voices loaded: 223
+[77:27:19.248] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[77:27:19.462] Browser LOG     [Speech] Voices loaded: 223
+[77:27:19.462] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[77:44:53.931] Browser LOG     [Speech] Voices loaded: 223
+[77:44:53.931] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[77:45:01.567] Browser LOG     [Speech] Voices loaded: 223
+[77:45:01.567] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[78:06:19.952] Browser LOG     [Speech] Voices loaded: 223
+[78:06:19.952] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[102:11:31.814] Browser LOG     [Speech] Voices loaded: 223
+[102:11:31.814] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[102:11:40.668] Browser LOG     [Speech] Voices loaded: 223
+[102:11:40.668] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[102:17:52.778] Browser LOG     [Speech] Voices loaded: 223
+[102:17:52.778] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[165:13:23.967] Browser LOG     [Speech] Voices loaded: 223
+[165:13:23.967] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Tingting (zh-CN)","Meijia (zh-TW)","Sinji (zh-HK)"]
+[165:16:28.612] Browser LOG     [Speech] Voices loaded: 223
+[165:16:28.613] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]
+[165:17:30.985] Browser LOG     [Speech] Voices loaded: 223
+[165:17:30.985] Browser LOG     [Speech] Chinese voices available: ["Eddy (zh-CN)","Shelley (zh-CN)","Grandma (zh-CN)","Reed (zh-CN)","Grandpa (zh-CN)","Rocko (zh-CN)","Flo (zh-CN)","Tingting (zh-CN)","Sandy (zh-CN)","Sinji (zh-HK)","Shelley (zh-TW)","Grandma (zh-TW)","Grandpa (zh-TW)","Sandy (zh-TW)","Flo (zh-TW)","Eddy (zh-TW)","Reed (zh-TW)","Meijia (zh-TW)","Rocko (zh-TW)","Sinji (zh-HK)","Tingting (zh-CN)","Meijia (zh-TW)"]

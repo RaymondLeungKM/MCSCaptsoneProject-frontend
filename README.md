@@ -195,6 +195,26 @@ Activity recommendations adapt to detected learning style.
 
 ## 🚀 Getting Started
 
+### Start Commands
+
+Frontend:
+
+```bash
+cd /Users/karen/MCSCaptsoneProject-frontend
+npm install
+npm run dev
+```
+
+Backend (run in a second terminal):
+
+```bash
+cd /Users/karen/MCSCaptsoneProject-backend
+source venv/bin/activate
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Open: http://localhost:3000
+
 ### Installation
 
 ```bash

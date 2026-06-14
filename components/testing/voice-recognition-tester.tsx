@@ -109,6 +109,7 @@ const DEFAULT_LANGUAGE_PRESET = LANGUAGE_PRESETS[0];
 const DRILL_HISTORY_STORAGE_KEY = "voice-recognition-drill-history-v1";
 const DRILL_SESSION_WORD_COUNT = 10;
 const MAX_DRILL_HISTORY = 12;
+const RECOGNITION_TEST_TIMEOUT_MS = 45_000;
 
 type DrillWord = {
   id: string;
@@ -1103,10 +1104,13 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
       form.append("model", effectiveModel);
       form.append("language", selectedLanguagePreset.recognitionLanguage);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), RECOGNITION_TEST_TIMEOUT_MS);
       const response = await fetch(`${API_BASE_URL}/audio/test-pronunciation`, {
         method: "POST",
         body: form,
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
       const data = (await response.json().catch(() => ({
         detail: `Recognition test failed (${response.status})`,
@@ -1125,6 +1129,12 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
         `Tested ${data.provider}/${data.model} in ${data.elapsed_ms} ms using ${selectedLanguagePreset.label}.`,
       );
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setRecognitionError(
+          "Recognition test timed out. Please try again, or switch to another model/provider.",
+        );
+        return;
+      }
       setRecognitionError(
         error instanceof Error ? error.message : "Recognition test failed.",
       );

@@ -394,6 +394,11 @@ const SIMPLE_JSON_MODELS = new Set([
   "@cf/lykon/dreamshaper-8-lcm",
 ]);
 
+/* Models that accept prompt + steps but reject width/height/guidance */
+const PROMPT_STEPS_ONLY_MODELS = new Set([
+  "@cf/black-forest-labs/flux-1-schnell",
+]);
+
 /* Models that break with long negative prompts — skip negative_prompt for these */
 const SKIP_NEG_PROMPT_MODELS = new Set([
   "@cf/lykon/dreamshaper-8-lcm",
@@ -448,6 +453,20 @@ async function generateWithCloudflare(
         },
         body: JSON.stringify({
           prompt: imagePrompt.prompt,
+        }),
+        signal: withTimeoutSignal(60_000),
+      });
+    } else if (PROMPT_STEPS_ONLY_MODELS.has(model)) {
+      // FLUX.1 Schnell accepts a compact prompt/steps payload and rejects extra fields.
+      res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${CF_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: imagePrompt.prompt,
+          steps: numSteps,
         }),
         signal: withTimeoutSignal(60_000),
       });

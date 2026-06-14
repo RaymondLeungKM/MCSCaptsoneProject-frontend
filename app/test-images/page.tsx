@@ -65,20 +65,7 @@ const MODELS: Record<
     guidance: 7.5,
     desc: "High quality, slower",
   },
-  dreamshaper: {
-    id: "@cf/lykon/dreamshaper-8-lcm",
-    name: "DreamShaper 8",
-    steps: 8,
-    guidance: 7.5,
-    desc: "Creative / artistic",
-  },
-  flux: {
-    id: "@cf/black-forest-labs/flux-1-schnell",
-    name: "FLUX.1 Schnell",
-    steps: 4,
-    guidance: 7.5,
-    desc: "Newest, often best",
-  },
+  
   "flux-2-dev": {
     id: "@cf/black-forest-labs/flux-2-dev",
     name: "FLUX.2 Dev",
@@ -100,13 +87,7 @@ const MODELS: Record<
     guidance: 7.5,
     desc: "Ultra-fast 4B distilled",
   },
-  "lucid-origin": {
-    id: "@cf/leonardo/lucid-origin",
-    name: "Leonardo Lucid Origin",
-    steps: 8,
-    guidance: 7.5,
-    desc: "Prompt-responsive, versatile",
-  },
+  
   "phoenix": {
     id: "@cf/leonardo/phoenix-1.0",
     name: "Leonardo Phoenix 1.0",

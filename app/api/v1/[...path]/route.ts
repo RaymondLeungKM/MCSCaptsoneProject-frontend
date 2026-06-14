@@ -12,6 +12,7 @@ export const revalidate = 0;
 
 const BACKEND_URL =
   process.env.BACKEND_URL || "http://localhost:8000";
+const PROXY_TIMEOUT_MS = 45_000;
 
 // Headers that should not be forwarded upstream
 const SKIP_REQUEST_HEADERS = new Set([
@@ -61,6 +62,7 @@ async function proxy(
       method: request.method,
       headers: forwardHeaders,
       body: bodyInit,
+      signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
       // Follow redirects server-side (e.g. FastAPI trailing-slash redirect)
       redirect: "follow",
     });
@@ -77,7 +79,13 @@ async function proxy(
       status: upstream.status,
       headers: responseHeaders,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return NextResponse.json(
+        { detail: "Backend request timed out while waiting for transcription." },
+        { status: 504 },
+      );
+    }
     return NextResponse.json(
       { detail: "Backend unavailable. Ensure the backend server is running on port 8000." },
       { status: 503 },
