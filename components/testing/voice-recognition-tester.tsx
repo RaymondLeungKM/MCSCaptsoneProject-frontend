@@ -395,6 +395,7 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
   const [cmpRecordingMimeType, setCmpRecordingMimeType] = useState("audio/webm");
   const [cmpTarget, setCmpTarget] = useState("大象");
   const [cmpHint, setCmpHint] = useState("daai6 zoeng6");
+  const [cmpBrowserLang, setCmpBrowserLang] = useState("zh-HK");
   const [cmpRunning, setCmpRunning] = useState(false);
   const [cmpBrowserResult, setCmpBrowserResult] = useState<{ heard: string; latencyMs: number } | null>(null);
   const [cmpWhisperResult, setCmpWhisperResult] = useState<PronunciationTestResponse | null>(null);
@@ -1243,7 +1244,7 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
       }
       const recognition = new SpeechRecognitionCtor();
       cmpRecognitionRef.current = recognition;
-      recognition.lang = "zh-HK";
+      recognition.lang = cmpBrowserLang;
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
@@ -1733,7 +1734,8 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="rounded-lg border bg-slate-50 p-4 text-sm text-slate-600">
-            Record once, then run both <span className="font-medium text-slate-900">Safari / browser Web Speech API</span> and <span className="font-medium text-slate-900">Cloudflare Whisper Large v3 Turbo</span> at the same time. The browser listens live from the mic while Whisper processes the saved recording.
+            Record once, then run both the <span className="font-medium text-slate-900">browser Web Speech API</span> (works in Safari, Chrome, Edge, and Android Chrome) and <span className="font-medium text-slate-900">Cloudflare Whisper Large v3 Turbo</span> at the same time. The browser listens live from the mic while Whisper processes the saved recording.
+            <span className="mt-1 block text-slate-500">Chrome / Edge / Android Chrome use <code className="rounded bg-slate-200 px-1">webkitSpeechRecognition</code>. Safari uses <code className="rounded bg-slate-200 px-1">SpeechRecognition</code>. Both accept the same BCP-47 language tags below.</span>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -1756,6 +1758,25 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
                 placeholder="daai6 zoeng6"
                 disabled={cmpRunning}
               />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cmp-browser-lang">Browser recognition language</Label>
+              <select
+                id="cmp-browser-lang"
+                value={cmpBrowserLang}
+                onChange={(e) => setCmpBrowserLang(e.target.value)}
+                disabled={cmpRunning}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+              >
+                <option value="zh-HK">zh-HK — Cantonese (Hong Kong) · recommended for Chrome/Edge/Android</option>
+                <option value="yue-Hant-HK">yue-Hant-HK — Cantonese (Safari extended tag)</option>
+                <option value="zh-TW">zh-TW — Traditional Chinese (Taiwan) · fallback</option>
+                <option value="zh-CN">zh-CN — Simplified Chinese (Mandarin)</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Chrome / Edge / Android Chrome all recognise <code className="rounded bg-slate-100 px-1">zh-HK</code> as Cantonese.
+                Safari may also accept <code className="rounded bg-slate-100 px-1">yue-Hant-HK</code>.
+              </p>
             </div>
           </div>
 
@@ -1822,10 +1843,16 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
                   <p className="text-sm font-semibold">
                     {cmpBrowserStatus === "listening" ? (
                       <><Loader2 className="inline w-3 h-3 mr-1 animate-spin" />Browser listening…</>
-                    ) : "Safari / Web Speech API"}
+                    ) : (
+                      typeof window !== "undefined" && (window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition
+                        ? "Firefox / Standard Web Speech API"
+                        : typeof window !== "undefined" && (window as any).webkitSpeechRecognition
+                          ? "Chrome / Edge / Safari (webkitSpeechRecognition)"
+                          : "Browser Web Speech API"
+                    )}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">lang: zh-HK (Cantonese)</p>
+                <p className="text-xs text-muted-foreground">lang: {cmpBrowserLang}</p>
                 {cmpBrowserStatus === "done" && cmpBrowserResult && (
                   <>
                     <p className="text-2xl font-bold mt-1">{cmpBrowserResult.heard || "(empty)"}</p>
