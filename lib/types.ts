@@ -293,6 +293,13 @@ export interface ParentalControl {
   bedtime_story_reminder: boolean;
   weekly_report_enabled: boolean;
   achievement_notifications: boolean;
+  // Anki-modified SM-2 settings
+  sr_easy_bonus?: number;
+  sr_interval_modifier?: number;
+  sr_max_interval_days?: number;
+  sr_graduating_interval?: number;
+  sr_easy_interval?: number;
+  sr_lapse_interval_pct?: number;
 }
 
 export interface LearningControlStatus {

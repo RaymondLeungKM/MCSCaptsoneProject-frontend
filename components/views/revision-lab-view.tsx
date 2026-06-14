@@ -383,27 +383,33 @@ export function RevisionLabView({
         <div className="pointer-events-none absolute right-4 top-4 text-lg opacity-70">
           🧠
         </div>
-        <div className="space-y-1">
-          <p className="text-xs font-black tracking-wide text-indigo-500">
-            題目
-          </p>
-          <p className="text-lg font-black text-slate-700 leading-relaxed">
-            {promptText}
-          </p>
-          {speechText && (
-            <div className="pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full border-sky-200 bg-white font-black text-sky-700 hover:bg-sky-50 disabled:opacity-60"
-                onClick={handlePlayWordAudio}
-                disabled={!isAvailable()}
-              >
-                <Volume2 className="mr-2 h-4 w-4" />
-                {isAvailable() ? "播放發音" : "語音不可用"}
-              </Button>
+        <div className="space-y-3">
+          {currentCard.image_url && (
+            <div className="flex justify-center">
+              <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-3xl border-2 border-white/70 bg-slate-50 shadow-md">
+                {/^(https?:\/\/|\/)/.test(currentCard.image_url) ? (
+                  <img
+                    src={currentCard.image_url}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-6xl" aria-hidden="true">
+                    {currentCard.image_url}
+                  </span>
+                )}
+              </div>
             </div>
           )}
+          <div>
+            <p className="text-xs font-black tracking-wide text-indigo-500">
+              題目
+            </p>
+            <p className="text-lg font-black text-slate-700 leading-relaxed">
+              {promptText}
+            </p>
+          </div>
           {attemptCount > 0 && !isResolved && (
             <p className="text-sm font-bold text-rose-500">
               再試一次，你一定得！💪
@@ -452,14 +458,45 @@ export function RevisionLabView({
                 : `正確答案：${challenge.correctOption}`}
             </p>
 
-            <div className="text-sm text-slate-600 space-y-1">
-              <p className="font-black text-slate-700 text-base">
-                {getCardLabel(currentCard)}
-              </p>
-              {currentCard.jyutping && <p>{currentCard.jyutping}</p>}
-              {currentCard.definition_cantonese && (
-                <p>{currentCard.definition_cantonese}</p>
+            <div className="flex items-start gap-3">
+              {currentCard.image_url && (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+                  {/^(https?:\/\/|\/)/.test(currentCard.image_url) ? (
+                    <img
+                      src={currentCard.image_url}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-3xl" aria-hidden="true">
+                      {currentCard.image_url}
+                    </span>
+                  )}
+                </div>
               )}
+              <div className="min-w-0 flex-1 space-y-1 text-sm text-slate-600">
+                <p className="font-black text-slate-700 text-base">
+                  {getCardLabel(currentCard)}
+                </p>
+                {currentCard.jyutping && <p>{currentCard.jyutping}</p>}
+                {currentCard.definition_cantonese && (
+                  <p>{currentCard.definition_cantonese}</p>
+                )}
+                {speechText && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="mt-1 rounded-full border-sky-200 bg-white font-bold text-sky-700 hover:bg-sky-50 disabled:opacity-60"
+                    onClick={handlePlayWordAudio}
+                    disabled={!isAvailable()}
+                  >
+                    <Volume2 className="mr-1.5 h-3.5 w-3.5" />
+                    {isAvailable() ? "播放發音" : "語音不可用"}
+                  </Button>
+                )}
+              </div>
             </div>
 
             <Button

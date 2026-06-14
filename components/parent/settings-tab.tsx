@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Brain,
   User,
@@ -57,7 +58,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { ParentalControlsSettings } from "./parental-controls";
 import { cn } from "@/lib/utils";
 import {
   clearStoredParentPin,
@@ -282,6 +282,15 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   );
   const [reminderWindow, setReminderWindow] = useState("18:00");
 
+  // Anki SM-2 settings
+  const [srEasyBonus, setSrEasyBonus] = useState(1.3);
+  const [srIntervalModifier, setSrIntervalModifier] = useState(1.0);
+  const [srMaxIntervalDays, setSrMaxIntervalDays] = useState(36500);
+  const [srGraduatingInterval, setSrGraduatingInterval] = useState(1);
+  const [srEasyInterval, setSrEasyInterval] = useState(4);
+  const [srLapseIntervalPct, setSrLapseIntervalPct] = useState(0.0);
+  const [srSaving, setSrSaving] = useState(false);
+
   const handleCommunitySharingChange = async (enabled: boolean) => {
     setCommunitySharing(enabled);
     if (!isMockData) {
@@ -409,6 +418,14 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
           queue.total_due ?? queue.cards.filter((card) => !card.is_new).length,
         );
         setReminderWindow(controls.daily_reminder_time || "18:00");
+
+        // Load Anki SR settings
+        setSrEasyBonus(controls.sr_easy_bonus ?? 1.3);
+        setSrIntervalModifier(controls.sr_interval_modifier ?? 1.0);
+        setSrMaxIntervalDays(controls.sr_max_interval_days ?? 36500);
+        setSrGraduatingInterval(controls.sr_graduating_interval ?? 1);
+        setSrEasyInterval(controls.sr_easy_interval ?? 4);
+        setSrLapseIntervalPct(controls.sr_lapse_interval_pct ?? 0.0);
       } catch {
         if (!cancelled) {
           setDueCards(0);
@@ -447,6 +464,23 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       });
     } finally {
       setCoachSaving(false);
+    }
+  };
+
+  const handleSaveAnkiSettings = async () => {
+    if (!getAuthToken()) return;
+    setSrSaving(true);
+    try {
+      await updateParentalControls(profile.id, {
+        sr_easy_bonus: srEasyBonus,
+        sr_interval_modifier: srIntervalModifier,
+        sr_max_interval_days: srMaxIntervalDays,
+        sr_graduating_interval: srGraduatingInterval,
+        sr_easy_interval: srEasyInterval,
+        sr_lapse_interval_pct: srLapseIntervalPct,
+      });
+    } finally {
+      setSrSaving(false);
     }
   };
 
@@ -1150,7 +1184,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
             社區詞彙分享
           </CardTitle>
           <CardDescription className="text-slate-400 text-xs pl-12">
-            Community Vocabulary Sharing
+            與社區分享小朋友拍攝的詞彙圖片
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1173,7 +1207,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
             <SlidersHorizontal className="h-5 w-5 text-indigo-500" />
-            複習教練面板
+            複習設定
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -1190,7 +1224,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
               <p className="text-sm font-black text-slate-700">偏好調節</p>
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Revision Questions
+                  每次複習題數
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[1, 2, 3, 4, 5].map((count) => (
@@ -1212,7 +1246,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
 
               <div className="space-y-2">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Reminder Window
+                  複習提醒時間
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <input
@@ -1224,14 +1258,98 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={() => void handleSaveCoachPreferences()}
-                disabled={coachSaving || !getAuthToken()}
-                className="rounded-full"
-              >
-                {coachSaving ? "儲存中..." : "儲存複習偏好"}
-              </Button>
+              <div className="border-t border-slate-100 pt-4 space-y-2">
+                <p className="text-sm font-black text-slate-700">複習頻率</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      數值越小，複習越頻密；越大，間隔越長
+                    </p>
+                  </div>
+                  <span className="font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg text-sm">
+                    {srIntervalModifier.toFixed(1)}×
+                  </span>
+                </div>
+                <Slider
+                  value={[srIntervalModifier]}
+                  onValueChange={([v]) =>
+                    setSrIntervalModifier(Math.round(v * 10) / 10)
+                  }
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-xs text-slate-400 font-medium">
+                  <span>0.5 (頻密)</span>
+                  <span>2.0 (輕鬆)</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 space-y-2">
+                <p className="text-sm font-black text-slate-700">
+                  首次複習間隔
+                </p>
+                <p className="text-xs text-slate-400">
+                  新詞答對後隔幾天再出現（天）
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full h-8 w-8 p-0 font-black"
+                    onClick={() =>
+                      setSrGraduatingInterval((v) => Math.max(1, v - 1))
+                    }
+                  >
+                    −
+                  </Button>
+                  <span className="min-w-8 text-center font-black text-slate-700">
+                    {srGraduatingInterval}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full h-8 w-8 p-0 font-black"
+                    onClick={() =>
+                      setSrGraduatingInterval((v) => Math.min(14, v + 1))
+                    }
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-sm font-black text-slate-700 mb-2">
+                  最長複習間隔
+                </p>
+                <p className="text-xs text-slate-400 mb-3">
+                  熟悉的單詞最多隔多久才再出現
+                </p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {([7, 14, 30, 90] as const).map((d) => (
+                    <Button
+                      key={d}
+                      type="button"
+                      size="sm"
+                      variant={srMaxIntervalDays === d ? "default" : "outline"}
+                      className="rounded-full text-xs px-2 h-7"
+                      onClick={() => setSrMaxIntervalDays(d)}
+                    >
+                      {d === 7
+                        ? "1週"
+                        : d === 14
+                          ? "2週"
+                          : d === 30
+                            ? "1個月"
+                            : "3個月"}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3 rounded-3xl bg-linear-to-br from-amber-50 to-white p-4 ring-1 ring-amber-100">
@@ -1253,58 +1371,82 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
         </CardContent>
       </Card>
 
-      <div className="sticky bottom-4 z-10 pt-4">
+      <div className="flex justify-center pt-2">
         <Button
-          onClick={handleSave}
-          disabled={saving || settingsLoading}
-          className="w-full h-14 text-lg font-bold gap-2 rounded-full shadow-xl shadow-blue-200 bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-          size="lg"
+          onClick={async () => {
+            await handleSave();
+            void handleSaveCoachPreferences();
+            void handleSaveAnkiSettings();
+          }}
+          disabled={
+            saving ||
+            settingsLoading ||
+            srSaving ||
+            coachSaving ||
+            !getAuthToken()
+          }
+          className="px-10 py-6 bg-linear-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-2xl shadow-lg font-bold text-lg transform hover:scale-105 transition-all duration-200"
         >
-          {saving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+          {saving || srSaving || coachSaving ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              儲存中...
+            </>
           ) : (
-            <Save className="w-5 h-5" />
+            <>
+              <Save className="w-5 h-5 mr-2" />
+              儲存所有設定
+            </>
           )}
-          {saving ? "儲存中..." : "儲存所有設定"}
         </Button>
       </div>
     </div>
   );
 }
 
+interface MiniMetricProps {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  delta?: string;
+  trend?: "up" | "down";
+}
+
 function MiniMetric({
   icon,
   label,
   value,
-  className,
-  labelClassName,
-  valueClassName,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  className?: string;
-  labelClassName?: string;
-  valueClassName?: string;
-}) {
+  delta,
+  trend = "up",
+}: MiniMetricProps) {
   return (
-    <div className={cn("rounded-3xl bg-slate-50 p-4", className)}>
-      <div className="mb-3 inline-flex rounded-2xl bg-white p-2 shadow-sm">
-        {icon}
+    <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-indigo-50">
+          {icon}
+        </span>
+        {delta ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold",
+              trend === "up"
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-rose-50 text-rose-600",
+            )}
+          >
+            {trend === "up" ? (
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDownRight className="h-3.5 w-3.5" />
+            )}
+            {delta}
+          </span>
+        ) : null}
       </div>
-      <p
-        className={cn(
-          "text-xs font-bold uppercase tracking-[0.18em] text-slate-400",
-          labelClassName,
-        )}
-      >
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
         {label}
       </p>
-      <p
-        className={cn("mt-1 text-lg font-black text-slate-800", valueClassName)}
-      >
-        {value}
-      </p>
+      <p className="mt-1 text-xl font-black text-slate-800">{value}</p>
     </div>
   );
 }
