@@ -387,6 +387,26 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
   const [uploadedAudioFile, setUploadedAudioFile] = useState<File | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState("");
   const [recordingMimeType, setRecordingMimeType] = useState("audio/webm");
+
+  // ── Side-by-side comparison state ────────────────────────────────────────
+  const [cmpIsRecording, setCmpIsRecording] = useState(false);
+  const [cmpAudio, setCmpAudio] = useState<Blob | null>(null);
+  const [cmpAudioPreviewUrl, setCmpAudioPreviewUrl] = useState("");
+  const [cmpRecordingMimeType, setCmpRecordingMimeType] = useState("audio/webm");
+  const [cmpTarget, setCmpTarget] = useState("大象");
+  const [cmpHint, setCmpHint] = useState("daai6 zoeng6");
+  const [cmpRunning, setCmpRunning] = useState(false);
+  const [cmpBrowserResult, setCmpBrowserResult] = useState<{ heard: string; latencyMs: number } | null>(null);
+  const [cmpWhisperResult, setCmpWhisperResult] = useState<PronunciationTestResponse | null>(null);
+  const [cmpBrowserStatus, setCmpBrowserStatus] = useState<"idle" | "listening" | "done" | "error">("idle");
+  const [cmpWhisperStatus, setCmpWhisperStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [cmpBrowserError, setCmpBrowserError] = useState("");
+  const [cmpWhisperError, setCmpWhisperError] = useState("");
+  const cmpRecorderRef = useRef<MediaRecorder | null>(null);
+  const cmpStreamRef = useRef<MediaStream | null>(null);
+  const cmpChunksRef = useRef<Blob[]>([]);
+  const cmpRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
+
   const liveRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
   const drillRecognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -617,9 +637,12 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
     return () => {
       liveRecognitionRef.current?.stop();
       drillRecognitionRef.current?.stop();
+      cmpRecognitionRef.current?.stop();
       clearDrillAdvanceTimer();
       recorderRef.current?.stream.getTracks().forEach((track) => track.stop());
       streamRef.current?.getTracks().forEach((track) => track.stop());
+      cmpRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+      cmpStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -1143,6 +1166,151 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
     }
   };
 
+  // Revoke comparison preview URL on change
+  useEffect(() => {
+    if (!cmpAudio) {
+      setCmpAudioPreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(cmpAudio);
+    setCmpAudioPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [cmpAudio]);
+
+  const startCmpRecording = async () => {
+    setCmpBrowserResult(null);
+    setCmpWhisperResult(null);
+    setCmpBrowserStatus("idle");
+    setCmpWhisperStatus("idle");
+    setCmpBrowserError("");
+    setCmpWhisperError("");
+    setCmpAudio(null);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredMimeType = getPreferredRecordingMimeType();
+      const recorder = preferredMimeType
+        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+        : new MediaRecorder(stream);
+
+      setCmpRecordingMimeType(recorder.mimeType || preferredMimeType || "audio/webm");
+      cmpStreamRef.current = stream;
+      cmpRecorderRef.current = recorder;
+      cmpChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) cmpChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(cmpChunksRef.current, {
+          type: recorder.mimeType || preferredMimeType || "audio/webm",
+        });
+        setCmpAudio(blob);
+        setCmpIsRecording(false);
+        stream.getTracks().forEach((t) => t.stop());
+        cmpStreamRef.current = null;
+      };
+      recorder.onerror = () => { setCmpIsRecording(false); };
+      recorder.start();
+      setCmpIsRecording(true);
+    } catch { setCmpIsRecording(false); }
+  };
+
+  const stopCmpRecording = () => {
+    if (cmpRecorderRef.current && cmpRecorderRef.current.state !== "inactive") {
+      cmpRecorderRef.current.stop();
+    }
+  };
+
+  const runComparison = async () => {
+    if (!cmpAudio) return;
+    setCmpRunning(true);
+    setCmpBrowserResult(null);
+    setCmpWhisperResult(null);
+    setCmpBrowserError("");
+    setCmpWhisperError("");
+    setCmpBrowserStatus("idle");
+    setCmpWhisperStatus("idle");
+
+    // ── Browser Web Speech API (runs live on the mic, not the recording) ────
+    const browserPromise = new Promise<void>((resolve) => {
+      const SpeechRecognitionCtor = getBrowserSpeechRecognitionCtor();
+      if (!SpeechRecognitionCtor) {
+        setCmpBrowserError("Web Speech API not supported in this browser.");
+        setCmpBrowserStatus("error");
+        resolve();
+        return;
+      }
+      const recognition = new SpeechRecognitionCtor();
+      cmpRecognitionRef.current = recognition;
+      recognition.lang = "zh-HK";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      const startMs = Date.now();
+      setCmpBrowserStatus("listening");
+      recognition.onresult = (event: any) => {
+        const heard = event?.results?.[0]?.[0]?.transcript?.trim() || "";
+        setCmpBrowserResult({ heard, latencyMs: Date.now() - startMs });
+        setCmpBrowserStatus("done");
+        resolve();
+      };
+      recognition.onerror = (event: any) => {
+        const msg = event?.error === "no-speech"
+          ? "No speech detected by browser."
+          : `Browser error: ${event?.error ?? "unknown"}`;
+        setCmpBrowserError(msg);
+        setCmpBrowserStatus("error");
+        resolve();
+      };
+      recognition.onend = () => resolve();
+      recognition.start();
+    });
+
+    // ── Cloudflare Whisper Turbo (sends the recording to the backend) ────────
+    const whisperPromise = (async () => {
+      const turboModel =
+        recognitionModels.find((m) => m.id === "@cf/openai/whisper-large-v3-turbo" && m.enabled) ??
+        recognitionModels.find((m) => m.provider === "cloudflare" && m.enabled);
+      if (!turboModel) {
+        setCmpWhisperError("Cloudflare Whisper Turbo is not enabled. Check CLOUDFLARE_AI_API_TOKEN in the backend .env.");
+        setCmpWhisperStatus("error");
+        return;
+      }
+      setCmpWhisperStatus("running");
+      try {
+        const ext = getAudioExtension(cmpAudio.type || cmpRecordingMimeType);
+        const file = new File([cmpAudio], `cmp${ext}`, { type: cmpAudio.type || cmpRecordingMimeType });
+        const form = new FormData();
+        form.append("audio", file);
+        form.append("word_cantonese", cmpTarget);
+        form.append("jyutping", cmpHint);
+        form.append("provider", turboModel.provider);
+        form.append("model", turboModel.id);
+        form.append("language", "yue");
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), RECOGNITION_TEST_TIMEOUT_MS);
+        const resp = await fetch(`${API_BASE_URL}/audio/test-pronunciation`, {
+          method: "POST", body: form, signal: controller.signal,
+        }).finally(() => clearTimeout(tid));
+        const data = await resp.json() as PronunciationTestResponse & { detail?: string };
+        if (!resp.ok) throw new Error(data.detail || `Backend error ${resp.status}`);
+        setCmpWhisperResult(data);
+        setCmpWhisperStatus("done");
+      } catch (err) {
+        setCmpWhisperError(
+          err instanceof DOMException && err.name === "AbortError"
+            ? "Whisper request timed out."
+            : err instanceof Error ? err.message : "Whisper test failed.",
+        );
+        setCmpWhisperStatus("error");
+      }
+    })();
+
+    await Promise.all([browserPromise, whisperPromise]);
+    setCmpRunning(false);
+  };
+
   return (
     <div className={cn("space-y-6", className)}>
       <Card>
@@ -1555,6 +1723,162 @@ export function VoiceRecognitionTester({ className }: VoiceRecognitionTesterProp
                 </details>
               </div>
             ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Side-by-Side Comparison</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="rounded-lg border bg-slate-50 p-4 text-sm text-slate-600">
+            Record once, then run both <span className="font-medium text-slate-900">Safari / browser Web Speech API</span> and <span className="font-medium text-slate-900">Cloudflare Whisper Large v3 Turbo</span> at the same time. The browser listens live from the mic while Whisper processes the saved recording.
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="cmp-target">Target word</Label>
+              <Input
+                id="cmp-target"
+                value={cmpTarget}
+                onChange={(e) => setCmpTarget(e.target.value)}
+                placeholder="大象"
+                disabled={cmpRunning}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cmp-hint">Pronunciation hint (jyutping)</Label>
+              <Input
+                id="cmp-hint"
+                value={cmpHint}
+                onChange={(e) => setCmpHint(e.target.value)}
+                placeholder="daai6 zoeng6"
+                disabled={cmpRunning}
+              />
+            </div>
+          </div>
+
+          {/* Recording controls */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={startCmpRecording}
+              disabled={cmpIsRecording || cmpRunning || !micSupported}
+            >
+              <Mic className="w-4 h-4 mr-2" />
+              {cmpIsRecording ? "Recording…" : "Start Recording"}
+            </Button>
+            <Button
+              onClick={stopCmpRecording}
+              disabled={!cmpIsRecording}
+              variant="secondary"
+            >
+              <Square className="w-4 h-4 mr-2" />
+              Stop Recording
+            </Button>
+          </div>
+
+          {cmpIsRecording && (
+            <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+              Recording — stop when done speaking, then click Run Comparison.
+            </div>
+          )}
+
+          {cmpAudioPreviewUrl && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Your recording</p>
+              <audio controls src={cmpAudioPreviewUrl} className="w-full" />
+            </div>
+          )}
+
+          {/* Run button */}
+          <Button
+            onClick={runComparison}
+            disabled={!cmpAudio || cmpIsRecording || cmpRunning || !browserRecognitionSupported}
+            className="w-full"
+          >
+            {cmpRunning ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Running Comparison…</>
+            ) : (
+              "Run Comparison"
+            )}
+          </Button>
+
+          {!browserRecognitionSupported && (
+            <p className="text-sm text-amber-700">Web Speech API is not available in this browser.</p>
+          )}
+
+          {/* Results side by side */}
+          {(cmpBrowserStatus !== "idle" || cmpWhisperStatus !== "idle") && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Browser column */}
+              <div className={cn(
+                "rounded-xl border p-4 space-y-2",
+                cmpBrowserStatus === "done" && "border-blue-300 bg-blue-50",
+                cmpBrowserStatus === "error" && "border-red-300 bg-red-50",
+                cmpBrowserStatus === "listening" && "border-amber-300 bg-amber-50",
+              )}>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">
+                    {cmpBrowserStatus === "listening" ? (
+                      <><Loader2 className="inline w-3 h-3 mr-1 animate-spin" />Browser listening…</>
+                    ) : "Safari / Web Speech API"}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">lang: zh-HK (Cantonese)</p>
+                {cmpBrowserStatus === "done" && cmpBrowserResult && (
+                  <>
+                    <p className="text-2xl font-bold mt-1">{cmpBrowserResult.heard || "(empty)"}</p>
+                    <p className="text-xs text-muted-foreground">{cmpBrowserResult.latencyMs} ms</p>
+                    <p className={cn(
+                      "text-sm font-medium capitalize",
+                      scoreRecognizedText(cmpBrowserResult.heard, cmpTarget) === "correct" && "text-green-700",
+                      scoreRecognizedText(cmpBrowserResult.heard, cmpTarget) === "partial" && "text-amber-700",
+                      scoreRecognizedText(cmpBrowserResult.heard, cmpTarget) === "incorrect" && "text-red-700",
+                    )}>
+                      {scoreRecognizedText(cmpBrowserResult.heard, cmpTarget)}
+                    </p>
+                  </>
+                )}
+                {cmpBrowserStatus === "error" && (
+                  <p className="text-sm text-red-700">{cmpBrowserError}</p>
+                )}
+              </div>
+
+              {/* Whisper column */}
+              <div className={cn(
+                "rounded-xl border p-4 space-y-2",
+                cmpWhisperStatus === "done" && "border-emerald-300 bg-emerald-50",
+                cmpWhisperStatus === "error" && "border-red-300 bg-red-50",
+                cmpWhisperStatus === "running" && "border-amber-300 bg-amber-50",
+              )}>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">
+                    {cmpWhisperStatus === "running" ? (
+                      <><Loader2 className="inline w-3 h-3 mr-1 animate-spin" />Whisper processing…</>
+                    ) : "Cloudflare Whisper Large v3 Turbo"}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">lang: yue (Cantonese)</p>
+                {cmpWhisperStatus === "done" && cmpWhisperResult && (
+                  <>
+                    <p className="text-2xl font-bold mt-1">{cmpWhisperResult.heard || "(empty)"}</p>
+                    <p className="text-xs text-muted-foreground">{cmpWhisperResult.elapsed_ms} ms</p>
+                    <p className={cn(
+                      "text-sm font-medium capitalize",
+                      cmpWhisperResult.result === "correct" && "text-green-700",
+                      cmpWhisperResult.result === "partial" && "text-amber-700",
+                      cmpWhisperResult.result === "incorrect" && "text-red-700",
+                    )}>
+                      {cmpWhisperResult.result ?? "transcribed"}
+                    </p>
+                  </>
+                )}
+                {cmpWhisperStatus === "error" && (
+                  <p className="text-sm text-red-700">{cmpWhisperError}</p>
+                )}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
