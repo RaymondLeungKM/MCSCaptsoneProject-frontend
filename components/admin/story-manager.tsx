@@ -520,36 +520,20 @@ export function StoryManager() {
               {selectedStoryId ? "編輯故事" : "建立新故事"}
             </DialogTitle>
             <DialogDescription className="text-sm font-medium text-slate-500">
-              這個表單直接編輯 generated_stories，適合 theme-based 與
-              vocabulary-focused 內容。
+              這個表單會直接編輯故事資料，適合管理主題故事與詞彙導向內容。
             </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 [scrollbar-gutter:stable] sm:px-8">
             <div className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="story-title">標題</Label>
-                  <Input
-                    id="story-title"
-                    value={form.title}
-                    onChange={(event) =>
-                      updateForm("title", event.target.value)
-                    }
-                    className="h-11 rounded-2xl border-slate-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="story-title-english">英文標題</Label>
-                  <Input
-                    id="story-title-english"
-                    value={form.titleEnglish}
-                    onChange={(event) =>
-                      updateForm("titleEnglish", event.target.value)
-                    }
-                    className="h-11 rounded-2xl border-slate-200"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="story-title">標題</Label>
+                <Input
+                  id="story-title"
+                  value={form.title}
+                  onChange={(event) => updateForm("title", event.target.value)}
+                  className="h-11 rounded-2xl border-slate-200"
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -687,43 +671,30 @@ export function StoryManager() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="story-content-english">英文內容</Label>
-                  <Textarea
-                    id="story-content-english"
-                    value={form.contentEnglish}
+                  <Label htmlFor="story-sort-order">排序</Label>
+                  <Input
+                    id="story-sort-order"
+                    type="number"
+                    value={form.sortOrder}
                     onChange={(event) =>
-                      updateForm("contentEnglish", event.target.value)
+                      updateForm("sortOrder", event.target.value)
                     }
-                    className="min-h-24 rounded-2xl border-slate-200"
+                    className="h-11 rounded-2xl border-slate-200"
                   />
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="story-sort-order">排序</Label>
-                    <Input
-                      id="story-sort-order"
-                      type="number"
-                      value={form.sortOrder}
-                      onChange={(event) =>
-                        updateForm("sortOrder", event.target.value)
-                      }
-                      className="h-11 rounded-2xl border-slate-200"
-                    />
+                <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div>
+                    <p className="font-bold text-slate-700">啟用故事</p>
+                    <p className="text-xs text-slate-500">
+                      停用後不會出現在前台故事列表
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <div>
-                      <p className="font-bold text-slate-700">啟用故事</p>
-                      <p className="text-xs text-slate-500">
-                        停用後不會出現在前台故事列表
-                      </p>
-                    </div>
-                    <Switch
-                      checked={form.isActive}
-                      onCheckedChange={(checked) =>
-                        updateForm("isActive", checked)
-                      }
-                    />
-                  </div>
+                  <Switch
+                    checked={form.isActive}
+                    onCheckedChange={(checked) =>
+                      updateForm("isActive", checked)
+                    }
+                  />
                 </div>
               </div>
 
