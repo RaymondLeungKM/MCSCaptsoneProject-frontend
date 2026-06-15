@@ -595,31 +595,17 @@ export function StoryManager() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="story-story-text">故事文本</Label>
-                  <Textarea
-                    id="story-story-text"
-                    value={form.storyText}
-                    onChange={(event) =>
-                      updateForm("storyText", event.target.value)
-                    }
-                    className="min-h-28 rounded-2xl border-slate-200"
-                    placeholder="可留空，將自動使用中文故事內容"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="story-ssml">SSML</Label>
-                  <Textarea
-                    id="story-ssml"
-                    value={form.storyTextSsml}
-                    onChange={(event) =>
-                      updateForm("storyTextSsml", event.target.value)
-                    }
-                    className="min-h-28 rounded-2xl border-slate-200"
-                    placeholder="可留空，將自動包成 <speak>..."
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="story-ssml">SSML</Label>
+                <Textarea
+                  id="story-ssml"
+                  value={form.storyTextSsml}
+                  onChange={(event) =>
+                    updateForm("storyTextSsml", event.target.value)
+                  }
+                  className="min-h-28 rounded-2xl border-slate-200"
+                  placeholder="可留空，將自動包成 <speak>..."
+                />
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
