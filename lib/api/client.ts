@@ -32,6 +32,11 @@ const RETRY_CONFIG = {
   retryableStatuses: [408, 429, 500, 502, 503, 504], // Timeout, Too Many Requests, Server errors
 };
 
+function isRetryableMethod(method?: string): boolean {
+  const normalized = (method || "GET").toUpperCase();
+  return normalized === "GET" || normalized === "HEAD";
+}
+
 /**
  * Get stored auth token
  */
@@ -100,6 +105,7 @@ export async function apiRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getAuthToken();
+  const allowRetry = isRetryableMethod(options.method);
   let lastError: Error | null = null;
   let delayMs = RETRY_CONFIG.initialDelayMs;
 
@@ -149,6 +155,7 @@ export async function apiRequest<T>(
 
         // Check if we should retry
         if (
+          allowRetry &&
           RETRY_CONFIG.retryableStatuses.includes(response.status) &&
           attempt < RETRY_CONFIG.maxAttempts
         ) {
@@ -195,7 +202,7 @@ export async function apiRequest<T>(
           throw error;
         }
         // Retry if attempts remaining
-        if (attempt < RETRY_CONFIG.maxAttempts) {
+        if (allowRetry && attempt < RETRY_CONFIG.maxAttempts) {
           logDebug(`Retrying... (${attempt}/${RETRY_CONFIG.maxAttempts})`);
           await sleep(delayMs);
           delayMs = Math.min(
@@ -210,7 +217,7 @@ export async function apiRequest<T>(
           "Network error: Unable to reach server. Check your connection.",
         );
         logDebug(`Network error on attempt ${attempt}:`, error.message);
-        if (attempt < RETRY_CONFIG.maxAttempts) {
+        if (allowRetry && attempt < RETRY_CONFIG.maxAttempts) {
           await sleep(delayMs);
           delayMs = Math.min(
             delayMs * RETRY_CONFIG.backoffMultiplier,
