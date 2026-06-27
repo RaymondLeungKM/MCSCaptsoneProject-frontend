@@ -345,8 +345,7 @@ export function StoryManager() {
               故事內容庫
             </CardTitle>
             <CardDescription className="mt-1">
-              管理存放於 generated_stories 的 theme-based 與 vocabulary-focused
-              故事。
+              管理員精選：主題式與字彙導向故事管理
             </CardDescription>
           </div>
           <Button

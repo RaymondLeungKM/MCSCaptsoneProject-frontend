@@ -35,6 +35,9 @@ export interface UserResponse {
   created_at: string;
   consent_given: boolean;
   consent_given_at?: string;
+  consent_camera: boolean;
+  consent_microphone: boolean;
+  consent_analytics: boolean;
 }
 
 /**

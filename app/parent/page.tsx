@@ -535,7 +535,9 @@ function ParentDashboardContent() {
                   stats={stats}
                   insights={insights}
                   weeklyDelta={weeklyDelta}
-                  onActiveVocabularyApproved={loadParentDashboardProfile}
+                  onActiveVocabularyApproved={() =>
+                    loadParentDashboardProfile({ background: true })
+                  }
                 />
               )}
             </TabsContent>

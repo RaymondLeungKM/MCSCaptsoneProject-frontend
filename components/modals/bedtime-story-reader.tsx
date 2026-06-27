@@ -392,7 +392,10 @@ export function BedtimeStoryReader({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[100vw] sm:max-w-3xl md:max-w-4xl w-full h-[100dvh] sm:h-[90dvh] max-h-[100dvh] sm:max-h-[90dvh] p-0 bg-transparent border-none shadow-none flex items-stretch justify-center overflow-hidden">
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[100vw] sm:max-w-3xl md:max-w-4xl w-full h-[100dvh] sm:h-[90dvh] max-h-[100dvh] sm:max-h-[90dvh] p-0 bg-transparent border-none shadow-none flex items-center justify-center overflow-hidden"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{story.title || "睡前故事"}</DialogTitle>
           <DialogDescription>

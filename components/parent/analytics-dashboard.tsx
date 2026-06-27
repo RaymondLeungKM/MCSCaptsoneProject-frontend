@@ -5,6 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -20,6 +27,7 @@ import {
   Target,
   Flame,
   Star,
+  Shield,
   Calendar,
   BarChart3,
   LineChart,
@@ -28,15 +36,18 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getDashboardSummary,
   getAnalyticsCharts,
+  getParentBenchmarks,
   getWordsByDate,
 } from "@/lib/api/parent-dashboard";
 import { API_BASE_URL, getAuthToken } from "@/lib/api/client";
 import { lookupEmojiOrFallback } from "@/lib/word-emoji";
+import type { ParentBenchmarks } from "@/lib/types";
 
 // --- TYPES (Locally defined to ensure standalone functionality) ---
 interface DashboardSummary {
@@ -333,13 +344,107 @@ interface AnalyticsDashboardProps {
   childId: string;
 }
 
+const BENCHMARK_RANGE_OPTIONS = [7, 28, 90] as const;
+
+const BENCHMARK_BAND_META = {
+  ahead: {
+    label: "高於同齡平均",
+    detail: "目前表現位於同齡較前位置",
+    badgeClassName:
+      "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200 shadow-sm",
+  },
+  on_track: {
+    label: "與同齡相若",
+    detail: "目前表現大致落在同齡中段",
+    badgeClassName: "bg-sky-50 text-sky-800 ring-1 ring-sky-200 shadow-sm",
+  },
+  needs_support: {
+    label: "需要更多練習",
+    detail: "目前表現比同齡平均低少少，可以先加強呢部分",
+    badgeClassName:
+      "bg-amber-50 text-amber-800 ring-1 ring-amber-200 shadow-sm",
+  },
+} as const;
+
+function getBenchmarkBandMeta(
+  band: ParentBenchmarks["pace_benchmark"] extends infer T
+    ? T extends { band: infer B }
+      ? B
+      : never
+    : never,
+) {
+  return BENCHMARK_BAND_META[band];
+}
+
+const MOCK_BENCHMARKS: ParentBenchmarks = {
+  child_id: "mock-123",
+  age_band: "5-6",
+  range_days: 28,
+  pace_benchmark: {
+    band: "ahead",
+    percentile_band: "P75-P100",
+    trend: "up",
+    child_value: 4.6,
+    cohort_value: 3.4,
+    tips: "可維持目前節奏，並逐步增加主動開口機會。",
+  },
+  engagement_benchmark: {
+    band: "on_track",
+    percentile_band: "P25-P75",
+    trend: "flat",
+    child_value: 18.2,
+    cohort_value: 16.5,
+    tips: "可把練習分成短段落，讓孩子更容易保持參與。",
+  },
+  category_benchmarks: [
+    {
+      category_id: "animals",
+      category_name: "動物",
+      band: "ahead",
+      percentile_band: "P75-P100",
+      trend: "up",
+      child_value: 84,
+      cohort_value: 68,
+      tips: "可把已掌握主題延伸到故事和角色扮演。",
+    },
+    {
+      category_id: "food",
+      category_name: "食物",
+      band: "on_track",
+      percentile_band: "P25-P75",
+      trend: "flat",
+      child_value: 61,
+      cohort_value: 58,
+      tips: "可在用餐情境加入描述味道和顏色的句子。",
+    },
+    {
+      category_id: "nature",
+      category_name: "大自然",
+      band: "needs_support",
+      percentile_band: "P0-P25",
+      trend: "down",
+      child_value: 39,
+      cohort_value: 55,
+      tips: "可透過戶外實物觀察，幫助孩子建立穩定連結。",
+    },
+  ],
+  suppression: {
+    is_suppressed: false,
+    reason: null,
+    minimum_cohort_threshold: 1,
+  },
+};
+
 export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [charts, setCharts] = useState<AnalyticsCharts | null>(null);
+  const [benchmarks, setBenchmarks] = useState<ParentBenchmarks | null>(null);
+  const [benchmarkRangeDays, setBenchmarkRangeDays] = useState<number>(28);
   const [loading, setLoading] = useState(true);
+  const [benchmarksLoading, setBenchmarksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = useCallback(
+  const loadDashboardData = useCallback(
     async ({ background = false }: { background?: boolean } = {}) => {
       if (!background) {
         setLoading(true);
@@ -421,13 +526,55 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     [childId],
   );
 
+  const loadBenchmarks = useCallback(
+    async ({ background = false }: { background?: boolean } = {}) => {
+      if (!background) {
+        setBenchmarksLoading(true);
+      }
+
+      try {
+        const token = getAuthToken();
+        const isMockChild = !childId || childId.length < 10;
+
+        if (!token || isMockChild) {
+          setBenchmarks({
+            ...MOCK_BENCHMARKS,
+            child_id: childId || MOCK_BENCHMARKS.child_id,
+            range_days: benchmarkRangeDays,
+          });
+          return;
+        }
+
+        const apiBenchmarks = await getParentBenchmarks(
+          childId,
+          benchmarkRangeDays,
+        );
+        setBenchmarks(apiBenchmarks);
+      } catch (benchmarkError) {
+        console.error("Failed to load benchmarks:", benchmarkError);
+      } finally {
+        if (!background) {
+          setBenchmarksLoading(false);
+        }
+      }
+    },
+    [benchmarkRangeDays, childId],
+  );
+
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    void loadBenchmarks();
+  }, [loadBenchmarks]);
 
   useEffect(() => {
     const handleWindowFocus = () => {
-      void loadData({ background: true });
+      void Promise.all([
+        loadDashboardData({ background: true }),
+        loadBenchmarks({ background: true }),
+      ]);
     };
 
     window.addEventListener("focus", handleWindowFocus);
@@ -435,7 +582,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
     return () => {
       window.removeEventListener("focus", handleWindowFocus);
     };
-  }, [loadData]);
+  }, [loadBenchmarks, loadDashboardData]);
 
   if (loading) {
     return (
@@ -445,19 +592,19 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
             <Skeleton key={i} className="h-32 rounded-[28px]" />
           ))}
         </div>
-        <Skeleton className="h-64 w-full rounded-[32px]" />
-        <Skeleton className="h-64 w-full rounded-[32px]" />
+        <Skeleton className="h-64 w-full rounded-4xl" />
+        <Skeleton className="h-64 w-full rounded-4xl" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-[24px] border border-red-200 bg-red-50 p-6 text-center">
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
         <h3 className="mb-2 text-lg font-semibold text-red-900">
           無法載入分析數據
         </h3>
-        <Button onClick={() => void loadData()} variant="destructive">
+        <Button onClick={() => void loadDashboardData()} variant="destructive">
           重試
         </Button>
       </div>
@@ -467,10 +614,10 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   if (!summary || !charts) return null;
 
   return (
-    <div className="space-y-8 w-full p-4 md:p-6 bg-white/50 backdrop-blur-sm rounded-[32px]">
+    <div className="space-y-8 w-full rounded-4xl bg-white/50 p-4 backdrop-blur-sm md:p-6">
       {/* Header */}
       <div className="text-center space-y-3 mb-6">
-        <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-2xl mb-2 shadow-sm">
+        <div className="mb-2 inline-flex items-center justify-center rounded-2xl bg-linear-to-br from-blue-100 to-cyan-100 p-3 shadow-sm">
           <LineChart className="w-8 h-8 text-blue-500" />
         </div>
         <h2 className="text-3xl font-black text-slate-800 tracking-tight">
@@ -515,7 +662,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
       {/* 3. Stats Grid (Weekly & Category) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Weekly Stats */}
-        <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60">
+        <Card className="rounded-4xl border-none bg-white/60 p-6 shadow-sm">
           <h3 className="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-green-500" />
             本週概況
@@ -549,7 +696,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         </Card>
 
         {/* Category Progress */}
-        <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60">
+        <Card className="rounded-4xl border-none bg-white/60 p-6 shadow-sm">
           <h4 className="text-lg font-bold text-slate-700 mb-6 flex items-center gap-2">
             <Target className="w-5 h-5 text-teal-500" />
             各主題掌握度
@@ -567,7 +714,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
                 </div>
                 <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full transition-all duration-1000"
+                    className="h-full rounded-full bg-linear-to-r from-teal-400 to-emerald-400 transition-all duration-1000"
                     style={{ width: `${cat.progress_percentage}%` }}
                   />
                 </div>
@@ -577,10 +724,17 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         </Card>
       </div>
 
+      <BenchmarkChartsPanel
+        benchmarks={benchmarks}
+        isLoading={benchmarksLoading}
+        benchmarkRangeDays={benchmarkRangeDays}
+        onRangeChange={setBenchmarkRangeDays}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 4. Recent Insights */}
         {summary.recent_insights.length > 0 && (
-          <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/60 h-full">
+          <Card className="h-full rounded-4xl border-none bg-white/60 p-6 shadow-sm">
             <h4 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-yellow-500" />
               AI 學習洞察
@@ -594,7 +748,7 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         )}
 
         {/* 5. Latest Report */}
-        <Card className="p-6 rounded-[32px] border-none shadow-sm bg-gradient-to-br from-indigo-50 to-purple-50 h-full">
+        <Card className="h-full rounded-4xl border-none bg-linear-to-br from-indigo-50 to-purple-50 p-6 shadow-sm">
           <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-500" />
             最新學習週報
@@ -605,12 +759,324 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
             <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
               <BarChart3 className="w-10 h-10 text-indigo-200" />
               <p className="text-sm font-bold text-indigo-400">暫無週報</p>
-              <p className="text-xs text-indigo-300 max-w-[200px]">
+              <p className="max-w-50 text-xs text-indigo-300">
                 學習週報每週自動生成，繼續學習後即可查閱。
               </p>
             </div>
           )}
         </Card>
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkChartsPanel({
+  benchmarks,
+  isLoading,
+  benchmarkRangeDays,
+  onRangeChange,
+}: {
+  benchmarks: ParentBenchmarks | null;
+  isLoading: boolean;
+  benchmarkRangeDays: number;
+  onRangeChange: (days: number) => void;
+}) {
+  const metricCards = [
+    {
+      id: "pace",
+      title: "學習節奏",
+      unit: "詞 / 活躍日",
+      metric: benchmarks?.pace_benchmark ?? null,
+      accent: "from-sky-500 to-cyan-400",
+    },
+    {
+      id: "engagement",
+      title: "參與度",
+      unit: "分 / 活躍日",
+      metric: benchmarks?.engagement_benchmark ?? null,
+      accent: "from-emerald-500 to-teal-400",
+    },
+  ];
+
+  return (
+    <Card className="rounded-4xl border border-sky-100/70 bg-linear-to-br from-slate-100 via-sky-50 to-white p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-sky-700">
+            <Shield className="h-3.5 w-3.5" />
+            同齡小朋友比較
+          </div>
+          <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-800">
+            同齡學習比較圖
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
+            用圖表查看孩子與同齡組的學習節奏、參與度，以及各主題掌握度差距。
+          </p>
+        </div>
+
+        <div className="w-full lg:w-72 rounded-[28px] bg-white/90 p-4 ring-1 ring-sky-100 shadow-sm">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+            比較時間
+          </p>
+          <Select
+            value={String(benchmarkRangeDays)}
+            disabled={isLoading}
+            onValueChange={(value) => {
+              const parsed = Number.parseInt(value, 10);
+              if (Number.isFinite(parsed) && parsed !== benchmarkRangeDays) {
+                onRangeChange(parsed);
+              }
+            }}
+          >
+            <SelectTrigger className="mt-3 h-12 w-full rounded-2xl border-white/20 bg-white text-slate-800 shadow-sm">
+              <SelectValue placeholder="選擇天數" />
+            </SelectTrigger>
+            <SelectContent>
+              {BENCHMARK_RANGE_OPTIONS.map((days) => (
+                <SelectItem key={days} value={String(days)}>
+                  最近 {days} 日
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs font-medium text-slate-500">
+            {isLoading
+              ? "正在更新呢個比較部分..."
+              : "只會更新呢個比較部分嘅資料"}
+          </p>
+        </div>
+      </div>
+
+      {benchmarks?.suppression.is_suppressed ? (
+        <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900">
+          請先在設定頁啟用分析資料同意，之後即可查看同齡學習比較圖表。
+        </div>
+      ) : (
+        <>
+          <div
+            className={cn(
+              "mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]",
+              isLoading && "opacity-75 transition-opacity",
+            )}
+          >
+            <div className="rounded-[28px] bg-white p-5 ring-1 ring-slate-100 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-slate-800">
+                <Users className="h-5 w-5 text-sky-500" />
+                <h4 className="text-lg font-black">重點指標比較</h4>
+              </div>
+              <div className="space-y-5">
+                {metricCards.map(({ id, title, unit, metric, accent }) =>
+                  metric ? (
+                    <BenchmarkComparisonChart
+                      key={id}
+                      title={title}
+                      unit={unit}
+                      childValue={metric.child_value}
+                      cohortValue={metric.cohort_value}
+                      band={metric.band}
+                      tip={metric.tips}
+                      accent={accent}
+                    />
+                  ) : null,
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[28px] bg-white p-5 ring-1 ring-slate-100 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-slate-800">
+                <BarChart3 className="h-5 w-5 text-emerald-500" />
+                <h4 className="text-lg font-black">主題掌握度比較</h4>
+              </div>
+              <div className="space-y-4">
+                {(benchmarks?.category_benchmarks ?? [])
+                  .slice(0, 4)
+                  .map((item) => (
+                    <CategoryBenchmarkBars
+                      key={item.category_id}
+                      benchmark={item}
+                    />
+                  ))}
+                {!benchmarks?.category_benchmarks?.length && (
+                  <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm font-medium text-slate-500">
+                    目前主題資料仍在累積，稍後會顯示各主題對照圖。
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
+function BenchmarkComparisonChart({
+  title,
+  unit,
+  childValue,
+  cohortValue,
+  band,
+  tip,
+  accent,
+}: {
+  title: string;
+  unit: string;
+  childValue: number;
+  cohortValue: number;
+  band: ParentBenchmarks["pace_benchmark"] extends infer T
+    ? T extends { band: infer B }
+      ? B
+      : never
+    : never;
+  tip: string;
+  accent: string;
+}) {
+  const maxValue = Math.max(childValue, cohortValue, 1);
+  const childWidth = Math.max((childValue / maxValue) * 100, 8);
+  const cohortWidth = Math.max((cohortValue / maxValue) * 100, 8);
+  const bandMeta = getBenchmarkBandMeta(band);
+
+  return (
+    <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-100">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-black text-slate-800">{title}</p>
+          <p className="mt-1 text-xs font-medium text-slate-500">{unit}</p>
+        </div>
+        <div className="text-right">
+          <div
+            className={cn(
+              "inline-flex rounded-full px-3 py-1 text-[11px] font-black tracking-[0.04em]",
+              bandMeta.badgeClassName,
+            )}
+          >
+            {bandMeta.label}
+          </div>
+          <p className="mt-2 text-[11px] font-medium text-slate-500">
+            {bandMeta.detail}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <ChartBarRow
+          label="你的孩子"
+          value={childValue}
+          width={childWidth}
+          barClassName={`bg-linear-to-r ${accent}`}
+          valueClassName="text-slate-800"
+        />
+        <ChartBarRow
+          label="同齡平均"
+          value={cohortValue}
+          width={cohortWidth}
+          barClassName="bg-slate-300"
+          valueClassName="text-slate-600"
+        />
+      </div>
+
+      <p className="mt-4 text-sm font-medium leading-6 text-slate-500">{tip}</p>
+    </div>
+  );
+}
+
+function ChartBarRow({
+  label,
+  value,
+  width,
+  barClassName,
+  valueClassName,
+}: {
+  label: string;
+  value: number;
+  width: number;
+  barClassName: string;
+  valueClassName: string;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs font-bold">
+        <span className="text-slate-500">{label}</span>
+        <span className={valueClassName}>{value.toFixed(1)}</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
+            barClassName,
+          )}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CategoryBenchmarkBars({
+  benchmark,
+}: {
+  benchmark: ParentBenchmarks["category_benchmarks"][number];
+}) {
+  const bandMeta = getBenchmarkBandMeta(benchmark.band);
+
+  return (
+    <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-100">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-black text-slate-800">
+            {benchmark.category_name}
+          </p>
+          <div
+            className={cn(
+              "mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black tracking-[0.04em]",
+              bandMeta.badgeClassName,
+            )}
+          >
+            {bandMeta.label}
+          </div>
+          <p className="mt-2 text-[11px] font-medium text-slate-500">
+            {bandMeta.detail}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-bold text-slate-600">
+            你的孩子 {benchmark.child_value.toFixed(0)}%
+          </p>
+          <p className="text-xs font-bold text-slate-500">
+            同齡平均 {benchmark.cohort_value.toFixed(0)}%
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs font-bold">
+            <span className="text-slate-500">你的孩子</span>
+            <span className="text-slate-800">
+              {benchmark.child_value.toFixed(0)}%
+            </span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-400 transition-[width] duration-700 ease-out motion-reduce:transition-none"
+              style={{ width: `${Math.min(benchmark.child_value, 100)}%` }}
+            />
+          </div>
+        </div>
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs font-bold">
+            <span className="text-slate-500">同齡平均</span>
+            <span className="text-slate-600">
+              {benchmark.cohort_value.toFixed(0)}%
+            </span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-slate-300 transition-[width] duration-700 ease-out motion-reduce:transition-none"
+              style={{ width: `${Math.min(benchmark.cohort_value, 100)}%` }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -928,7 +1394,7 @@ function LearningCalendar({
 
   return (
     <>
-      <Card className="p-6 rounded-[32px] border-none shadow-sm bg-white/80">
+      <Card className="rounded-4xl border-none bg-white/80 p-6 shadow-sm">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h4 className="text-xl font-bold text-slate-700 flex items-center gap-2">
@@ -943,7 +1409,7 @@ function LearningCalendar({
             >
               <ChevronLeft className="w-4 h-4 text-slate-600" />
             </button>
-            <span className="text-sm font-bold text-slate-700 min-w-[90px] text-center">
+            <span className="min-w-22.5 text-center text-sm font-bold text-slate-700">
               {currentMonth.toLocaleDateString("zh-HK", {
                 year: "numeric",
                 month: "long",

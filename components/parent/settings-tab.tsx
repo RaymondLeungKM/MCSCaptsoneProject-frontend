@@ -29,13 +29,15 @@ import {
 
 import { useToast } from "@/hooks/use-toast";
 import { updateChild, toChildProfile } from "@/lib/api/children";
+import { submitConsent } from "@/lib/api/consent";
 import {
   getParentalControls,
   updateParentalControls,
 } from "@/lib/api/parent-dashboard";
-import { getReviewQueue } from "@/lib/api/phase8";
+import { getReviewQueue } from "@/lib/api/word-personalization";
 import { getCategories } from "@/lib/api/vocabulary";
 import { getAuthToken } from "@/lib/api/client";
+import { useAuth } from "@/lib/auth-context";
 import {
   DEFAULT_REVISION_QUESTION_COUNT,
   getRevisionQuestionCount,
@@ -236,6 +238,7 @@ function mergeInterestOptions(
 
 export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   const { toast } = useToast();
+  const { user, refreshUser } = useAuth();
   const isMockData =
     !profile.id ||
     profile.id === "1" ||
@@ -267,6 +270,8 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   const [communitySharing, setCommunitySharing] = useState(
     profile.communityEnabled ?? false,
   );
+  const [analyticsConsent, setAnalyticsConsent] = useState<boolean>(true);
+  const [consentSaving, setConsentSaving] = useState(false);
   const [storedParentPin, setStoredParentPinState] = useState<string | null>(
     null,
   );
@@ -324,6 +329,12 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
   useEffect(() => {
     setStoredParentPinState(getStoredParentPin());
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setAnalyticsConsent(user.consent_analytics);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isMockData) {
@@ -608,6 +619,44 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       title: "已移除家長 PIN",
       description: "這部裝置上的家長模式鎖已清除。",
     });
+  };
+
+  const handleSaveAnalyticsConsent = async () => {
+    if (!getAuthToken() || !user) {
+      toast({
+        title: "未登入",
+        description: "請先登入家長帳戶後再更新同意設定。",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setConsentSaving(true);
+    try {
+      const response = await submitConsent({
+        consent_camera: user.consent_camera,
+        consent_microphone: user.consent_microphone,
+        consent_analytics: analyticsConsent,
+        community_sharing_enabled: communitySharing,
+      });
+      setAnalyticsConsent(response.consent_analytics);
+      await refreshUser();
+      toast({
+        title: "私隱同意已更新",
+        description: analyticsConsent
+          ? "已啟用分析資料同意。"
+          : "已停用分析資料同意。",
+      });
+    } catch (error) {
+      console.error("Failed to update analytics consent:", error);
+      toast({
+        title: "更新失敗",
+        description: "未能更新分析資料同意，請稍後再試。",
+        variant: "destructive",
+      });
+    } finally {
+      setConsentSaving(false);
+    }
   };
 
   return (
@@ -1171,6 +1220,56 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
             只會儲存在目前這部裝置上。若你常用平板或手機讓小朋友學習，建議在該裝置也設定同一組
             PIN。
           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-sm bg-white rounded-[28px]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-slate-700 text-xl">
+            <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
+              <Shield className="w-5 h-5" />
+            </div>
+            私隱與同意
+          </CardTitle>
+          <CardDescription className="text-slate-400 text-xs pl-12">
+            控制同齡基準與學習分析功能所需的資料同意。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl">
+            <div>
+              <p className="font-bold text-slate-700">分析資料同意</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                啟用後可使用同齡學習基準與進階分析建議。
+              </p>
+            </div>
+            <Switch
+              checked={analyticsConsent}
+              onCheckedChange={setAnalyticsConsent}
+              disabled={consentSaving || !user}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              onClick={() => void handleSaveAnalyticsConsent()}
+              disabled={consentSaving || !user}
+              className="rounded-full bg-emerald-500 px-5 font-bold text-white hover:bg-emerald-600"
+            >
+              {consentSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  儲存中...
+                </>
+              ) : (
+                "儲存同意設定"
+              )}
+            </Button>
+            {!user && (
+              <p className="text-xs text-slate-400">請先登入家長帳戶</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

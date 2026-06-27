@@ -9,6 +9,8 @@ import { apiRequest } from "./client";
 import type {
   WordGraph,
   GraphRecommendation,
+  WordRelationshipReviewList,
+  WordRelationshipReviewActionResult,
   ReviewQueue,
   ReviewResult,
   SpacedRepetitionCard,
@@ -62,6 +64,36 @@ export async function addWordRelationship(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function listPendingWordRelationships(
+  limit = 100,
+): Promise<WordRelationshipReviewList> {
+  return apiRequest<WordRelationshipReviewList>(
+    `/adaptive/admin/word-relationships/pending?limit=${limit}`,
+  );
+}
+
+export async function approvePendingWordRelationship(
+  relationshipId: number,
+): Promise<WordRelationshipReviewActionResult> {
+  return apiRequest<WordRelationshipReviewActionResult>(
+    `/adaptive/admin/word-relationships/${relationshipId}/approve`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export async function rejectPendingWordRelationship(
+  relationshipId: number,
+): Promise<WordRelationshipReviewActionResult> {
+  return apiRequest<WordRelationshipReviewActionResult>(
+    `/adaptive/admin/word-relationships/${relationshipId}/reject`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------

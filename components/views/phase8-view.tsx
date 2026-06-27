@@ -45,7 +45,7 @@ import {
   getLearningSpeedProfile,
   getGraphRecommendations,
   getWordGraph,
-} from "@/lib/api/phase8";
+} from "@/lib/api/word-personalization";
 
 // ---------------------------------------------------------------------------
 // Tab config
@@ -275,25 +275,17 @@ function ReviewView({ childId, onPlayAudio }: ReviewViewProps) {
         {profile && (
           <div className="grid gap-3 rounded-3xl border border-indigo-100 bg-indigo-50/80 p-5 text-left sm:grid-cols-3">
             <div>
-              <p className="child-tab-stat-label !text-indigo-500">
-                總卡數
-              </p>
-              <p className="child-tab-stat-value">
-                {profile.total_cards}
-              </p>
+              <p className="child-tab-stat-label !text-indigo-500">總卡數</p>
+              <p className="child-tab-stat-value">{profile.total_cards}</p>
             </div>
             <div>
-              <p className="child-tab-stat-label !text-emerald-500">
-                畢業率
-              </p>
+              <p className="child-tab-stat-label !text-emerald-500">畢業率</p>
               <p className="child-tab-stat-value">
                 {Math.round(profile.graduation_rate * 100)}%
               </p>
             </div>
             <div>
-              <p className="child-tab-stat-label !text-amber-500">
-                平均間隔
-              </p>
+              <p className="child-tab-stat-label !text-amber-500">平均間隔</p>
               <p className="child-tab-stat-value">
                 {profile.avg_interval.toFixed(1)}天
               </p>
@@ -527,25 +519,19 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
 
               <div className="grid grid-cols-3 gap-2 md:hidden">
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="child-tab-caption !text-[10px]">
-                    XP
-                  </p>
+                  <p className="child-tab-caption !text-[10px]">XP</p>
                   <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.xp}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="child-tab-caption !text-[10px]">
-                    目標
-                  </p>
+                  <p className="child-tab-caption !text-[10px]">目標</p>
                   <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.todayProgress}/{profile.dailyGoal}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white/75 px-3 py-3 text-center shadow-sm backdrop-blur-md">
-                  <p className="child-tab-caption !text-[10px]">
-                    專注
-                  </p>
+                  <p className="child-tab-caption !text-[10px]">專注</p>
                   <p className="child-tab-stat-value !mt-1 !text-lg">
                     {profile.attentionSpan} 分
                   </p>
@@ -564,9 +550,7 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <ActiveIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="child-tab-caption">
-                    {activeTabMeta.labelEn}
-                  </p>
+                  <p className="child-tab-caption">{activeTabMeta.labelEn}</p>
                   <h3 className="child-tab-section-title !mt-1 !text-2xl">
                     {activeTabMeta.label}
                   </h3>
@@ -663,7 +647,9 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                               </Badge>
                             )}
                           </div>
-                          <p className="child-tab-card-copy">{tab.description}</p>
+                          <p className="child-tab-card-copy">
+                            {tab.description}
+                          </p>
                         </div>
                       </div>
                     </button>
@@ -683,7 +669,9 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="child-tab-section-title !text-xl">今日智能提示</h3>
+                  <h3 className="child-tab-section-title !text-xl">
+                    今日智能提示
+                  </h3>
                   <p className="child-tab-section-copy !text-sm">
                     目前工具會根據你的進度這樣幫你。
                   </p>
@@ -715,7 +703,6 @@ export function Phase8View({ profile, onPlayAudio }: Phase8ViewProps) {
                 </div>
               </div>
             </section>
-
           </div>
 
           <div className="order-1 space-y-4 md:order-2 md:space-y-6">

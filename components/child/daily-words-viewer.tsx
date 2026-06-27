@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { AISentences } from "@/components/child/ai-sentences";
 import { getWords, getWordsWithProgress, getCapturedWords } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/api/client";
-import { getGraphRecommendations } from "@/lib/api/phase8";
+import { getGraphRecommendations } from "@/lib/api/word-personalization";
 import type { LanguagePreference, Word } from "@/lib/types";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
@@ -362,7 +362,9 @@ export function DailyWordsViewer({
     );
   }
 
-  const isInitialLoading = showDefaultLibrary ? loading && cameraLoading : cameraLoading;
+  const isInitialLoading = showDefaultLibrary
+    ? loading && cameraLoading
+    : cameraLoading;
 
   if (isInitialLoading) {
     return (
@@ -545,7 +547,9 @@ export function DailyWordsViewer({
                               {index + 1}
                             </div>
                             <Badge className="rounded-full border-none bg-white/90 px-3 py-1 text-xs font-black text-slate-600 shadow-sm backdrop-blur-sm">
-                              {currentTab === "camera" ? "相機探索" : "今日推薦"}
+                              {currentTab === "camera"
+                                ? "相機探索"
+                                : "今日推薦"}
                             </Badge>
                           </div>
 
@@ -593,8 +597,8 @@ export function DailyWordsViewer({
                               <p className="child-tab-caption !text-[11px] !tracking-[0.22em]">
                                 {showDefaultLibrary
                                   ? currentTab === "camera"
-                                  ? "今日相機探索"
-                                  : "今日故事詞語"
+                                    ? "今日相機探索"
+                                    : "今日故事詞語"
                                   : "今日相機探索"}
                               </p>
                               <h3 className="child-tab-hero-title !mt-2 wrap-break-word !text-[2.1rem] !leading-[0.95] !text-slate-800 sm:!text-[2.6rem]">
@@ -704,15 +708,19 @@ export function DailyWordsViewer({
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                     }
                     label="高優先級"
-                    value={currentWords.filter((w) => w.story_priority >= 7).length}
+                    value={
+                      currentWords.filter((w) => w.story_priority >= 7).length
+                    }
                     color="bg-yellow-50 text-yellow-700 border border-yellow-100"
                   />
                   <StatBox
                     icon={<BookOpen className="w-5 h-5 text-blue-500" />}
                     label="平均練習"
                     value={(
-                      currentWords.reduce((sum, w) => sum + w.exposure_count, 0) /
-                      (currentWords.length || 1)
+                      currentWords.reduce(
+                        (sum, w) => sum + w.exposure_count,
+                        0,
+                      ) / (currentWords.length || 1)
                     ).toFixed(1)}
                     color="bg-blue-50 text-blue-700 border border-blue-100"
                   />
@@ -734,7 +742,9 @@ export function DailyWordsViewer({
                   <StatBox
                     icon={<Zap className="w-5 h-5 text-blue-500" />}
                     label="已開始練習"
-                    value={currentWords.filter((w) => w.exposure_count > 0).length}
+                    value={
+                      currentWords.filter((w) => w.exposure_count > 0).length
+                    }
                     color="bg-blue-50 text-blue-700 border border-blue-100"
                   />
                   <StatBox
@@ -773,10 +783,10 @@ function StatBox({
       )}
     >
       <div className="mb-1 opacity-90">{icon}</div>
-      <div className="child-tab-stat-value !mb-1 !mt-0 !text-2xl !leading-none">{value}</div>
-      <div className="child-tab-caption opacity-80">
-        {label}
+      <div className="child-tab-stat-value !mb-1 !mt-0 !text-2xl !leading-none">
+        {value}
       </div>
+      <div className="child-tab-caption opacity-80">{label}</div>
     </div>
   );
 }

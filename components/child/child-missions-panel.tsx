@@ -42,6 +42,31 @@ function isMissionCompleted(mission: MissionResponse): boolean {
   return mission.assignment?.status === "completed";
 }
 
+function isClusterMission(mission: MissionResponse): boolean {
+  return Boolean(mission.assignment?.selection_metadata?.is_cluster);
+}
+
+function getClusterWords(mission: MissionResponse): string[] {
+  const values = mission.assignment?.selection_metadata?.target_words_display;
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    )
+    .slice(0, 6);
+}
+
+function getClusterThemeLabel(mission: MissionResponse): string | null {
+  const value = mission.assignment?.selection_metadata?.cluster_theme_label;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
 function pickVisibleMissions(
   dailyMissions: MissionResponse[],
   parentMissions: MissionResponse[],
@@ -246,6 +271,9 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
             const isSubmitting = submittingMissionId === mission.id;
             const isOffline = kind === "offline";
             const isParentAuthored = mission.assignment?.source === "parent";
+            const isCluster = isClusterMission(mission);
+            const clusterWords = getClusterWords(mission);
+            const clusterThemeLabel = getClusterThemeLabel(mission);
 
             return (
               <article
@@ -281,6 +309,16 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                         家長自訂
                       </span>
                     )}
+                    {isCluster && (
+                      <span className="inline-flex rounded-full border border-fuchsia-200 bg-fuchsia-100 px-3 py-1 text-xs font-black text-fuchsia-700">
+                        主題串連
+                      </span>
+                    )}
+                    {isCluster && clusterThemeLabel && (
+                      <span className="inline-flex rounded-full border border-violet-200 bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
+                        主題：{clusterThemeLabel}
+                      </span>
+                    )}
                   </div>
 
                   {completed && (
@@ -291,12 +329,27 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                   )}
                 </div>
 
-                <h3 className="child-tab-section-title !mt-3 !text-3xl !leading-tight">
+                <h3 className="child-tab-section-title mt-3! text-3xl! leading-tight!">
                   {mission.title}
                 </h3>
-                <p className="child-tab-card-copy !mt-2 !min-h-14 !text-xl !leading-6">
+                <p className="child-tab-card-copy mt-2! min-h-14! text-xl! leading-6!">
                   {mission.description}
                 </p>
+
+                {isCluster && (
+                  <div className="mt-2 space-y-1">
+                    {clusterThemeLabel && (
+                      <p className="text-sm font-bold text-violet-700">
+                        今次會圍繞「{clusterThemeLabel}」主題練習。
+                      </p>
+                    )}
+                    {clusterWords.length > 0 && (
+                      <p className="text-sm font-bold text-fuchsia-700">
+                        同主題詞語：{clusterWords.join("、")}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {mission.target_words.length > 0 && (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -312,7 +365,7 @@ export function ChildMissionsPanel({ childId }: ChildMissionsPanelProps) {
                 )}
 
                 {mission.conversation_prompts[0] && (
-                  <div className="child-tab-card-copy mt-4 rounded-2xl bg-amber-50 px-3 py-2 !text-base !leading-6 !text-slate-600">
+                  <div className="child-tab-card-copy mt-4 rounded-2xl bg-amber-50 px-3 py-2 text-base! leading-6! text-slate-600!">
                     <span className="font-black text-amber-700">小提示：</span>
                     {mission.conversation_prompts[0]}
                   </div>

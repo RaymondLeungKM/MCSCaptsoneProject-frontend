@@ -40,6 +40,33 @@ export interface MissionAssignmentResponse {
   updated_at: string | null;
 }
 
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function asStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const list = value
+    .filter(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    )
+    .slice(0, 8);
+
+  return list.length > 0 ? list : undefined;
+}
+
 export interface MissionResponse {
   id: string;
   slug: string;
@@ -149,6 +176,8 @@ export function toOfflineMission(
   const completed = assignmentCompleted ?? progress?.completed ?? false;
   const completedDate = m.assignment?.completed_at ?? progress?.completed_date;
   const parentNotes = m.assignment?.completion_notes ?? progress?.parent_notes;
+  const metadata = m.assignment?.selection_metadata ?? {};
+  const isClusterMission = Boolean(metadata?.is_cluster);
 
   return {
     id: m.id,
@@ -160,6 +189,16 @@ export function toOfflineMission(
     completed,
     completedDate: completedDate ? new Date(completedDate) : undefined,
     parentNotes: parentNotes ?? undefined,
+    isClusterMission,
+    clusterId: asString(metadata?.cluster_id),
+    clusterSeedWordId: asString(metadata?.seed_word_id),
+    clusterDepth: asNumber(metadata?.cluster_depth),
+    clusterStrategy: asString(metadata?.cluster_strategy),
+    clusterThemeLabel: asString(metadata?.cluster_theme_label),
+    clusterRelatedThemeLabels: asStringArray(
+      metadata?.cluster_related_theme_labels,
+    ),
+    clusterWords: asStringArray(metadata?.target_words_display),
   };
 }
 

@@ -65,6 +65,23 @@ interface SpacedRepetitionCardProps {
   totalCards: number;
 }
 
+function getQueueReasonLabel(reason?: SRCard["queue_reason"]): string {
+  switch (reason) {
+    case "due":
+      return "到期重溫";
+    case "bridge":
+      return "概念橋樑";
+    case "weak_link":
+      return "加強弱項";
+    case "quick_win":
+      return "快速鞏固";
+    case "balance":
+      return "平衡安排";
+    default:
+      return "系統推薦";
+  }
+}
+
 export function SpacedRepetitionCard({
   card,
   onRate,
@@ -104,6 +121,10 @@ export function SpacedRepetitionCard({
           </span>
         )}
       </div>
+
+      <p className="child-tab-copy mt-0 text-xs text-slate-500">
+        推薦原因：{getQueueReasonLabel(card.queue_reason)}
+      </p>
 
       {/* Flip card */}
       <div
@@ -201,7 +222,7 @@ export function SpacedRepetitionCard({
                 )}
               >
                 <span className="text-lg">{emoji}</span>
-                  <span className="text-[10px] leading-tight mt-0.5 text-center">
+                <span className="text-[10px] leading-tight mt-0.5 text-center">
                   {label}
                 </span>
               </button>

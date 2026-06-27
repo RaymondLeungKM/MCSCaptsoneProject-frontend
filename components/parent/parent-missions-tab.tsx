@@ -935,6 +935,17 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                                   {section.title}
                                 </span>
+                                {mission.isClusterMission && (
+                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" /> 主題串連
+                                  </span>
+                                )}
+                                {mission.isClusterMission &&
+                                  mission.clusterThemeLabel && (
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200">
+                                      主題：{mission.clusterThemeLabel}
+                                    </span>
+                                  )}
                                 {mission.completed && (
                                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200 flex items-center gap-1">
                                     <Check className="w-3 h-3" /> 已完成
@@ -976,6 +987,27 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                           <p className="text-slate-500 text-sm mt-1 line-clamp-1 group-hover:line-clamp-none transition-all">
                             {mission.description}
                           </p>
+
+                          {mission.isClusterMission &&
+                            (mission.clusterThemeLabel ||
+                              (mission.clusterWords &&
+                                mission.clusterWords.length > 0)) && (
+                              <div className="mt-2 space-y-1">
+                                {mission.clusterThemeLabel && (
+                                  <p className="text-xs font-semibold text-fuchsia-700">
+                                    這是一組「{mission.clusterThemeLabel}
+                                    」主題詞語任務。
+                                  </p>
+                                )}
+                                {mission.clusterWords &&
+                                  mission.clusterWords.length > 0 && (
+                                    <p className="text-xs font-semibold text-violet-600">
+                                      同主題詞語：
+                                      {mission.clusterWords.join("、")}
+                                    </p>
+                                  )}
+                              </div>
+                            )}
 
                           <div className="flex flex-wrap gap-2 mt-3">
                             {mission.targetWords.map((word, index) => (

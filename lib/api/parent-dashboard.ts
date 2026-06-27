@@ -9,6 +9,7 @@ import type {
   LearningInsight,
   WeeklyReport,
   ParentalControl,
+  ParentBenchmarks,
 } from "../types";
 
 /**
@@ -141,5 +142,18 @@ export async function getWordsByDate(
 }> {
   return apiRequest(
     `/parent-dashboard/${childId}/words-by-date?date_str=${encodeURIComponent(dateStr)}`,
+  );
+}
+
+/**
+ * Get privacy-safe benchmarks against same age-band cohort.
+ */
+export async function getParentBenchmarks(
+  childId: string,
+  rangeDays: number = 28,
+): Promise<ParentBenchmarks> {
+  const params = new URLSearchParams({ range_days: String(rangeDays) });
+  return apiRequest<ParentBenchmarks>(
+    `/parent-dashboard/${childId}/benchmarks?${params.toString()}`,
   );
 }

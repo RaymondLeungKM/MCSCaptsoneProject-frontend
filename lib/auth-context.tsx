@@ -21,6 +21,9 @@ interface User {
   full_name: string;
   role: string;
   consent_given: boolean;
+  consent_camera: boolean;
+  consent_microphone: boolean;
+  consent_analytics: boolean;
 }
 
 interface AuthContextType {
@@ -85,7 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const email = process.env.NEXT_PUBLIC_DEV_EMAIL;
     const password = process.env.NEXT_PUBLIC_DEV_PASSWORD;
     if (!email || !password) {
-      console.warn("[dev] ?dev shortcut: set NEXT_PUBLIC_DEV_EMAIL and NEXT_PUBLIC_DEV_PASSWORD in .env.local");
+      console.warn(
+        "[dev] ?dev shortcut: set NEXT_PUBLIC_DEV_EMAIL and NEXT_PUBLIC_DEV_PASSWORD in .env.local",
+      );
       setLoading(false);
       return;
     }

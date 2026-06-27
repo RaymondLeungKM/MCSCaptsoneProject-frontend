@@ -15,7 +15,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Bot, User, Sparkles, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TutorChatMessage } from "@/lib/types";
-import { sendTutorMessage } from "@/lib/api/phase8";
+import { sendTutorMessage } from "@/lib/api/word-personalization";
 
 // ---------------------------------------------------------------------------
 // Suggested starter questions
@@ -163,9 +163,7 @@ export function AITutorChat({
       <div className="flex items-center justify-between px-4 py-3 bg-amber-400 text-white">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
-          <span className="font-bold text-base">
-            小博士 AI 助手
-          </span>
+          <span className="font-bold text-base">小博士 AI 助手</span>
         </div>
         <button
           onClick={handleClear}

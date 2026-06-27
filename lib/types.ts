@@ -96,6 +96,14 @@ export interface OfflineMission {
   completed: boolean;
   completedDate?: Date;
   parentNotes?: string;
+  isClusterMission?: boolean;
+  clusterId?: string;
+  clusterSeedWordId?: string;
+  clusterDepth?: number;
+  clusterStrategy?: string;
+  clusterThemeLabel?: string;
+  clusterRelatedThemeLabels?: string[];
+  clusterWords?: string[];
   // Conversation starters for parents
   conversationPrompts: string[];
 }
@@ -383,6 +391,42 @@ export interface AnalyticsCharts {
   average_session_length: number;
 }
 
+export interface BenchmarkSuppression {
+  is_suppressed: boolean;
+  reason?: string | null;
+  minimum_cohort_threshold: number;
+}
+
+export interface ParentBenchmarkCard {
+  band: "ahead" | "on_track" | "needs_support";
+  percentile_band: string;
+  trend: "up" | "flat" | "down";
+  child_value: number;
+  cohort_value: number;
+  tips: string;
+}
+
+export interface ParentCategoryBenchmarkCard {
+  category_id: string;
+  category_name: string;
+  band: "ahead" | "on_track" | "needs_support";
+  percentile_band: string;
+  trend: "up" | "flat" | "down";
+  child_value: number;
+  cohort_value: number;
+  tips: string;
+}
+
+export interface ParentBenchmarks {
+  child_id: string;
+  age_band: string;
+  range_days: number;
+  pace_benchmark?: ParentBenchmarkCard | null;
+  engagement_benchmark?: ParentBenchmarkCard | null;
+  category_benchmarks: ParentCategoryBenchmarkCard[];
+  suppression: BenchmarkSuppression;
+}
+
 // ---------------------------------------------------------------------------
 // Phase 8 – Advanced AI & Personalization
 // ---------------------------------------------------------------------------
@@ -426,6 +470,32 @@ export interface GraphRecommendation {
   bridge_concepts: string[];
 }
 
+export interface WordRelationshipReviewItem {
+  id: number;
+  word_id: string;
+  word?: string;
+  word_cantonese?: string;
+  related_word_id: string;
+  related_word?: string;
+  related_word_cantonese?: string;
+  relationship_type: RelationshipType;
+  strength: number;
+  source: string;
+  created_at: string;
+}
+
+export interface WordRelationshipReviewList {
+  items: WordRelationshipReviewItem[];
+  total_pending: number;
+  limit: number;
+}
+
+export interface WordRelationshipReviewActionResult {
+  id: number;
+  action: "approved" | "rejected";
+  success: boolean;
+}
+
 // Epic 8.2 – Spaced Repetition (SM-2)
 
 export interface SpacedRepetitionCard {
@@ -447,6 +517,16 @@ export interface SpacedRepetitionCard {
   image_url?: string;
   audio_url?: string;
   definition_cantonese?: string;
+  queue_reason?: "due" | "bridge" | "weak_link" | "quick_win" | "balance";
+  queue_features?: {
+    due_score: number;
+    graph_score: number;
+    bridge_score: number;
+    centrality_score: number;
+    weak_link_boost: number;
+    diversity_penalty: number;
+    final_score: number;
+  };
 }
 
 export interface ReviewQueue {

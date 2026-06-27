@@ -10,10 +10,10 @@ import {
   Calendar,
   Layers,
   Sparkles,
+  Shield,
   Clock3,
   Activity,
   CheckCircle2,
-  Shield,
   XCircle,
   Lightbulb,
   ArrowUpRight,
@@ -29,8 +29,9 @@ import type {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { getAuthToken } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 import {
   approveActiveVocabRequest,
   getPendingActiveVocabRequests,
@@ -365,138 +366,209 @@ export function OverviewTab({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-        <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
-              <Calendar className="h-5 w-5 text-sky-500" />
-              本週學習節奏
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <MiniMetric
-                icon={<TrendingUp className="h-4 w-4 text-sky-500" />}
-                label="本週新詞彙"
-                value={`${weeklyTotal}`}
-              />
-              <MiniMetric
-                icon={<Clock3 className="h-4 w-4 text-emerald-500" />}
-                label="平均輸入次數"
-                value={`${stats.averageExposuresPerWord.toFixed(1)} 次`}
-              />
-              <MiniMetric
-                icon={<Activity className="h-4 w-4 text-violet-500" />}
-                label="最活躍日"
-                value={
-                  hasWeeklyActivity && peakDayIndex >= 0
-                    ? days[peakDayIndex]
-                    : "暫無"
-                }
-              />
-            </div>
-            {weeklyDelta && (
-              <div className="rounded-3xl bg-linear-to-r from-sky-50 to-white p-4 ring-1 ring-slate-100">
+      <div className="space-y-6">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Card className="rounded-4xl border-2 border-slate-100 shadow-sm xl:order-1">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+                <Calendar className="h-5 w-5 text-sky-500" />
+                本週學習節奏
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <MiniMetric
+                  icon={<TrendingUp className="h-4 w-4 text-sky-500" />}
+                  label="本週新詞彙"
+                  value={`${weeklyTotal}`}
+                />
+                <MiniMetric
+                  icon={<Clock3 className="h-4 w-4 text-emerald-500" />}
+                  label="平均輸入次數"
+                  value={`${stats.averageExposuresPerWord.toFixed(1)} 次`}
+                />
+                <MiniMetric
+                  icon={<Activity className="h-4 w-4 text-violet-500" />}
+                  label="最活躍日"
+                  value={
+                    hasWeeklyActivity && peakDayIndex >= 0
+                      ? days[peakDayIndex]
+                      : "暫無"
+                  }
+                />
+              </div>
+              {weeklyDelta && (
+                <div className="rounded-3xl bg-linear-to-r from-sky-50 to-white p-4 ring-1 ring-slate-100">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
+                        相比上週
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">
+                        這一列由後端摘要直接提供，避免前端各自計算不同週期。
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                        比較時間
+                      </p>
+                      <p className="text-sm font-black text-slate-700">
+                        本週 vs 上週
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <WeeklyDeltaPill
+                      label="新詞彙"
+                      metric={weeklyDelta.words_learned}
+                      unit="個"
+                    />
+                    <WeeklyDeltaPill
+                      label="學習時間"
+                      metric={weeklyDelta.learning_time}
+                      unit="分"
+                    />
+                    <WeeklyDeltaPill
+                      label="學習回合"
+                      metric={weeklyDelta.sessions}
+                      unit="次"
+                    />
+                    <WeeklyDeltaPill
+                      label="活躍日"
+                      metric={weeklyDelta.active_days}
+                      unit="天"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="rounded-[28px] bg-linear-to-b from-slate-50 to-white p-4 ring-1 ring-slate-100">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
-                      相比上週
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      每日詞彙軌跡
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-500">
-                      這一列由後端摘要直接提供，避免前端各自計算不同週期。
+                      依照每天接觸到的不同詞彙數量統計
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-                      比較區間
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
+                      本週峰值
                     </p>
-                    <p className="text-sm font-black text-slate-700">
-                      本週 vs 上週
+                    <p className="text-lg font-black text-slate-700">
+                      {peakValue} 個
                     </p>
                   </div>
                 </div>
+                <div className="grid grid-cols-7 gap-3">
+                  {days.map((day, index) => {
+                    const dayValue = weeklySeries[index];
+                    const heightPercent = (dayValue / maxWeeklyValue) * 100;
+                    const barHeight =
+                      dayValue > 0 ? Math.max(heightPercent, 14) : 0;
 
-                <div className="grid grid-cols-2 gap-3">
-                  <WeeklyDeltaPill
-                    label="新詞彙"
-                    metric={weeklyDelta.words_learned}
-                    unit="個"
-                  />
-                  <WeeklyDeltaPill
-                    label="學習時間"
-                    metric={weeklyDelta.learning_time}
-                    unit="分"
-                  />
-                  <WeeklyDeltaPill
-                    label="學習回合"
-                    metric={weeklyDelta.sessions}
-                    unit="次"
-                  />
-                  <WeeklyDeltaPill
-                    label="活躍日"
-                    metric={weeklyDelta.active_days}
-                    unit="天"
-                  />
+                    return (
+                      <div
+                        key={day}
+                        className="group flex flex-col items-center gap-2"
+                      >
+                        <p
+                          className={`text-xs font-black ${
+                            dayValue > 0 ? "text-slate-700" : "text-slate-300"
+                          }`}
+                        >
+                          {dayValue}
+                        </p>
+                        <div className="flex h-28 w-full items-end rounded-[20px] bg-slate-100/90 p-2 shadow-inner shadow-slate-200/60">
+                          <div
+                            className="w-full rounded-[14px] bg-linear-to-t from-sky-500 to-cyan-300 shadow-[0_10px_24px_rgba(14,165,233,0.24)] transition-all duration-700 group-hover:from-orange-400 group-hover:to-amber-300"
+                            style={{ height: `${barHeight}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] font-bold text-slate-400">
+                          {day}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-            <div className="rounded-[28px] bg-linear-to-b from-slate-50 to-white p-4 ring-1 ring-slate-100">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-                    每日詞彙軌跡
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">
-                    依照每天接觸到的不同詞彙數量統計
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
-                    本週峰值
-                  </p>
-                  <p className="text-lg font-black text-slate-700">
-                    {peakValue} 個
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-7 gap-3">
-                {days.map((day, index) => {
-                  const dayValue = weeklySeries[index];
-                  const heightPercent = (dayValue / maxWeeklyValue) * 100;
-                  const barHeight =
-                    dayValue > 0 ? Math.max(heightPercent, 14) : 0;
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-4xl border-2 border-slate-100 shadow-sm xl:order-3">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
+                <Target className="h-5 w-5 text-sky-500" />
+                主題掌握焦點
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {categoryFocusList.length > 0 ? (
+                categoryFocusList.map((category) => {
+                  const translatedName = getTranslatedCategory(
+                    category.category,
+                  );
+                  const remainingWords = Math.max(
+                    (category.total ?? 0) - (category.mastered ?? 0),
+                    0,
+                  );
 
                   return (
                     <div
-                      key={day}
-                      className="group flex flex-col items-center gap-2"
+                      key={category.category}
+                      className="rounded-3xl bg-slate-50 px-4 py-4"
                     >
-                      <p
-                        className={`text-xs font-black ${
-                          dayValue > 0 ? "text-slate-700" : "text-slate-300"
-                        }`}
-                      >
-                        {dayValue}
-                      </p>
-                      <div className="flex h-28 w-full items-end rounded-[20px] bg-slate-100/90 p-2 shadow-inner shadow-slate-200/60">
-                        <div
-                          className="w-full rounded-[14px] bg-linear-to-t from-sky-500 to-cyan-300 shadow-[0_10px_24px_rgba(14,165,233,0.24)] transition-all duration-700 group-hover:from-orange-400 group-hover:to-amber-300"
-                          style={{ height: `${barHeight}%` }}
-                        />
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-slate-700">
+                            {translatedName}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-slate-400">
+                            {getFocusLabel(category.progress)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black text-slate-400">
+                          {Math.round(category.progress)}%
+                        </span>
                       </div>
-                      <p className="text-[11px] font-bold text-slate-400">
-                        {day}
+                      <Progress
+                        value={category.progress}
+                        className="h-2.5 rounded-full bg-white"
+                        indicatorClassName={
+                          category.progress >= 80
+                            ? "bg-emerald-500"
+                            : category.progress >= 40
+                              ? "bg-sky-500"
+                              : "bg-orange-400"
+                        }
+                      />
+                      <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
+                        {category.total && category.mastered !== undefined
+                          ? `已掌握 ${category.mastered} / ${category.total} 個詞彙，尚有 ${remainingWords} 個可加強。`
+                          : "可優先安排這個主題的短練習，幫助掌握度更穩定。"}
+                      </p>
+                      <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
+                        {getCategorySuggestion(category.category)}
                       </p>
                     </div>
                   );
-                })}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                })
+              ) : (
+                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
+                  <p className="text-sm font-black text-slate-700">
+                    暫時未有主題掌握資料
+                  </p>
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                    完成幾次學習後，這裡會顯示最需要加強的主題和對應的複習建議。
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <div className="space-y-6">
-          <Card className="overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-900 via-slate-800 to-sky-900 shadow-sm">
+          <Card className="overflow-hidden rounded-4xl border-none bg-linear-to-br from-slate-900 via-slate-800 to-sky-900 shadow-sm xl:order-2">
             <CardHeader className="pb-4 text-white">
               <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-sky-200">
                 <TrendingUp className="h-3.5 w-3.5" />
@@ -587,7 +659,7 @@ export function OverviewTab({
             </CardContent>
           </Card>
 
-          <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
+          <Card className="rounded-4xl border-2 border-slate-100 shadow-sm xl:order-4">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
                 <Sparkles className="h-5 w-5 text-amber-500" />
@@ -614,142 +686,11 @@ export function OverviewTab({
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      <PendingActiveVocabularyCard
-        childId={profile.id}
-        onApproved={onActiveVocabularyApproved}
-      />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
-              <BookOpen className="h-5 w-5 text-sky-500" />
-              詞彙掌握結構
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-3 rounded-3xl bg-slate-50 p-4">
-              <div className="flex items-center justify-between text-sm font-bold text-slate-600">
-                <span>整體掌握度</span>
-                <span>
-                  {stats.masteredWords} / {stats.totalWords}
-                </span>
-              </div>
-              <Progress
-                value={overallProgress}
-                className="h-3 rounded-full bg-white"
-                indicatorClassName="bg-sky-500"
-              />
-              <p className="text-sm font-medium text-slate-500">
-                目前已掌握 {Math.round(overallProgress)}% 的整體課程詞彙。
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <MetricRow
-                label="主動詞彙"
-                value={`${stats.activeVocabulary} 個`}
-                progress={
-                  stats.activeVocabulary + stats.passiveVocabulary > 0
-                    ? (stats.activeVocabulary /
-                        (stats.activeVocabulary + stats.passiveVocabulary)) *
-                      100
-                    : 0
-                }
-                indicatorClassName="bg-emerald-500"
-              />
-              <MetricRow
-                label="被動詞彙"
-                value={`${stats.passiveVocabulary} 個`}
-                progress={
-                  stats.activeVocabulary + stats.passiveVocabulary > 0
-                    ? (stats.passiveVocabulary /
-                        (stats.activeVocabulary + stats.passiveVocabulary)) *
-                      100
-                    : 0
-                }
-                indicatorClassName="bg-violet-400"
-              />
-              <MetricRow
-                label="多感官參與度"
-                value={`${stats.multiSensoryEngagement}%`}
-                progress={stats.multiSensoryEngagement}
-                indicatorClassName="bg-amber-400"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-4xl border-2 border-slate-100 shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-700">
-              <Layers className="h-5 w-5 text-emerald-500" />
-              主題掌握焦點
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {categoryFocusList.length > 0 ? (
-              categoryFocusList.map((category) => {
-                const translatedName = getTranslatedCategory(category.category);
-                const remainingWords = Math.max(
-                  (category.total ?? 0) - (category.mastered ?? 0),
-                  0,
-                );
-
-                return (
-                  <div
-                    key={category.category}
-                    className="rounded-3xl bg-slate-50 px-4 py-4"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-slate-700">
-                          {translatedName}
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-slate-400">
-                          {getFocusLabel(category.progress)}
-                        </p>
-                      </div>
-                      <span className="text-sm font-black text-slate-400">
-                        {Math.round(category.progress)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={category.progress}
-                      className="h-2.5 rounded-full bg-white"
-                      indicatorClassName={
-                        category.progress >= 80
-                          ? "bg-emerald-500"
-                          : category.progress >= 40
-                            ? "bg-sky-500"
-                            : "bg-orange-400"
-                      }
-                    />
-                    <p className="mt-3 text-sm font-medium leading-6 text-slate-500">
-                      {category.total && category.mastered !== undefined
-                        ? `已掌握 ${category.mastered} / ${category.total} 個詞彙，尚有 ${remainingWords} 個可加強。`
-                        : "可優先安排這個主題的短練習，幫助掌握度更穩定。"}
-                    </p>
-                    <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-                      {getCategorySuggestion(category.category)}
-                    </p>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
-                <p className="text-sm font-black text-slate-700">
-                  暫時未有主題掌握資料
-                </p>
-                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
-                  完成幾次學習後，這裡會顯示最需要加強的主題和對應的複習建議。
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <PendingActiveVocabularyCard
+          childId={profile.id}
+          onApproved={onActiveVocabularyApproved}
+        />
       </div>
     </div>
   );
@@ -762,6 +703,7 @@ function PendingActiveVocabularyCard({
   childId: string;
   onApproved?: () => void | Promise<void>;
 }) {
+  const { toast } = useToast();
   const [requests, setRequests] = useState<ActiveVocabularyApprovalRequest[]>(
     [],
   );
@@ -792,18 +734,45 @@ function PendingActiveVocabularyCard({
     wordId: string,
     action: "approve" | "reject",
   ) => {
+    const request = requests.find((item) => item.word_id === wordId);
+    const wordLabel = request?.word_cantonese || request?.word || "該詞語";
+
     setActingWordId(wordId);
     try {
       if (action === "approve") {
         await approveActiveVocabRequest(wordId, childId);
-        await onApproved?.();
+        setRequests((prev) =>
+          prev.filter((pendingRequest) => pendingRequest.word_id !== wordId),
+        );
+        toast({
+          title: "已批准詞語",
+          description: `${wordLabel} 已加入主動詞彙。`,
+        });
+        if (onApproved) {
+          void Promise.resolve(onApproved()).catch((refreshError) => {
+            console.error(
+              "Failed to refresh parent dashboard after approval",
+              refreshError,
+            );
+          });
+        }
       } else {
         await rejectActiveVocabRequest(wordId, childId);
+        setRequests((prev) =>
+          prev.filter((pendingRequest) => pendingRequest.word_id !== wordId),
+        );
+        toast({
+          title: "已拒絕詞語",
+          description: `${wordLabel} 已從待確認清單移除。`,
+        });
       }
-
-      setRequests((prev) =>
-        prev.filter((request) => request.word_id !== wordId),
-      );
+    } catch (error) {
+      console.error(`Failed to ${action} active vocabulary request`, error);
+      toast({
+        title: action === "approve" ? "批准失敗" : "拒絕失敗",
+        description: "未能更新詞語狀態，請稍後再試。",
+        variant: "destructive",
+      });
     } finally {
       setActingWordId(null);
     }

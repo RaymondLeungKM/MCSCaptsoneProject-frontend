@@ -11,7 +11,7 @@ import {
 import type { ChildProfile, ReviewQueue, ReviewResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { getReviewQueue, submitReview } from "@/lib/api/phase8";
+import { getReviewQueue, submitReview } from "@/lib/api/word-personalization";
 import { useSpeech } from "@/lib/speech";
 import {
   DEFAULT_REVISION_QUESTION_COUNT,
@@ -41,6 +41,25 @@ function shuffleArray<T>(values: T[]): T[] {
 
 function getCardLabel(card: ReviewQueue["cards"][number]): string {
   return card.word_cantonese?.trim() || card.word?.trim() || "(未知詞語)";
+}
+
+function getQueueReasonText(
+  reason?: ReviewQueue["cards"][number]["queue_reason"],
+): string {
+  switch (reason) {
+    case "due":
+      return "呢張卡已到重溫時間，宜家溫習效果最好。";
+    case "bridge":
+      return "呢張卡可以連接你最近學過的詞語，幫你建立概念網。";
+    case "weak_link":
+      return "系統發現你喺呢類詞語較易混淆，先加強會更穩陣。";
+    case "quick_win":
+      return "呢張卡屬於容易鞏固的內容，先答啱可以建立信心。";
+    case "balance":
+      return "系統為你平衡咗題目類型，同一類唔會連續太多。";
+    default:
+      return "系統按你最近表現安排咗呢張卡。";
+  }
 }
 
 function buildChallenge(
@@ -408,6 +427,9 @@ export function RevisionLabView({
             </p>
             <p className="text-lg font-black text-slate-700 leading-relaxed">
               {promptText}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              {getQueueReasonText(currentCard.queue_reason)}
             </p>
           </div>
           {attemptCount > 0 && !isResolved && (
