@@ -61,12 +61,21 @@ export function StoryCard({
   const styles = getCoverStyles(story.color || "blue", story.completed);
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onRead(story)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onRead(story);
+        }
+      }}
       className={cn(
-        "group relative flex flex-col rounded-4xl overflow-hidden min-w-[17rem] w-[17rem] h-[23rem]",
+        "group relative flex flex-col rounded-4xl overflow-hidden min-w-[17rem] w-[17rem] h-[23rem] cursor-pointer",
         "border-4 transition-all duration-300",
         "hover:scale-105 active:scale-95 shadow-sm hover:shadow-xl",
+        "focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-300",
         story.completed
           ? "border-emerald-400"
           : "border-white hover:border-purple-200",
@@ -128,7 +137,7 @@ export function StoryCard({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
