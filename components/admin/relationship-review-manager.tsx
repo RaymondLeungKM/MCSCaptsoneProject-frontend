@@ -193,7 +193,7 @@ export function RelationshipReviewManager() {
       setSelectedIds([]);
     } catch (loadError) {
       console.error("Failed to load pending AI relationships", loadError);
-      setError("未能載入 AI 詞彙關係審核清單，請稍後再試。");
+      setError("未能載入詞彙關係審核清單，請稍後再試。");
     } finally {
       setLoading(false);
     }
@@ -536,7 +536,7 @@ export function RelationshipReviewManager() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <CardTitle className="text-2xl font-black text-slate-800">
-                AI 詞彙關係審核
+                詞彙關係審核
               </CardTitle>
               <CardDescription className="mt-1">
                 先由系統產生候選詞彙連結，再由管理員決定是否保留，提升知識圖譜品質。

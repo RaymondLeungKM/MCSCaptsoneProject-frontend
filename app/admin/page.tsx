@@ -908,7 +908,7 @@ export default function AdminPage() {
                   className="justify-start gap-3 rounded-3xl border border-emerald-100 bg-white/80 px-4 py-3 text-left data-[state=active]:border-emerald-200 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none"
                 >
                   <GitBranch className="h-4 w-4" />
-                  <span className="font-black">AI 關係審核</span>
+                  <span className="font-black">詞彙關係審核</span>
                 </TabsTrigger>
               </TabsList>
             </div>
