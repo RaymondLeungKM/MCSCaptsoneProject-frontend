@@ -133,7 +133,6 @@ const CANTONESE_TO_ENGLISH: Record<string, string> = {
   月亮: "moon",
   星星: "star",
   雲: "cloud",
-  風: "wind",
   草: "grass",
   山: "mountain",
 
@@ -318,9 +317,9 @@ interface ImagePrompt {
 function buildPrompt(wordEnglish: string): ImagePrompt {
   const w = (wordEnglish || "object").trim().toLowerCase();
   return {
-    prompt: `a single ${w}, highly detailed, photorealistic RAW photograph, centered on a pure white seamless background. High-end product photography, soft studio lighting, shot on DSLR, 85mm lens, f/8 aperture, razor-sharp focus, visible natural textures, 8k resolution. Clean and bright, no text, no label.`,
+    prompt: `a high-quality clean soft watercolor illustration of a single ${w} for children's Cantonese vocabulary flashcard, simple plain inanimate object, no face no eyes no mouth no limbs no anthropomorphic features, soft warm pastel tones, gentle ink outlines, smooth shading, centered composition, plain cream paper background with subtle texture and soft shadow, child-friendly, educational, no text, no labels`,
     negative_prompt:
-      "cartoon, emoji, vector, flat, illustration, drawing, sketch, anime, manga, 3D render, text, letters, words, watermark, blurry, noisy, multiple objects, busy background, human, person, fingers, hands, face on object, anthropomorphic, dark, moody, scary",
+      "photo, photograph, realistic, 3D render, clay, pixel art, face, eyes, mouth, smile, kawaii face, cartoon face, anthropomorphic, limbs, arms, legs, hands, multiple objects, busy background, dark background, text, letters, labels, watermark, blurry, low quality, oversaturated",
   };
 }
 
@@ -749,26 +748,10 @@ async function generateWithGemini(
   }
 }
 
-function resolveProvider(providerOverride: string, modelOverride: string): ImageProvider {
-  if (providerOverride === "gemini") {
-    return "gemini";
-  }
-  if (providerOverride === "siliconflow") {
-    return "siliconflow";
-  }
-  if (modelOverride === GEMINI_MODEL || modelOverride === "gemini-3.1-flash-image-preview") {
-    return "gemini";
-  }
-  if (modelOverride === SILICONFLOW_MODEL) {
-    return "siliconflow";
-  }
-  // Google image models → route through Gemini/Cloudflare AI Gateway
-  if (
-    modelOverride.startsWith("gemini-") ||
-    modelOverride.startsWith("google/")
-  ) {
-    return "gemini";
-  }
+function resolveProvider(_providerOverride: string, _modelOverride: string): ImageProvider {
+  // All generated images use FLUX.2 Klein 9B via Cloudflare Workers AI.
+  // Provider/model overrides are intentionally ignored so every image —
+  // including the test page — goes through the single FLUX.2 provider.
   return "cloudflare";
 }
 
@@ -834,21 +817,15 @@ export async function GET(request: Request) {
       imagePrompt = buildPrompt(translated);
     }
 
-    // 3. Generate with Cloudflare Workers AI
+    // 3. Generate with Cloudflare Workers AI — always FLUX.2 Klein 9B.
+    // Model overrides are ignored so every image uses the single FLUX.2 model.
     const genOptions: GenerateOptions = { provider };
-    if (modelOverride) genOptions.model = modelOverride;
     if (guidanceOverride !== undefined && !isNaN(guidanceOverride))
       genOptions.guidance = guidanceOverride;
     if (stepsOverride !== undefined && !isNaN(stepsOverride))
       genOptions.numSteps = stepsOverride;
 
-    const modelUsed =
-      modelOverride ||
-      (provider === "gemini"
-        ? GEMINI_MODEL
-        : provider === "siliconflow"
-          ? SILICONFLOW_MODEL
-          : CF_MODEL);
+    const modelUsed = CF_MODEL;
     console.log(`[generate-image] model=${modelUsed} provider=${provider} prompt="${imagePrompt.prompt.slice(0, 80)}..." neg="${imagePrompt.negative_prompt.slice(0, 60)}..."`);
 
     const imageResult =

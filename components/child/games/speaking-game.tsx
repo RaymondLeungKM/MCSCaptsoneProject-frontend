@@ -300,7 +300,6 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
         setTimeout(() => { nextRound(); }, 1800);
       } else {
         setTimeout(() => { void playCurrentWord(); }, 400);
-        setTimeout(() => { void playCurrentWord(); }, 1400);
         setTimeout(() => { setResult(null); setTranscript(""); }, 2200);
       }
       return newCount;

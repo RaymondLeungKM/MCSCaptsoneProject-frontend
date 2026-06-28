@@ -55,7 +55,7 @@ const MASCOT_TIERS: MascotTier[] = [
   {
     id: "owl",
     unlockLevel: 1,
-    name: "Ollie 貓頭鷹",
+    name: "貓頭鷹",
     role: "你嘅學習老師",
     accent: "rgba(139, 92, 246, 0.55)",
     bubbleBorder: "#c4b5fd",
@@ -271,7 +271,7 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
           ref={cardRef}
           role="dialog"
           aria-label={`${activeMascot.name} 對話`}
-          className="fixed bottom-[148px] right-3 z-50 w-[280px] sm:w-[300px] rounded-3xl bg-white shadow-[0_24px_50px_rgba(15,23,42,0.22)]"
+          className="fixed bottom-[148px] right-3 z-50 w-[300px] sm:w-[340px] rounded-3xl bg-white shadow-[0_24px_50px_rgba(15,23,42,0.22)]"
           style={{
             border: `3px solid ${activeMascot.bubbleBorder}`,
             animation: "owl-card-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -293,12 +293,12 @@ export function OwlCompanion({ level = 1 }: OwlCompanionProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p
-                className="truncate text-base font-black"
+                className="text-base font-black leading-tight"
                 style={{ color: activeMascot.bubbleText }}
               >
                 {activeMascot.name}
               </p>
-              <p className="truncate text-xs font-bold text-slate-500">
+              <p className="text-xs font-bold leading-tight text-slate-500">
                 {activeMascot.role} · Lv.{Math.max(level, activeMascot.unlockLevel)}
               </p>
             </div>

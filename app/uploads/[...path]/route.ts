@@ -55,6 +55,13 @@ async function proxy(
       }
     });
 
+    // Force revalidation so regenerated images replace browser-cached old
+    // versions immediately. The upstream still sends ETag/Last-Modified so
+    // a 304 is returned when the content is unchanged — no bandwidth wasted.
+    if (pathStr.startsWith("images/")) {
+      responseHeaders.set("Cache-Control", "no-cache, must-revalidate");
+    }
+
     return new NextResponse(upstream.body, {
       status: upstream.status,
       headers: responseHeaders,
