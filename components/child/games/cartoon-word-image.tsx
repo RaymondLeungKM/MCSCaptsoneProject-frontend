@@ -71,17 +71,35 @@ export function CartoonWordImage({
 
   const label = wordCantonese || word;
 
+  const resolvedSrc = hasStoredImage
+    ? resolveBackendAssetUrl(imgUrl)
+    : imgUrl;
+
+  if (typeof window !== "undefined") {
+    // One concise log per render decision so we can trace which source each
+    // word image came from (stored backend image vs on-the-fly generation).
+    console.log(
+      `[CartoonImage] word="${label}" source=${hasStoredImage ? "stored" : "generated"} src="${resolvedSrc}"`,
+    );
+  }
+
   const handleError = useCallback(() => {
     if (retriesRef.current < MAX_RETRIES) {
       retriesRef.current += 1;
+      console.warn(
+        `[CartoonImage] LOAD FAILED word="${label}" retry ${retriesRef.current}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms src="${resolvedSrc}"`,
+      );
       // Retry after a delay
       setTimeout(() => {
         setImgKey((k) => k + 1);
       }, RETRY_DELAY_MS);
     } else {
+      console.error(
+        `[CartoonImage] GAVE UP word="${label}" after ${MAX_RETRIES} retries — showing emoji fallback "${emoji}" src="${resolvedSrc}"`,
+      );
       setGaveUp(true);
     }
-  }, []);
+  }, [emoji, label, resolvedSrc]);
 
   const showPlaceholder = !realLoaded || gaveUp;
 
@@ -117,7 +135,10 @@ export function CartoonWordImage({
           className={`w-full h-full object-contain transition-opacity duration-300 ${
             realLoaded ? "opacity-100" : "opacity-0"
           }`}
-          onLoad={() => setRealLoaded(true)}
+          onLoad={() => {
+            console.log(`[CartoonImage] LOADED word="${label}" src="${resolvedSrc}"`);
+            setRealLoaded(true);
+          }}
           onError={handleError}
           loading="eager"
           crossOrigin="anonymous"
