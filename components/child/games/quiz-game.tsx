@@ -534,7 +534,7 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4 py-2 overflow-y-auto min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 gap-4 pt-4 pb-8 overflow-y-auto min-h-0">
         {/* Audio prompt */}
         <div className="flex flex-col items-center gap-2 shrink-0">
           <p className="child-tab-section-title !mt-0 !text-xl !text-center !text-slate-700 bg-white/50 px-5 py-1.5 rounded-full border-2 border-purple-200 shadow-sm">

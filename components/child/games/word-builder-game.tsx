@@ -681,7 +681,7 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6 overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 gap-6 overflow-y-auto pt-4 pb-8">
         {/* Image + Audio */}
         {currentWord && (
           <div className="flex flex-col items-center gap-5">
