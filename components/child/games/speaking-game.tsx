@@ -759,13 +759,13 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
               wordCantonese={currentWord.word_cantonese}
               category={currentWord.category}
               existingImageUrl={currentWord.image_url}
-              className="w-full h-[160px] rounded-3xl"
+              className="w-full max-w-[220px] mx-auto aspect-square rounded-3xl"
               emojiSize="text-7xl"
               placeholderBg="bg-orange-50"
               showLabel={false}
             />
           ) : (
-            <div className="w-full h-[160px] rounded-3xl bg-orange-50 flex items-center justify-center text-7xl">
+            <div className="w-full max-w-[220px] mx-auto aspect-square rounded-3xl bg-orange-50 flex items-center justify-center text-7xl">
               🎨
             </div>
           )}
@@ -802,7 +802,7 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
               >
                 {micErrorKind === "network" ? "🎤 再試發音" : "🔄 再試一次"}
               </button>
-              {micErrorKind === "network" && (
+              {(micErrorKind === "network" || micErrorKind === "device") && (
                 <button
                   onClick={() => {
                     setMicError(null);
@@ -817,6 +817,11 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
                 </button>
               )}
             </div>
+            {micErrorKind === "device" && (
+              <p className="child-tab-caption !mt-3 !text-amber-600">
+                冇麥克風都可以繼續聽聲音學習 🔊
+              </p>
+            )}
           </div>
         )}
 
