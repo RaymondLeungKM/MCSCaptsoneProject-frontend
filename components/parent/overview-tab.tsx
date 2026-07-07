@@ -399,7 +399,7 @@ export function OverviewTab({
               </div>
               {weeklyDelta && (
                 <div className="rounded-3xl bg-linear-to-r from-sky-50 to-white p-4 ring-1 ring-slate-100">
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
                         相比上週
@@ -408,7 +408,7 @@ export function OverviewTab({
                         這一列由後端摘要直接提供，避免前端各自計算不同週期。
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-slate-100">
+                    <div className="w-full rounded-2xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-slate-100 sm:w-auto sm:text-right">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
                         比較時間
                       </p>
@@ -418,7 +418,7 @@ export function OverviewTab({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <WeeklyDeltaPill
                       label="新詞彙"
                       metric={weeklyDelta.words_learned}
@@ -973,17 +973,16 @@ function WeeklyDeltaPill({
         : "持平";
 
   return (
-    <div className="relative rounded-3xl bg-white px-4 pb-4 pt-5 shadow-sm ring-1 ring-slate-100">
-      <span
-        className={`absolute right-4 top-4 shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${deltaToneClass}`}
-      >
-        {deltaLabel}
-      </span>
-
-      <div className="min-h-10 pr-20">
+    <div className="rounded-3xl bg-white px-4 pb-4 pt-5 shadow-sm ring-1 ring-slate-100">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <p className="text-sm font-bold leading-tight tracking-[0.04em] text-slate-400">
           {label}
         </p>
+        <span
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ring-1 ${deltaToneClass}`}
+        >
+          {deltaLabel}
+        </span>
       </div>
 
       <p className="mt-3 text-lg font-black text-slate-800">

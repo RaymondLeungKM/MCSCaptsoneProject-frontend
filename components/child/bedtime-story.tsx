@@ -245,23 +245,23 @@ export function BedtimeStoryGenerator({
         </div>
 
         {/* Theme Selection Grid */}
-        <div className="bg-white/60 backdrop-blur-md p-4 sm:p-6 rounded-[32px] mx-3 sm:mx-4 mb-4">
+        <div className="mx-3 mb-4 rounded-[32px] bg-white/60 p-4 backdrop-blur-md sm:mx-4 sm:p-6">
           <h3 className="child-tab-section-title mb-4 flex items-center gap-2 text-purple-900">
             <Sparkles className="w-4 h-4 text-yellow-500" /> 選擇主題
           </h3>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
             {themes.map((theme) => (
               <button
                 key={theme.value}
                 onClick={() => setCurrentSelectedTheme(theme.value)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 p-2 rounded-2xl border-2 transition-all duration-300",
+                  "flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 p-3 text-center transition-all duration-300 sm:min-h-0 sm:p-2",
                   currentSelectedTheme === theme.value
                     ? "bg-purple-100 border-purple-400 text-purple-900 shadow-md scale-105"
                     : "bg-white border-transparent hover:border-purple-200 text-slate-600 hover:bg-purple-50",
                 )}
               >
-                <span className="text-xl">{theme.emoji}</span>
+                <span className="text-2xl sm:text-xl">{theme.emoji}</span>
                 <span className="child-tab-card-title !mt-0 !text-sm sm:!text-base">
                   {theme.label}
                 </span>
@@ -337,26 +337,26 @@ function StoryCard({
   return (
     <Card className="relative overflow-hidden bg-white border-4 border-white rounded-[40px] shadow-xl">
       {/* Header Art */}
-      <div className="h-32 bg-gradient-to-r from-indigo-400 to-purple-400 relative">
+      <div className="relative h-28 bg-gradient-to-r from-indigo-400 to-purple-400 sm:h-32">
         <Sparkles className="absolute top-4 right-4 text-white/30 w-12 h-12" />
-        <div className="absolute -bottom-8 left-6 w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl shadow-md">
+        <div className="absolute -bottom-7 left-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-3xl shadow-md sm:-bottom-8 sm:left-6 sm:h-16 sm:w-16">
           🍎
         </div>
       </div>
 
-      <div className="pt-10 px-8 pb-8">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="child-tab-section-title mb-1 !text-3xl md:!text-[2.4rem]">
+      <div className="px-4 pb-5 pt-8 sm:px-8 sm:pb-8 sm:pt-10">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="child-tab-section-title mb-1 !text-2xl !leading-tight sm:!text-3xl md:!text-[2.4rem]">
               {story.title}
             </h3>
           </div>
-          <button className="p-2 bg-pink-50 rounded-full text-pink-500 hover:bg-pink-100 transition-colors">
+          <button className="rounded-full bg-pink-50 p-2 text-pink-500 transition-colors hover:bg-pink-100">
             <Heart className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="flex gap-2 mb-6">
+        <div className="mb-5 flex flex-wrap gap-2 sm:mb-6">
           {story.featured_words.map((word) => (
             <Badge
               key={word}
@@ -370,8 +370,8 @@ function StoryCard({
           </Badge>
         </div>
 
-        <div className="bg-slate-50 p-6 rounded-[24px] mb-6">
-          <p className="child-tab-card-copy !mt-0 !text-xl !leading-relaxed !text-slate-600 md:!text-2xl">
+        <div className="mb-5 rounded-[24px] bg-slate-50 p-4 sm:mb-6 sm:p-6">
+          <p className="child-tab-card-copy !mt-0 !text-lg !leading-relaxed !text-slate-600 sm:!text-xl md:!text-2xl">
             {story.content_cantonese}
           </p>
         </div>
@@ -379,7 +379,7 @@ function StoryCard({
         <Button
           onClick={onRead}
           disabled={!onRead}
-          className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-12 w-full rounded-full bg-[#38BDF8] text-lg font-black text-white shadow-lg transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 sm:h-14 sm:text-xl"
         >
           <BookOpen className="w-5 h-5 mr-2" />
           開始閱讀

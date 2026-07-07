@@ -63,6 +63,8 @@ export function StoriesView({
     title: story.title,
     duration: `${story.reading_time_minutes || 5} 分鐘`,
     completed: (story.read_count || 0) > 0,
+    generatedAt:
+      story.generated_at || story.generation_date || story.created_at,
     emoji:
       story.theme === "animals"
         ? "🦊"
@@ -90,12 +92,13 @@ export function StoriesView({
     }
 
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {storiesToShow.map((story) => (
           <StoryCard
             key={story.id}
             story={toStoryCardData(story)}
             onRead={() => onReadStory(story)}
+            variant="compact"
           />
         ))}
       </div>
@@ -108,9 +111,7 @@ export function StoriesView({
       <div className="flex items-center gap-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-7 rounded-3xl text-white shadow-lg">
         <Moon className="w-12 h-12 shrink-0" />
         <div>
-          <h1 className="text-4xl font-black md:text-[2.75rem]">
-            睡前故事
-          </h1>
+          <h1 className="text-4xl font-black md:text-[2.75rem]">睡前故事</h1>
           <p className="text-lg opacity-95 font-semibold md:text-xl">
             {childName}的故事圖書館
           </p>
@@ -180,7 +181,10 @@ export function StoriesView({
         ) : (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
             <TabsList className="grid w-full grid-cols-2 h-14">
-              <TabsTrigger value="all" className="flex items-center gap-2 text-base font-black">
+              <TabsTrigger
+                value="all"
+                className="flex items-center gap-2 text-base font-black"
+              >
                 <BookOpen className="w-4 h-4" />
                 全部故事
                 <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">

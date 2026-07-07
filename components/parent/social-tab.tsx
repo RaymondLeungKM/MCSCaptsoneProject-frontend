@@ -2697,7 +2697,7 @@ function ChallengesPanel() {
 
           {latestCompletedFriendChallenge && (
             <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
                     已完成回顧
@@ -2706,7 +2706,7 @@ function ChallengesPanel() {
                     只顯示最近完成的一場挑戰，可直接套用設定再發起。
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
                     最近 1 場
                   </span>
@@ -2757,9 +2757,9 @@ function ChallengesPanel() {
 
                     return (
                       <>
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                           <div className="min-w-0">
-                            <p className="text-lg font-black text-slate-700 truncate">
+                            <p className="text-lg font-black text-slate-700 wrap-break-word sm:truncate">
                               {latestCompletedFriendChallenge.emoji}{" "}
                               {latestCompletedFriendChallenge.title_zh}
                             </p>
@@ -2777,7 +2777,7 @@ function ChallengesPanel() {
                               )}
                             </p>
                           </div>
-                          <div className="flex flex-col items-end gap-2 shrink-0">
+                          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end sm:shrink-0">
                             <span
                               className={`rounded-full px-3 py-1 text-xs font-black ${lifecyclePillClass(
                                 resolveFriendChallengeLifecycle(

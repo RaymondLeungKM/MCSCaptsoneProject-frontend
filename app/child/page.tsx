@@ -116,6 +116,16 @@ const GAMES_DATA: Game[] = [
 const IDLE_TIMEOUT_MS = 60_000;
 const IDLE_CHECK_INTERVAL_MS = 15_000;
 const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
+const RECENT_STORIES_LIMIT = 3;
+const ARCHIVE_PREVIEW_LIMIT = 2;
+
+interface StoryArchiveGroup {
+  key: string;
+  label: string;
+  stories: GeneratedStory[];
+}
+
+type StoryShelfFilter = "all" | "new" | "read";
 
 function getStoredSelectedChildId(): string | null {
   if (typeof window === "undefined") {
@@ -138,6 +148,78 @@ function getLocalDateString(value: Date = new Date()): string {
   const month = String(value.getMonth() + 1).padStart(2, "0");
   const day = String(value.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getStoryDisplayDate(story: GeneratedStory): Date | null {
+  const rawValue =
+    story.generated_at || story.generation_date || story.created_at;
+  if (!rawValue) {
+    return null;
+  }
+
+  const parsed = new Date(rawValue);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function sortStoriesByNewest(storyList: GeneratedStory[]): GeneratedStory[] {
+  return [...storyList].sort((left, right) => {
+    const leftTime = getStoryDisplayDate(left)?.getTime() ?? 0;
+    const rightTime = getStoryDisplayDate(right)?.getTime() ?? 0;
+    return rightTime - leftTime;
+  });
+}
+
+function formatStoryArchiveLabel(
+  key: string,
+  referenceDate: Date = new Date(),
+): string {
+  if (key === "older") {
+    return "較早故事";
+  }
+
+  const [yearText, monthText] = key.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+
+  if (
+    year === referenceDate.getFullYear() &&
+    month === referenceDate.getMonth() + 1
+  ) {
+    return "今個月較早故事";
+  }
+
+  if (year === referenceDate.getFullYear()) {
+    return `${month} 月故事`;
+  }
+
+  return `${year} 年 ${month} 月故事`;
+}
+
+function buildStoryArchiveGroups(
+  storyList: GeneratedStory[],
+): StoryArchiveGroup[] {
+  const groupedStories = new Map<string, GeneratedStory[]>();
+
+  storyList.forEach((story) => {
+    const storyDate = getStoryDisplayDate(story);
+    const key = storyDate
+      ? `${storyDate.getFullYear()}-${String(storyDate.getMonth() + 1).padStart(2, "0")}`
+      : "older";
+    const existingStories = groupedStories.get(key);
+
+    if (existingStories) {
+      existingStories.push(story);
+      return;
+    }
+
+    groupedStories.set(key, [story]);
+  });
+
+  return Array.from(groupedStories.entries()).map(([key, grouped]) => ({
+    key,
+    label: formatStoryArchiveLabel(key),
+    stories: grouped,
+  }));
 }
 
 function toLearningControlStatus(
@@ -285,6 +367,11 @@ function ChildDashboardContent() {
   const [storiesError, setStoriesError] = useState<string | null>(null);
   const [curatedStoriesError, setCuratedStoriesError] = useState<string | null>(
     null,
+  );
+  const [storyShelfFilter, setStoryShelfFilter] =
+    useState<StoryShelfFilter>("all");
+  const [expandedArchiveGroups, setExpandedArchiveGroups] = useState<string[]>(
+    [],
   );
   const [playingStoryId, setPlayingStoryId] = useState<string | null>(null);
   const [storyAudioLoadingId, setStoryAudioLoadingId] = useState<string | null>(
@@ -524,6 +611,24 @@ function ChildDashboardContent() {
         (curated || []).map((story) => ({
           ...story,
           child_id: story.child_id ?? null,
+          title_english: story.title_english ?? undefined,
+          theme: story.theme ?? undefined,
+          generated_by: story.generated_by ?? undefined,
+          content_english: story.content_english ?? undefined,
+          jyutping: story.jyutping ?? undefined,
+          vocab_used: story.vocab_used ?? undefined,
+          story_generate_provdier: story.story_generate_provdier ?? undefined,
+          story_generate_model: story.story_generate_model ?? undefined,
+          word_usage: story.word_usage ?? undefined,
+          audio_url: story.audio_url ?? undefined,
+          audio_duration_seconds: story.audio_duration_seconds ?? undefined,
+          audio_generate_provider: story.audio_generate_provider ?? undefined,
+          audio_generate_voice_name:
+            story.audio_generate_voice_name ?? undefined,
+          word_count: story.word_count ?? undefined,
+          cultural_references: story.cultural_references ?? undefined,
+          ai_model: story.ai_model ?? undefined,
+          updated_at: story.updated_at ?? undefined,
         })),
       );
     } catch (err) {
@@ -547,9 +652,72 @@ function ChildDashboardContent() {
     title: story.title,
     duration: `${story.reading_time_minutes || 5} min`,
     completed: (story.read_count || 0) > 0,
+    generatedAt:
+      story.generated_at || story.generation_date || story.created_at,
     color,
-    emoji: "📖",
+    emoji:
+      story.theme === "animals"
+        ? "🦊"
+        : story.theme === "nature"
+          ? "🌙"
+          : story.theme === "adventure"
+            ? "🚀"
+            : story.theme === "family"
+              ? "🏠"
+              : story.theme === "friendship"
+                ? "🤝"
+                : "📖",
   });
+
+  const visibleStories = sortStoriesByNewest(stories);
+  const unreadStories = visibleStories.filter(
+    (story) => (story.read_count || 0) === 0,
+  );
+  const readStories = visibleStories.filter(
+    (story) => (story.read_count || 0) > 0,
+  );
+  const filteredStories = visibleStories.filter((story) => {
+    if (storyShelfFilter === "new") {
+      return (story.read_count || 0) === 0;
+    }
+
+    if (storyShelfFilter === "read") {
+      return (story.read_count || 0) > 0;
+    }
+
+    return true;
+  });
+  const continueReadingStory =
+    storyShelfFilter === "new" ? null : (readStories[0] ?? null);
+  const shelfStories = continueReadingStory
+    ? filteredStories.filter((story) => story.id !== continueReadingStory.id)
+    : filteredStories;
+  const recentStories = shelfStories.slice(0, RECENT_STORIES_LIMIT);
+  const archiveStoryGroups = buildStoryArchiveGroups(
+    shelfStories.slice(RECENT_STORIES_LIMIT),
+  );
+
+  const toggleArchiveGroup = (key: string) => {
+    setExpandedArchiveGroups((currentKeys) =>
+      currentKeys.includes(key)
+        ? currentKeys.filter((currentKey) => currentKey !== key)
+        : [...currentKeys, key],
+    );
+  };
+
+  const renderCompactStoryCard = (story: GeneratedStory) => (
+    <StoryCard
+      key={story.id}
+      story={toStoryCard(story, "blue")}
+      onRead={(cardStory) => void handleReadStory(cardStory.id)}
+      onPlayAudio={
+        story.audio_url ? () => void handlePlayStoryAudio(story.id) : undefined
+      }
+      isAudioPlaying={playingStoryId === story.id}
+      isAudioLoading={storyAudioLoadingId === story.id}
+      variant="compact"
+    />
+  );
 
   const resolveAudioUrl = (audioUrl: string): string => {
     if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
@@ -1179,8 +1347,8 @@ function ChildDashboardContent() {
           )}
 
           {activeTab === "stories" && (
-            <div className="space-y-8">
-              <section className="bg-white/60 backdrop-blur-md rounded-4xl p-2 shadow-sm border border-white/50">
+            <div className="space-y-6 sm:space-y-8">
+              <section className="rounded-4xl border border-white/50 bg-white/60 p-1.5 shadow-sm backdrop-blur-md sm:p-2">
                 <BedtimeStoryGenerator
                   childId={profile.id}
                   childName={profile.name}
@@ -1198,56 +1366,222 @@ function ChildDashboardContent() {
                 />
               </section>
 
-              <section className="px-2">
-                <div className="flex items-center gap-3 mb-4 pl-2">
-                  <div className="bg-blue-400 p-2 rounded-xl -rotate-3 shadow-sm">
-                    <Book className="w-5 h-5 text-white" />
+              <section className="px-1 sm:px-2">
+                <div className="rounded-[30px] border border-white/50 bg-white/60 p-3 shadow-sm backdrop-blur-md sm:rounded-[34px] sm:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3 sm:items-center">
+                      <div className="rounded-xl bg-blue-400 p-2 shadow-sm sm:-rotate-3">
+                        <Book className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+                          我的故事書
+                        </h2>
+                        <p className="mt-1 text-sm font-semibold leading-snug text-slate-500">
+                          最新故事置頂，較早的故事會自動收進故事寶箱
+                        </p>
+                      </div>
+                    </div>
+
+                    {!storiesLoading && visibleStories.length > 0 && (
+                      <div className="self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-500 sm:self-auto sm:text-sm">
+                        {filteredStories.length === visibleStories.length
+                          ? `${visibleStories.length} 本故事`
+                          : `顯示 ${filteredStories.length} / ${visibleStories.length} 本`}
+                      </div>
+                    )}
                   </div>
-                  <h2 className="text-3xl font-black text-slate-700">
-                    我的故事書
-                  </h2>
-                </div>
 
-                {storiesError && (
-                  <Alert variant="destructive" className="mb-3 rounded-2xl">
-                    <AlertDescription>{storiesError}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {!storiesLoading &&
-                    stories.length > 0 &&
-                    stories.map((story) => (
-                      <StoryCard
-                        key={story.id}
-                        story={toStoryCard(story, "blue")}
-                        onRead={(cardStory) =>
-                          void handleReadStory(cardStory.id)
-                        }
-                        onPlayAudio={
-                          story.audio_url
-                            ? () => void handlePlayStoryAudio(story.id)
-                            : undefined
-                        }
-                        isAudioPlaying={playingStoryId === story.id}
-                        isAudioLoading={storyAudioLoadingId === story.id}
-                      />
-                    ))}
-
-                  {!storiesLoading && stories.length === 0 && (
-                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
-                      <Sparkles className="w-10 h-10 mb-3 opacity-50" />
-                      <span className="font-bold text-base">
-                        生成第一個故事
-                      </span>
-                    </div>
+                  {storiesError && (
+                    <Alert variant="destructive" className="mb-3 rounded-2xl">
+                      <AlertDescription>{storiesError}</AlertDescription>
+                    </Alert>
                   )}
 
-                  {storiesLoading && (
-                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
-                      <span className="font-bold text-base">載入故事中...</span>
-                    </div>
-                  )}
+                  <div className="space-y-4">
+                    {!storiesLoading && visibleStories.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                        {[
+                          {
+                            value: "all" as const,
+                            label: "全部",
+                            count: visibleStories.length,
+                          },
+                          {
+                            value: "new" as const,
+                            label: "新故事",
+                            count: unreadStories.length,
+                          },
+                          {
+                            value: "read" as const,
+                            label: "已閱讀",
+                            count: readStories.length,
+                          },
+                        ].map((filterOption) => {
+                          const isActive =
+                            storyShelfFilter === filterOption.value;
+
+                          return (
+                            <button
+                              key={filterOption.value}
+                              type="button"
+                              onClick={() =>
+                                setStoryShelfFilter(filterOption.value)
+                              }
+                              className={
+                                isActive
+                                  ? "rounded-full bg-slate-700 px-3 py-2 text-center text-sm font-black text-white shadow-sm sm:px-4"
+                                  : "rounded-full bg-white/80 px-3 py-2 text-center text-sm font-black text-slate-500 shadow-sm transition-colors hover:bg-white sm:px-4"
+                              }
+                            >
+                              {filterOption.label} {filterOption.count}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {!storiesLoading && continueReadingStory && (
+                      <div className="rounded-[28px] border border-white/70 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-black tracking-[0.18em] text-emerald-500">
+                              繼續重讀
+                            </p>
+                            <h3 className="text-lg font-black text-slate-700 sm:text-xl">
+                              由上次讀到的故事開始
+                            </h3>
+                          </div>
+                          <div className="self-start rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-700 sm:self-auto sm:text-sm">
+                            已閱讀 {continueReadingStory.read_count || 0} 次
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                          {renderCompactStoryCard(continueReadingStory)}
+                        </div>
+                      </div>
+                    )}
+
+                    {!storiesLoading && filteredStories.length > 0 && (
+                      <div className="rounded-[28px] border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-black tracking-[0.18em] text-sky-500">
+                              最近生成
+                            </p>
+                            <h3 className="text-lg font-black text-slate-700 sm:text-xl">
+                              先讀最新故事
+                            </h3>
+                          </div>
+                          <div className="self-start rounded-full bg-sky-100 px-3 py-1.5 text-xs font-black text-sky-700 sm:self-auto sm:text-sm">
+                            先看最近 {recentStories.length} 本
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          {recentStories.map(renderCompactStoryCard)}
+                        </div>
+                      </div>
+                    )}
+
+                    {!storiesLoading && archiveStoryGroups.length > 0 && (
+                      <div className="rounded-[28px] border border-white/70 bg-white/55 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-xs font-black tracking-[0.18em] text-indigo-500">
+                              故事寶箱
+                            </p>
+                            <h3 className="text-lg font-black text-slate-700 sm:text-xl">
+                              較早故事按月份收好
+                            </h3>
+                          </div>
+                          <div className="self-start rounded-full bg-indigo-100 px-3 py-1.5 text-xs font-black text-indigo-700 sm:self-auto sm:text-sm">
+                            {filteredStories.length - recentStories.length}{" "}
+                            本較早故事
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {archiveStoryGroups.map((group) => {
+                            const isExpanded = expandedArchiveGroups.includes(
+                              group.key,
+                            );
+                            const visibleGroupStories = isExpanded
+                              ? group.stories
+                              : group.stories.slice(0, ARCHIVE_PREVIEW_LIMIT);
+
+                            return (
+                              <div
+                                key={group.key}
+                                className="rounded-[24px] border border-white/70 bg-white/80 p-3 shadow-sm sm:p-4"
+                              >
+                                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                                  <div>
+                                    <h4 className="text-base font-black text-slate-700 sm:text-lg">
+                                      {group.label}
+                                    </h4>
+                                    <p className="text-xs font-semibold text-slate-400">
+                                      {group.stories.length} 本故事
+                                    </p>
+                                  </div>
+
+                                  {group.stories.length >
+                                    ARCHIVE_PREVIEW_LIMIT && (
+                                    <button
+                                      onClick={() =>
+                                        toggleArchiveGroup(group.key)
+                                      }
+                                      className="self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-500 transition-colors hover:bg-slate-200 sm:self-auto sm:text-sm"
+                                      type="button"
+                                    >
+                                      {isExpanded
+                                        ? "收起"
+                                        : `再看 ${group.stories.length - ARCHIVE_PREVIEW_LIMIT} 本`}
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                                  {visibleGroupStories.map(
+                                    renderCompactStoryCard,
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {!storiesLoading && stories.length === 0 && (
+                      <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
+                        <Sparkles className="w-10 h-10 mb-3 opacity-50" />
+                        <span className="font-bold text-base">
+                          生成第一個故事
+                        </span>
+                      </div>
+                    )}
+
+                    {!storiesLoading &&
+                      stories.length > 0 &&
+                      filteredStories.length === 0 && (
+                        <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-60 flex-col items-center justify-center text-slate-400 bg-white/20">
+                          <Book className="mb-3 h-10 w-10 opacity-50" />
+                          <span className="font-bold text-base">
+                            這個分類暫時未有故事
+                          </span>
+                        </div>
+                      )}
+
+                    {storiesLoading && (
+                      <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
+                        <span className="font-bold text-base">
+                          載入故事中...
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 

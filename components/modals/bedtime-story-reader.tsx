@@ -239,6 +239,62 @@ export function BedtimeStoryReader({
 
   const totalPages = pages.length + 1;
   const isStatsPage = currentPage === pages.length;
+  const storyVocabulary = useMemo(() => {
+    const featuredWords = story.featured_words
+      .flatMap((word) => word.split(/[\n,、，]+/))
+      .map((word) => word.trim())
+      .filter(Boolean);
+
+    if (featuredWords.length > 0) {
+      return featuredWords;
+    }
+
+    if (story.vocab_used) {
+      return story.vocab_used
+        .split(/[\n,、，]+/)
+        .map((word) => word.trim())
+        .filter(Boolean);
+    }
+
+    if (story.word_usage) {
+      return Object.keys(story.word_usage)
+        .map((word) => word.trim())
+        .filter(Boolean);
+    }
+
+    return [] as string[];
+  }, [story.featured_words, story.vocab_used, story.word_usage]);
+  const vocabularyEntries = useMemo(() => {
+    if (story.word_usage) {
+      return Object.entries(story.word_usage)
+        .map(([word, usage]) => ({
+          word: word.trim(),
+          usage: usage.trim(),
+        }))
+        .filter((entry) => entry.word.length > 0);
+    }
+
+    return storyVocabulary.map((word) => ({ word, usage: null }));
+  }, [story.word_usage, storyVocabulary]);
+  const storyKeepsakeDate = useMemo(() => {
+    const rawDate =
+      story.generated_at || story.generation_date || story.created_at;
+
+    if (!rawDate) {
+      return "";
+    }
+
+    const parsedDate = new Date(rawDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return rawDate;
+    }
+
+    return new Intl.DateTimeFormat("zh-HK", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(parsedDate);
+  }, [story.created_at, story.generated_at, story.generation_date]);
 
   const pageStartRatios = useMemo(() => {
     if (pages.length === 0) {
@@ -560,37 +616,43 @@ export function BedtimeStoryReader({
                     </div>
                   )}
 
-                {/* Word Usage */}
-                {story.word_usage && (
-                  <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+                {/* Words Used In Story */}
+                {vocabularyEntries.length > 0 && (
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:p-5">
                     <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
                       <span className="text-xl">📖</span> 故事詞彙
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {Object.entries(story.word_usage).map(
-                        ([word, usage], idx) => (
-                          <div
-                            key={idx}
-                            className="bg-white p-2 rounded-lg text-sm border border-blue-100 flex justify-between px-3"
-                          >
-                            <span className="font-bold text-slate-700">
-                              {word}
+                    <div className="space-y-3">
+                      {vocabularyEntries.map((entry) => (
+                        <div
+                          key={`${story.id}-${entry.word}`}
+                          className="rounded-2xl border border-blue-100 bg-white px-4 py-3 shadow-sm"
+                        >
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                            <span className="text-xl font-black text-blue-700 sm:text-2xl">
+                              {entry.word}
                             </span>
-                            <span className="text-slate-400 text-xs">
-                              {usage}
-                            </span>
+                            {entry.usage && (
+                              <span className="text-sm font-semibold leading-relaxed text-slate-500 sm:max-w-[60%] sm:text-right">
+                                {entry.usage}
+                              </span>
+                            )}
                           </div>
-                        ),
-                      )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                <div className="text-center pt-4 text-slate-400 text-xs">
-                  <p>
-                    {story.ai_model ? `由 ${story.ai_model} 生成` : "AI Story"}
+                <div className="text-center pt-4 text-slate-400">
+                  <p className="text-xs font-semibold tracking-[0.2em] text-slate-400/90 sm:text-sm">
+                    睡前故事珍藏
                   </p>
-                  <p>{new Date(story.generation_date).toLocaleDateString()}</p>
+                  {storyKeepsakeDate && (
+                    <p className="mt-1 text-sm font-medium text-slate-400 sm:text-base">
+                      {storyKeepsakeDate}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

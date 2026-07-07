@@ -406,21 +406,21 @@ function ParentDashboardContent() {
 
   return (
     <CozyPageWrapper type="dashboard">
-      <div className="container mx-auto px-4 py-6 max-w-2xl md:max-w-6xl pb-32">
+      <div className="container mx-auto px-3 py-5 sm:px-4 sm:py-6 max-w-2xl md:max-w-6xl pb-32">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* --- UNIFIED HEADER + NAV CARD --- */}
-          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-4xl shadow-sm border border-white/50 mb-6 overflow-hidden">
+          <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-4xl shadow-sm border border-white/50 mb-4 sm:mb-6 overflow-hidden">
             {/* Header row */}
-            <div className="flex flex-row items-center justify-between px-4 py-3 md:px-5 md:py-4 gap-3">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-2.5 px-3 py-3 sm:px-4 md:flex-row md:items-center md:justify-between md:px-5 md:py-4">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="bg-orange-100 p-2.5 md:p-3.5 rounded-full shadow-inner shrink-0">
                   <Baby className="w-6 h-6 md:w-8 md:h-8 text-orange-500" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h1 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">
                     家長中心
                   </h1>
-                  <p className="text-slate-500 font-bold text-xs md:text-sm">
+                  <p className="text-slate-500 font-bold text-xs md:text-sm wrap-break-word">
                     跟進{" "}
                     <span className="text-[#38BDF8]">{activeChildLabel}</span>{" "}
                     的學習進度
@@ -434,7 +434,7 @@ function ParentDashboardContent() {
                           persistSelectedChildId(nextChildId);
                         }}
                       >
-                        <SelectTrigger className="h-8 min-w-44 rounded-full border-slate-200 bg-white/80 text-xs font-bold text-slate-600 shadow-none">
+                        <SelectTrigger className="h-8 w-full min-w-0 sm:min-w-44 rounded-full border-slate-200 bg-white/80 text-xs font-bold text-slate-600 shadow-none">
                           <SelectValue placeholder="選擇小朋友" />
                         </SelectTrigger>
                         <SelectContent>
@@ -450,15 +450,15 @@ function ParentDashboardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex w-full flex-nowrap items-center gap-2 md:w-auto md:items-center md:justify-end md:gap-2 md:shrink-0">
                 <button
                   onClick={handleSignOut}
-                  className="group flex items-center gap-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-sm transition-all hover:scale-105 active:scale-95"
+                  className="group flex min-w-0 flex-1 items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-2 py-2 rounded-full font-black text-xs shadow-sm transition-all hover:scale-105 active:scale-95 sm:px-2.5 sm:text-sm md:flex-none md:w-auto md:justify-start md:px-5 md:py-2.5 md:text-base"
                 >
                   <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-slate-100 rounded-full shrink-0">
                     <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </span>
-                  <span>登出</span>
+                  <span className="whitespace-nowrap">登出</span>
                 </button>
 
                 <button
@@ -467,12 +467,12 @@ function ParentDashboardContent() {
                       profile?.id ? `/child?childId=${profile.id}` : "/child",
                     )
                   }
-                  className="group flex items-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white pl-2.5 pr-4 py-2 md:pl-3 md:pr-5 md:py-2.5 rounded-full font-black text-sm md:text-base shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95"
+                  className="group flex min-w-0 flex-1 items-center justify-center gap-2 bg-linear-to-r from-[#38BDF8] to-[#818CF8] hover:from-[#0EA5E9] hover:to-[#6366F1] text-white px-2 py-2 rounded-full font-black text-xs shadow-lg shadow-sky-200/60 transition-all hover:scale-105 active:scale-95 sm:px-2.5 sm:text-sm md:flex-none md:w-auto md:justify-start md:px-5 md:py-2.5 md:text-base"
                 >
                   <span className="flex items-center justify-center w-6 h-6 md:w-7 md:h-7 bg-white/25 rounded-full shrink-0">
                     <Baby className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </span>
-                  <span>兒童模式</span>
+                  <span className="whitespace-nowrap">兒童模式</span>
                   <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -482,42 +482,49 @@ function ParentDashboardContent() {
             <div className="h-px bg-slate-100 mx-4" />
 
             {/* Tab bar row */}
-            <div className="overflow-x-auto scrollbar-hide px-2 py-2">
-              <TabsList className="bg-transparent p-0 h-auto flex-nowrap inline-flex w-max mx-auto gap-1 md:gap-2 min-w-full justify-start md:justify-center">
+            <div className="overflow-x-auto scrollbar-hide px-1.5 py-2 sm:px-2">
+              <TabsList className="bg-transparent p-0 h-auto flex-nowrap inline-flex w-max mx-auto gap-0.5 min-w-full justify-start md:gap-2 md:justify-center">
                 <TabItem
                   value="overview"
                   icon={<LayoutGrid className="w-4 h-4" />}
                   label="概覽"
+                  mobileLabel="總覽"
                 />
                 <TabItem
                   value="progress"
                   icon={<TrendingUp className="w-4 h-4" />}
                   label="進度"
+                  mobileLabel="追蹤"
                 />
                 <TabItem
                   value="charts"
                   icon={<PieChart className="w-4 h-4" />}
                   label="圖表"
+                  mobileLabel="統計"
                 />
                 <TabItem
                   value="missions"
                   icon={<Target className="w-4 h-4" />}
                   label="任務"
+                  mobileLabel="目標"
                 />
                 <TabItem
                   value="insights"
                   icon={<BarChart3 className="w-4 h-4" />}
                   label="分析"
+                  mobileLabel="洞察"
                 />
                 <TabItem
                   value="settings"
                   icon={<Settings className="w-4 h-4" />}
                   label="設定"
+                  mobileLabel="偏好"
                 />
                 <TabItem
                   value="social"
                   icon={<Users className="w-4 h-4" />}
                   label="社群"
+                  mobileLabel="互動"
                 />
               </TabsList>
             </div>
@@ -630,18 +637,21 @@ function TabItem({
   value,
   icon,
   label,
+  mobileLabel,
 }: {
   value: string;
   icon: React.ReactNode;
   label: string;
+  mobileLabel?: string;
 }) {
   return (
     <TabsTrigger
       value={value}
-      className="rounded-full px-3 py-2 md:px-5 md:py-2.5 data-[state=active]:bg-[#38BDF8] data-[state=active]:text-white data-[state=active]:shadow-md transition-all font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 gap-1.5 md:gap-2 data-[state=active]:scale-105 text-xs md:text-sm whitespace-nowrap"
+      className="rounded-full px-2.5 py-1.5 md:px-5 md:py-2.5 data-[state=active]:bg-[#38BDF8] data-[state=active]:text-white data-[state=active]:shadow-md transition-all font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 gap-1 md:gap-2 data-[state=active]:scale-105 text-[11px] leading-none md:text-sm whitespace-nowrap [&_svg]:size-3.5 md:[&_svg]:size-4"
     >
       {icon}
-      {label}
+      <span className="md:hidden">{mobileLabel ?? label}</span>
+      <span className="hidden md:inline">{label}</span>
     </TabsTrigger>
   );
 }

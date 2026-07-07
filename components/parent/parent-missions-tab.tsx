@@ -921,7 +921,7 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                         </div>
 
                         <div className="flex-1 min-w-0 pt-1">
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start justify-between gap-3 sm:gap-4">
                             <div>
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span
@@ -954,7 +954,7 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                               </div>
                               <h3
                                 className={cn(
-                                  "text-lg font-bold text-slate-800 truncate pr-4",
+                                  "text-lg font-bold text-slate-800 pr-2 wrap-break-word sm:truncate sm:pr-4",
                                   mission.completed &&
                                     "line-through opacity-60",
                                 )}
@@ -984,7 +984,7 @@ export function ParentMissionsTab({ childId }: ParentMissionsTabProps = {}) {
                             </button>
                           </div>
 
-                          <p className="text-slate-500 text-sm mt-1 line-clamp-1 group-hover:line-clamp-none transition-all">
+                          <p className="text-slate-500 text-sm mt-1 line-clamp-2 sm:line-clamp-1 group-hover:line-clamp-none transition-all">
                             {mission.description}
                           </p>
 
