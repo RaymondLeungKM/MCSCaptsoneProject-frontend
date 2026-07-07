@@ -183,12 +183,16 @@ interface InterestOption {
 const FALLBACK_INTEREST_OPTIONS: InterestOption[] = [
   { id: "Animals", label: "動物", icon: "🦁" },
   { id: "Food", label: "食物", icon: "🍎" },
-  { id: "Colors", label: "顏色", icon: "🎨" },
+  { id: "Fruits & Vegetables", label: "蔬果", icon: "🥬" },
+  { id: "Toys", label: "玩具", icon: "🧸" },
   { id: "Nature", label: "大自然", icon: "🌳" },
-  { id: "Vehicles", label: "交通工具", icon: "🚗" },
-  { id: "Family", label: "家庭", icon: "👨‍👩‍👧" },
-  { id: "Space", label: "太空", icon: "🚀" },
-  { id: "Music", label: "音樂", icon: "🎵" },
+  { id: "Stationery", label: "文具", icon: "✏️" },
+  { id: "Transportation", label: "交通工具", icon: "🚗" },
+  { id: "Household", label: "日常物品", icon: "🏠" },
+  { id: "Kitchen", label: "廚具", icon: "🍳" },
+  { id: "Bathroom", label: "浴室用品", icon: "🛁" },
+  { id: "Electronics", label: "電子產品", icon: "📱" },
+  { id: "Clothing", label: "衣服", icon: "👕" },
 ];
 
 function buildDefaultParentalControls(childId: string): ParentalControl {
@@ -405,6 +409,14 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
     setRevisionQuestionCountState(getRevisionQuestionCount(profile.id));
   }, [profile.id]);
 
+  const toggleInterest = (interestId: string) => {
+    setInterests((prev) =>
+      prev.includes(interestId)
+        ? prev.filter((interest) => interest !== interestId)
+        : [...prev, interestId],
+    );
+  };
+
   useEffect(() => {
     if (!getAuthToken()) {
       setDueCards(0);
@@ -452,14 +464,6 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
       cancelled = true;
     };
   }, [profile.id]);
-
-  const toggleInterest = (interestId: string) => {
-    setInterests((prev) =>
-      prev.includes(interestId)
-        ? prev.filter((interest) => interest !== interestId)
-        : [...prev, interestId],
-    );
-  };
 
   const handleSaveCoachPreferences = async () => {
     setRevisionQuestionCount(profile.id, revisionQuestionCount);
@@ -962,7 +966,7 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
             興趣偏好
           </CardTitle>
           <CardDescription className="text-slate-400 pl-12">
-            選擇小朋友喜歡的主題，我們會優先推薦相關內容。
+            選擇小朋友喜歡的主題，系統會優先安排相近詞彙。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -975,10 +979,12 @@ export function SettingsTab({ profile, onProfileUpdated }: SettingsTabProps) {
                   key={interest.id}
                   type="button"
                   onClick={() => toggleInterest(interest.id)}
+                  disabled={settingsLoading}
                   className={cn(
                     "px-4 py-2.5 rounded-full text-sm font-bold transition-all flex items-center gap-2 border-2",
+                    settingsLoading && "cursor-not-allowed opacity-60",
                     isSelected
-                      ? "bg-yellow-100 text-yellow-800 border-yellow-200 shadow-sm transform scale-105"
+                      ? "bg-yellow-100 text-yellow-800 border-yellow-200 shadow-sm"
                       : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100",
                   )}
                 >

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Moon, Sparkles, BookOpen, Clock, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   GeneratedStory,
@@ -76,6 +77,17 @@ const themes: Array<{
   },
 ];
 
+const NO_WORDS_LEARNED_ERROR =
+  "No words learned today to include in story. Please complete some learning activities first.";
+
+function isNoWordsLearnedError(message: string | null | undefined): boolean {
+  return Boolean(
+    message &&
+    (message.includes("No words learned today") ||
+      message === NO_WORDS_LEARNED_ERROR),
+  );
+}
+
 export function BedtimeStoryGenerator({
   childId = "1",
   childName = "小朋友",
@@ -97,6 +109,8 @@ export function BedtimeStoryGenerator({
   const [internalGeneratedStory, setInternalGeneratedStory] =
     useState<GeneratedStory | null>(null);
   const [internalError, setInternalError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const lastHandledErrorRef = useRef<string | null>(null);
 
   const currentIsGenerating = isGenerating ?? internalIsGenerating;
   const currentSelectedTheme = selectedTheme ?? internalSelectedTheme;
@@ -110,6 +124,26 @@ export function BedtimeStoryGenerator({
   const setCurrentGeneratedStory =
     onGeneratedStoryChange ?? setInternalGeneratedStory;
   const setCurrentError = onErrorChange ?? setInternalError;
+  const inlineError = isNoWordsLearnedError(currentError) ? null : currentError;
+
+  useEffect(() => {
+    if (!isNoWordsLearnedError(currentError)) {
+      lastHandledErrorRef.current = null;
+      return;
+    }
+
+    if (lastHandledErrorRef.current === currentError) {
+      return;
+    }
+
+    lastHandledErrorRef.current = currentError;
+    toast({
+      title: "今日未有詞語可以加入故事",
+      description: "你今日仲未學到新詞語，先完成幾個學習活動，再生成故事啦。",
+      variant: "destructive",
+    });
+    setCurrentError(null);
+  }, [currentError, setCurrentError, toast]);
 
   const handleGenerateStory = async () => {
     const request: StoryGenerationRequest = {
@@ -180,7 +214,9 @@ export function BedtimeStoryGenerator({
             <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
               <div className="mb-3 flex items-center justify-center gap-3">
                 <Sparkles className="w-7 h-7 animate-spin text-yellow-300" />
-                <span className="text-2xl font-black text-white sm:text-3xl">正在施展魔法...</span>
+                <span className="text-2xl font-black text-white sm:text-3xl">
+                  正在施展魔法...
+                </span>
                 <Sparkles className="w-7 h-7 animate-spin text-yellow-300 [animation-direction:reverse]" />
               </div>
               <p className="text-base font-semibold text-white/80 sm:text-lg">
@@ -198,9 +234,7 @@ export function BedtimeStoryGenerator({
           <div className="inline-flex p-4 bg-white rounded-full shadow-md mb-2">
             <Moon className="w-8 h-8 text-purple-500 fill-purple-500" />
           </div>
-          <h2 className="child-tab-hero-title text-purple-900">
-            生成睡前故事
-          </h2>
+          <h2 className="child-tab-hero-title text-purple-900">生成睡前故事</h2>
           <p className="child-tab-hero-copy !mt-0 !max-w-none !text-sm !font-bold !text-purple-700 sm:!text-lg md:!text-xl">
             為
             <span className="font-bold underline decoration-wavy decoration-purple-400">
@@ -228,7 +262,9 @@ export function BedtimeStoryGenerator({
                 )}
               >
                 <span className="text-xl">{theme.emoji}</span>
-                <span className="child-tab-card-title !mt-0 !text-sm sm:!text-base">{theme.label}</span>
+                <span className="child-tab-card-title !mt-0 !text-sm sm:!text-base">
+                  {theme.label}
+                </span>
               </button>
             ))}
           </div>
@@ -270,9 +306,9 @@ export function BedtimeStoryGenerator({
           </Button>
         </div>
 
-        {currentError && (
+        {inlineError && (
           <div className="child-tab-copy px-6 pb-5 !text-sm !font-bold !text-red-600">
-            {currentError}
+            {inlineError}
           </div>
         )}
       </Card>
@@ -343,7 +379,7 @@ function StoryCard({
         <Button
           onClick={onRead}
           disabled={!onRead}
-    className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full h-14 rounded-full bg-[#38BDF8] text-white font-black text-xl shadow-lg hover:scale-[1.02] transition-transform disabled:cursor-not-allowed disabled:opacity-60"
         >
           <BookOpen className="w-5 h-5 mr-2" />
           開始閱讀

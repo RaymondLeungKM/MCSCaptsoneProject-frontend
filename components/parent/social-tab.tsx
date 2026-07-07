@@ -202,6 +202,25 @@ function relativeTimeLabel(dateValue: string): string {
   return `${Math.max(1, Math.floor(deltaMs / day))} 天前`;
 }
 
+function pickMostRecentEndedChallenge(
+  challenges: CommunityChallenge[],
+): CommunityChallenge | null {
+  if (challenges.length === 0) return null;
+
+  return [...challenges].sort(
+    (left, right) =>
+      new Date(right.ends_at).getTime() - new Date(left.ends_at).getTime(),
+  )[0];
+}
+
+function challengeDurationDays(challenge: FriendChallenge): number {
+  const durationMs =
+    new Date(challenge.ends_at).getTime() -
+    new Date(challenge.starts_at).getTime();
+  const dayMs = 86_400_000;
+  return Math.max(3, Math.min(30, Math.round(durationMs / dayMs) || 7));
+}
+
 function lifecyclePillClass(lifecycle: FriendChallengeLifecycleStage): string {
   switch (lifecycle) {
     case "invited":
@@ -1732,9 +1751,18 @@ function ChallengesPanel() {
   const [communityChallenges, setCommunityChallenges] = useState<
     CommunityChallenge[]
   >([]);
+  const [recentEndedCommunityChallenge, setRecentEndedCommunityChallenge] =
+    useState<CommunityChallenge | null>(null);
   const [leaderboards, setLeaderboards] = useState<
     Record<string, ChallengeParticipation[]>
   >({});
+  const [showCompletedHistory, setShowCompletedHistory] = useState(false);
+  const [completedHistoryPage, setCompletedHistoryPage] = useState(1);
+  const [expandedHistoryResults, setExpandedHistoryResults] = useState<
+    Record<string, boolean>
+  >({});
+  const [showLatestCompletedResult, setShowLatestCompletedResult] =
+    useState(false);
   const [loadingFriendChallenges, setLoadingFriendChallenges] = useState(true);
   const [loadingCommunityChallenges, setLoadingCommunityChallenges] =
     useState(true);
@@ -1802,11 +1830,35 @@ function ChallengesPanel() {
   const loadCommunityChallenges = async () => {
     setLoadingCommunityChallenges(true);
     try {
-      const data = await getChallenges("active");
-      setCommunityChallenges(data);
+      const [activeResult, completedResult, expiredResult] =
+        await Promise.allSettled([
+          getChallenges("active"),
+          getChallenges("completed"),
+          getChallenges("expired"),
+        ]);
+
+      const activeChallenges =
+        activeResult.status === "fulfilled" ? activeResult.value : [];
+      const endedChallenges = [
+        ...(completedResult.status === "fulfilled"
+          ? completedResult.value
+          : []),
+        ...(expiredResult.status === "fulfilled" ? expiredResult.value : []),
+      ];
+      const fallbackChallenge = pickMostRecentEndedChallenge(endedChallenges);
+
+      setCommunityChallenges(activeChallenges);
+      setRecentEndedCommunityChallenge(
+        activeChallenges.length === 0 ? fallbackChallenge : null,
+      );
 
       const boards = await Promise.allSettled(
-        data.map((challenge) =>
+        (activeChallenges.length > 0
+          ? activeChallenges
+          : fallbackChallenge
+            ? [fallbackChallenge]
+            : []
+        ).map((challenge) =>
           getChallengeLeaderboard(challenge.id).then((board) => ({
             id: challenge.id,
             board,
@@ -1823,6 +1875,7 @@ function ChallengesPanel() {
     } catch (err) {
       console.warn("[Challenges] Failed to load:", err);
       setCommunityChallenges([]);
+      setRecentEndedCommunityChallenge(null);
       setLeaderboards({});
     } finally {
       setLoadingCommunityChallenges(false);
@@ -1854,6 +1907,28 @@ function ChallengesPanel() {
     (challenge) =>
       resolveFriendChallengeLifecycle(challenge) === "completed" ||
       resolveFriendChallengeLifecycle(challenge) === "expired",
+  );
+  const sortedCompletedFriendChallenges = [...completedFriendChallenges].sort(
+    (left, right) =>
+      new Date(right.ends_at).getTime() - new Date(left.ends_at).getTime(),
+  );
+  const latestCompletedFriendChallenge =
+    sortedCompletedFriendChallenges[0] ?? null;
+  const completedHistoryChallenges = sortedCompletedFriendChallenges.slice(1);
+  const completedHistoryPageSize = 5;
+  const completedHistoryTotalPages = Math.max(
+    1,
+    Math.ceil(completedHistoryChallenges.length / completedHistoryPageSize),
+  );
+  const safeCompletedHistoryPage = Math.min(
+    completedHistoryPage,
+    completedHistoryTotalPages,
+  );
+  const completedHistoryStartIndex =
+    (safeCompletedHistoryPage - 1) * completedHistoryPageSize;
+  const paginatedCompletedHistory = completedHistoryChallenges.slice(
+    completedHistoryStartIndex,
+    completedHistoryStartIndex + completedHistoryPageSize,
   );
   const declinedFriendChallenges = friendChallenges.filter(
     (challenge) => resolveFriendChallengeLifecycle(challenge) === "declined",
@@ -2048,6 +2123,44 @@ function ChallengesPanel() {
     } finally {
       setRespondingChallengeId(null);
     }
+  };
+
+  const handleReuseCompletedChallenge = (challenge: FriendChallenge) => {
+    const currentParticipant = challenge.participants.find(
+      (participant) =>
+        participant.parent_id === currentUser?.id && participant.child_id,
+    );
+    const acceptedParentIds = Array.from(
+      new Set(
+        challenge.participants
+          .filter(
+            (participant) =>
+              participant.invite_status === "accepted" &&
+              participant.parent_id &&
+              participant.parent_id !== currentUser?.id,
+          )
+          .map((participant) => participant.parent_id as string),
+      ),
+    );
+
+    if (currentParticipant?.child_id) {
+      setSelectedChildId(currentParticipant.child_id);
+    } else if (!selectedChildId && children[0]?.id) {
+      setSelectedChildId(children[0].id);
+    }
+
+    setSelectedFriendIds(acceptedParentIds);
+    setMetricType(challenge.metric_type);
+    setTargetCount(String(challenge.target_count));
+    setDurationDays(String(challengeDurationDays(challenge)));
+    setCreateOpen(true);
+    setCreateMessage(null);
+  };
+
+  const openCompletedHistory = () => {
+    setCompletedHistoryPage(1);
+    setExpandedHistoryResults({});
+    setShowCompletedHistory(true);
   };
 
   if (loadingFriendChallenges && loadingCommunityChallenges) {
@@ -2582,42 +2695,222 @@ function ChallengesPanel() {
             </div>
           )}
 
-          {completedFriendChallenges.length > 0 && (
+          {latestCompletedFriendChallenge && (
             <div className="space-y-3">
-              <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
-                已完成或已結束
-              </p>
-              {completedFriendChallenges.map((challenge) => (
-                <Card
-                  key={challenge.id}
-                  className="rounded-[20px] border-none shadow-sm"
-                >
-                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-lg font-black text-slate-700">
-                        {challenge.emoji} {challenge.title_zh}
-                      </p>
-                      <p className="text-sm font-bold text-slate-400 mt-1">
-                        {friendChallengeLifecycleLabel(
-                          resolveFriendChallengeLifecycle(challenge),
-                        )}
-                        · 我的成績 {challenge.my_progress}/
-                        {challenge.target_count}
-                        {friendChallengeTargetUnit(challenge.metric_type)}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-black shrink-0 ${lifecyclePillClass(
-                        resolveFriendChallengeLifecycle(challenge),
-                      )}`}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-500 uppercase tracking-wide">
+                    已完成回顧
+                  </p>
+                  <p className="text-xs font-bold text-slate-400 mt-1">
+                    只顯示最近完成的一場挑戰，可直接套用設定再發起。
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                    最近 1 場
+                  </span>
+                  {completedHistoryChallenges.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={openCompletedHistory}
+                      className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
                     >
-                      {friendChallengeLifecycleLabel(
-                        resolveFriendChallengeLifecycle(challenge),
-                      )}
-                    </span>
-                  </CardContent>
-                </Card>
-              ))}
+                      歷史挑戰 ({completedHistoryChallenges.length})
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <Card
+                key={latestCompletedFriendChallenge.id}
+                className="rounded-[20px] border-none shadow-sm"
+              >
+                <CardContent className="p-4 space-y-3">
+                  {(() => {
+                    const acceptedParticipants = [
+                      ...latestCompletedFriendChallenge.participants,
+                    ]
+                      .filter(
+                        (participant) =>
+                          participant.invite_status === "accepted",
+                      )
+                      .sort((left, right) => right.progress - left.progress);
+                    const topProgress = acceptedParticipants[0]?.progress ?? 0;
+                    const winners = acceptedParticipants.filter(
+                      (participant) =>
+                        topProgress > 0 && participant.progress === topProgress,
+                    );
+                    const winnerNames = winners.map(
+                      (participant) => participant.parent_name ?? "家長",
+                    );
+                    const myParticipant = acceptedParticipants.find(
+                      (participant) =>
+                        participant.parent_id === currentUser?.id,
+                    );
+                    const myRank = myParticipant
+                      ? acceptedParticipants.findIndex(
+                          (participant) =>
+                            participant.parent_id === currentUser?.id,
+                        ) + 1
+                      : null;
+
+                    return (
+                      <>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-lg font-black text-slate-700 truncate">
+                              {latestCompletedFriendChallenge.emoji}{" "}
+                              {latestCompletedFriendChallenge.title_zh}
+                            </p>
+                            <p className="text-sm font-bold text-slate-400 mt-1">
+                              {friendChallengeLifecycleLabel(
+                                resolveFriendChallengeLifecycle(
+                                  latestCompletedFriendChallenge,
+                                ),
+                              )}
+                              · 我的成績{" "}
+                              {latestCompletedFriendChallenge.my_progress}/
+                              {latestCompletedFriendChallenge.target_count}
+                              {friendChallengeTargetUnit(
+                                latestCompletedFriendChallenge.metric_type,
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-black ${lifecyclePillClass(
+                                resolveFriendChallengeLifecycle(
+                                  latestCompletedFriendChallenge,
+                                ),
+                              )}`}
+                            >
+                              {latestCompletedFriendChallenge.my_progress >=
+                              latestCompletedFriendChallenge.target_count
+                                ? "已達標"
+                                : `未達標 · 還差 ${Math.max(
+                                    0,
+                                    latestCompletedFriendChallenge.target_count -
+                                      latestCompletedFriendChallenge.my_progress,
+                                  )}${friendChallengeTargetUnit(
+                                    latestCompletedFriendChallenge.metric_type,
+                                  )}`}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                void handleReuseCompletedChallenge(
+                                  latestCompletedFriendChallenge,
+                                )
+                              }
+                              className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                              再發起
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setShowLatestCompletedResult(
+                                  (current) => !current,
+                                )
+                              }
+                              className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                              {showLatestCompletedResult
+                                ? "隱藏結果"
+                                : "顯示結果"}
+                              <ChevronDown
+                                className={`ml-1 h-3.5 w-3.5 transition-transform ${
+                                  showLatestCompletedResult ? "rotate-180" : ""
+                                }`}
+                              />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                          <div className="rounded-2xl bg-emerald-50 px-3 py-2 border border-emerald-100">
+                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-wide">
+                              結果
+                            </p>
+                            <p className="text-sm font-black text-slate-700 mt-1">
+                              {latestCompletedFriendChallenge.my_progress >=
+                              latestCompletedFriendChallenge.target_count
+                                ? "成功完成"
+                                : "尚未完成"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-blue-50 px-3 py-2 border border-blue-100">
+                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-wide">
+                              我的進度
+                            </p>
+                            <p className="text-sm font-black text-slate-700 mt-1">
+                              {latestCompletedFriendChallenge.my_progress}/
+                              {latestCompletedFriendChallenge.target_count}
+                              {friendChallengeTargetUnit(
+                                latestCompletedFriendChallenge.metric_type,
+                              )}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
+                              截止時間
+                            </p>
+                            <p className="text-sm font-black text-slate-700 mt-1">
+                              {new Date(
+                                latestCompletedFriendChallenge.ends_at,
+                              ).toLocaleDateString("zh-HK")}
+                            </p>
+                          </div>
+                        </div>
+
+                        {showLatestCompletedResult && (
+                          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 space-y-2">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                              挑戰結果
+                            </p>
+                            <p className="text-sm font-bold text-slate-600">
+                              {winnerNames.length > 0
+                                ? `勝出：${winnerNames.join("、")}`
+                                : "未有有效成績"}
+                            </p>
+                            <p className="text-xs font-bold text-slate-500">
+                              {myParticipant && myRank
+                                ? `我的排名：第 ${myRank} 名（${myParticipant.progress}/${latestCompletedFriendChallenge.target_count}${friendChallengeTargetUnit(latestCompletedFriendChallenge.metric_type)}）`
+                                : "你未有參與此挑戰成績"}
+                            </p>
+                            {acceptedParticipants.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {acceptedParticipants
+                                  .slice(0, 3)
+                                  .map((participant, index) => (
+                                    <span
+                                      key={participant.id}
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600"
+                                    >
+                                      #{index + 1}
+                                      <span>
+                                        {participant.parent_name ?? "家長"}
+                                      </span>
+                                      <span className="text-slate-400">
+                                        {participant.progress}/
+                                        {
+                                          latestCompletedFriendChallenge.target_count
+                                        }
+                                      </span>
+                                    </span>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
             </div>
           )}
 
@@ -2688,10 +2981,114 @@ function ChallengesPanel() {
             <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
           </div>
         ) : visibleCommunityChallenges.length === 0 ? (
-          <div className="text-center py-10 text-slate-400">
-            <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="font-bold text-sm">目前沒有進行中的社群挑戰。</p>
-          </div>
+          recentEndedCommunityChallenge ? (
+            <Card className="overflow-hidden rounded-[20px] border-none py-0 gap-0 shadow-sm">
+              <div className="bg-linear-to-r from-slate-50 via-blue-50 to-emerald-50 border-b border-slate-100 px-5 py-4 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-slate-600 to-slate-400 text-white flex items-center justify-center text-xl shadow-sm shrink-0">
+                    {recentEndedCommunityChallenge.emoji}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl font-black text-slate-800 truncate">
+                      {recentEndedCommunityChallenge.title_zh ??
+                        recentEndedCommunityChallenge.title}
+                    </p>
+                    {recentEndedCommunityChallenge.description_zh && (
+                      <p className="text-sm text-slate-500 font-bold mt-0.5">
+                        {recentEndedCommunityChallenge.description_zh}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right rounded-2xl bg-white/90 border border-slate-100 px-3 py-2 shadow-xs shrink-0">
+                  <p className="text-slate-500 font-black text-lg leading-none">
+                    已結束
+                  </p>
+                  <p className="text-slate-400 text-xs font-bold mt-1">
+                    最近一場公開挑戰
+                  </p>
+                </div>
+              </div>
+
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-bold text-slate-500">
+                  先看看這場挑戰的排行榜，了解社群最近的學習熱度。
+                </p>
+
+                <p className="text-sm font-bold text-slate-500">
+                  目標：
+                  <span className="text-slate-700 font-black">
+                    {recentEndedCommunityChallenge.target_count}
+                  </span>{" "}
+                  次
+                </p>
+
+                {(leaderboards[recentEndedCommunityChallenge.id] ?? []).length >
+                0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                      排行榜
+                    </p>
+                    {(leaderboards[recentEndedCommunityChallenge.id] ?? [])
+                      .slice(0, 5)
+                      .map((participant, index) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center gap-3 bg-slate-50/80 border border-slate-100 rounded-2xl px-3 py-3"
+                        >
+                          <span className="text-sm font-black text-slate-500 w-5 text-center">
+                            {index + 1}
+                          </span>
+                          <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-base shadow-xs shrink-0">
+                            {participant.child_avatar ??
+                              participant.child_name?.[0] ??
+                              "👧"}
+                          </div>
+                          <div className="w-28 sm:w-36 min-w-0">
+                            <p className="text-sm font-black text-slate-700 truncate">
+                              {participant.child_name ?? "參加者"}
+                            </p>
+                            <p className="text-[11px] font-bold text-slate-400 truncate mt-0.5">
+                              {(participant.parent_name ?? "家庭") +
+                                (participant.participant_code
+                                  ? ` · #${participant.participant_code}`
+                                  : "")}
+                            </p>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Progress
+                              value={
+                                (participant.progress /
+                                  (recentEndedCommunityChallenge.target_count ||
+                                    1)) *
+                                100
+                              }
+                              className="h-2 rounded-full"
+                            />
+                          </div>
+                          <span className="text-sm font-black text-slate-600 w-12 text-right">
+                            {participant.progress}/
+                            {recentEndedCommunityChallenge.target_count}
+                          </span>
+                          {participant.is_completed && (
+                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-slate-400 text-center py-2">
+                    這場挑戰暫時沒有公開參加紀錄。
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="text-center py-10 text-slate-400">
+              <Trophy className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p className="font-bold text-sm">目前沒有進行中的社群挑戰。</p>
+            </div>
+          )
         ) : (
           visibleCommunityChallenges.map((challenge) => {
             const board = leaderboards[challenge.id] ?? [];
@@ -2796,6 +3193,217 @@ function ChallengesPanel() {
           })
         )}
       </div>
+
+      {showCompletedHistory && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowCompletedHistory(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-base font-black text-slate-700">歷史挑戰</p>
+                <p className="text-xs font-bold text-slate-400 mt-1">
+                  共 {completedHistoryChallenges.length}{" "}
+                  場已完成或已結束的私人挑戰
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCompletedHistory(false)}
+                className="rounded-full border border-slate-200 p-2 text-slate-400 hover:bg-slate-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[56vh] space-y-3 overflow-y-auto px-5 py-4">
+              {paginatedCompletedHistory.length === 0 ? (
+                <p className="py-6 text-center text-sm font-bold text-slate-400">
+                  暫時沒有更多歷史挑戰。
+                </p>
+              ) : (
+                paginatedCompletedHistory.map((challenge) => (
+                  <Card
+                    key={challenge.id}
+                    className="rounded-[20px] border border-slate-100 shadow-none"
+                  >
+                    <CardContent className="p-4 space-y-3">
+                      {(() => {
+                        const acceptedParticipants = [...challenge.participants]
+                          .filter(
+                            (participant) =>
+                              participant.invite_status === "accepted",
+                          )
+                          .sort(
+                            (left, right) => right.progress - left.progress,
+                          );
+                        const topProgress =
+                          acceptedParticipants[0]?.progress ?? 0;
+                        const winners = acceptedParticipants.filter(
+                          (participant) =>
+                            topProgress > 0 &&
+                            participant.progress === topProgress,
+                        );
+                        const winnerNames = winners.map(
+                          (participant) => participant.parent_name ?? "家長",
+                        );
+                        const myParticipant = acceptedParticipants.find(
+                          (participant) =>
+                            participant.parent_id === currentUser?.id,
+                        );
+                        const myRank = myParticipant
+                          ? acceptedParticipants.findIndex(
+                              (participant) =>
+                                participant.parent_id === currentUser?.id,
+                            ) + 1
+                          : null;
+                        const isExpanded =
+                          !!expandedHistoryResults[challenge.id];
+
+                        return (
+                          <>
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <p className="text-base font-black text-slate-700 truncate">
+                                  {challenge.emoji} {challenge.title_zh}
+                                </p>
+                                <p className="text-xs font-bold text-slate-400 mt-1">
+                                  {friendChallengeLifecycleLabel(
+                                    resolveFriendChallengeLifecycle(challenge),
+                                  )}
+                                  · 我的成績 {challenge.my_progress}/
+                                  {challenge.target_count}
+                                  {friendChallengeTargetUnit(
+                                    challenge.metric_type,
+                                  )}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    handleReuseCompletedChallenge(challenge);
+                                    setShowCompletedHistory(false);
+                                  }}
+                                  className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                                >
+                                  再發起
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setExpandedHistoryResults((current) => ({
+                                      ...current,
+                                      [challenge.id]: !current[challenge.id],
+                                    }))
+                                  }
+                                  className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                                >
+                                  {isExpanded ? "隱藏結果" : "顯示結果"}
+                                  <ChevronDown
+                                    className={`ml-1 h-3.5 w-3.5 transition-transform ${
+                                      isExpanded ? "rotate-180" : ""
+                                    }`}
+                                  />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-xs font-bold text-slate-500">
+                              截止：
+                              {new Date(challenge.ends_at).toLocaleDateString(
+                                "zh-HK",
+                              )}
+                            </p>
+                            {isExpanded && (
+                              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 space-y-2">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-wide">
+                                  挑戰結果
+                                </p>
+                                <p className="text-sm font-bold text-slate-600">
+                                  {winnerNames.length > 0
+                                    ? `勝出：${winnerNames.join("、")}`
+                                    : "未有有效成績"}
+                                </p>
+                                <p className="text-xs font-bold text-slate-500">
+                                  {myParticipant && myRank
+                                    ? `我的排名：第 ${myRank} 名（${myParticipant.progress}/${challenge.target_count}${friendChallengeTargetUnit(challenge.metric_type)}）`
+                                    : "你未有參與此挑戰成績"}
+                                </p>
+                                {acceptedParticipants.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {acceptedParticipants
+                                      .slice(0, 3)
+                                      .map((participant, index) => (
+                                        <span
+                                          key={participant.id}
+                                          className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-600"
+                                        >
+                                          #{index + 1}
+                                          <span>
+                                            {participant.parent_name ?? "家長"}
+                                          </span>
+                                          <span className="text-slate-400">
+                                            {participant.progress}/
+                                            {challenge.target_count}
+                                          </span>
+                                        </span>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+              <p className="text-xs font-bold text-slate-400">
+                第 {safeCompletedHistoryPage} / {completedHistoryTotalPages} 頁
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setCompletedHistoryPage((current) =>
+                      Math.max(1, current - 1),
+                    )
+                  }
+                  disabled={safeCompletedHistoryPage <= 1}
+                  className="rounded-xl"
+                >
+                  上一頁
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setCompletedHistoryPage((current) =>
+                      Math.min(completedHistoryTotalPages, current + 1),
+                    )
+                  }
+                  disabled={
+                    safeCompletedHistoryPage >= completedHistoryTotalPages
+                  }
+                  className="rounded-xl"
+                >
+                  下一頁
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,12 +27,15 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { lookupEmojiOrFallback } from "@/lib/word-emoji";
 import { useSpeech } from "@/lib/speech";
 import { getWordsWithProgress, toWord } from "@/lib/api/vocabulary";
 import { getProgressStats } from "@/lib/api/progress";
 import { getAuthToken } from "@/lib/api/client";
 
 const EXPOSURE_TARGET = 6;
+const WORDS_PAGE_SIZE = 10;
+const MY_CATEGORY_KEY = "my_collection";
 
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
   Animals: "動物",
@@ -44,6 +47,12 @@ const CATEGORY_TRANSLATIONS: Record<string, string> = {
   Numbers: "數字",
   Body: "身體部位",
   Actions: "動作",
+  "My Collection": "我的分類",
+  my_collection: "我的分類",
+  mycollection: "我的分類",
+  我的分類: "我的分類",
+  我的詞庫: "我的分類",
+  我的小分類: "我的分類",
 };
 
 const FILTER_OPTIONS = [
@@ -87,12 +96,101 @@ function getWordLabel(word: Word) {
 }
 
 function getWordCategoryLabel(word: Word) {
+  const rawCategoryLabel =
+    word.category_name_cantonese || word.categoryName || word.category;
+
+  if (isMyCategoryValue(rawCategoryLabel)) {
+    return "我的分類";
+  }
+
   return (
     word.category_name_cantonese ||
     word.categoryName ||
     getTranslatedCategory(word.category) ||
     "一般"
   );
+}
+
+function isMyCategoryValue(value?: string) {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ");
+
+  return (
+    normalized === "my" ||
+    normalized === "my collection" ||
+    normalized === "mycollection" ||
+    normalized === "我的" ||
+    normalized === "我的分類" ||
+    normalized === "我的词库" ||
+    normalized === "我的詞庫" ||
+    normalized === "我的小分類"
+  );
+}
+
+function resolveCategoryGroupKey(word: Word) {
+  const sourceKey = word.category || word.categoryName || "general";
+
+  if (
+    isMyCategoryValue(word.category_name_cantonese) ||
+    isMyCategoryValue(word.categoryName) ||
+    isMyCategoryValue(word.category)
+  ) {
+    return MY_CATEGORY_KEY;
+  }
+
+  return sourceKey;
+}
+
+function normalizeCategoryKey(value?: string) {
+  if (isMyCategoryValue(value)) {
+    return MY_CATEGORY_KEY;
+  }
+
+  return value || "general";
+}
+
+function isImageUrl(value?: string) {
+  if (!value) {
+    return false;
+  }
+
+  return (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:") ||
+    value.startsWith("/")
+  );
+}
+
+function looksLikeEmoji(value?: string) {
+  return !!value && /\p{Extended_Pictographic}/u.test(value);
+}
+
+function getWordVisual(word: Word) {
+  const rawImage = word.image?.trim();
+
+  if (isImageUrl(rawImage)) {
+    return {
+      imageUrl: rawImage,
+      emoji: lookupEmojiOrFallback(word.word, word.word_cantonese),
+    };
+  }
+
+  if (looksLikeEmoji(rawImage)) {
+    return { imageUrl: undefined, emoji: rawImage || "🎨" };
+  }
+
+  return {
+    imageUrl: undefined,
+    emoji: lookupEmojiOrFallback(word.word, word.word_cantonese),
+  };
 }
 
 function sortWordsForDisplay(words: Word[]) {
@@ -145,13 +243,24 @@ function buildCategorySummaries(
   categoryProgress: ProgressStats["categoryProgress"],
   useStatsCounts: boolean,
 ) {
-  const statsByCategory = new Map(
-    categoryProgress.map((item) => [item.category, item]),
-  );
+  const statsByCategory = new Map<
+    string,
+    ProgressStats["categoryProgress"][number]
+  >();
+
+  for (const item of categoryProgress) {
+    const normalizedKey = normalizeCategoryKey(item.category);
+    const existing = statsByCategory.get(normalizedKey);
+
+    if (!existing || (item.total ?? 0) > (existing.total ?? 0)) {
+      statsByCategory.set(normalizedKey, item);
+    }
+  }
+
   const groupedWords = new Map<string, Word[]>();
 
   for (const word of words) {
-    const key = word.category || word.categoryName || "general";
+    const key = resolveCategoryGroupKey(word);
     const existing = groupedWords.get(key);
 
     if (existing) {
@@ -162,10 +271,13 @@ function buildCategorySummaries(
   }
 
   if (groupedWords.size === 0 && useStatsCounts) {
-    return categoryProgress
-      .map((item) => ({
-        key: item.category,
-        label: getTranslatedCategory(item.category),
+    return Array.from(statsByCategory.entries())
+      .map(([key, item]) => ({
+        key,
+        label:
+          key === MY_CATEGORY_KEY
+            ? "我的分類"
+            : getTranslatedCategory(item.category),
         progress: item.progress,
         total: item.total ?? 0,
         mastered: item.mastered ?? 0,
@@ -209,9 +321,11 @@ function buildCategorySummaries(
       return {
         key,
         label:
-          sortedWords[0] !== undefined
-            ? getWordCategoryLabel(sortedWords[0])
-            : getTranslatedCategory(key),
+          key === MY_CATEGORY_KEY
+            ? "我的分類"
+            : sortedWords[0] !== undefined
+              ? getWordCategoryLabel(sortedWords[0])
+              : getTranslatedCategory(key),
         progress,
         total,
         mastered,
@@ -229,6 +343,43 @@ function buildCategorySummaries(
 
       return right.total - left.total;
     });
+}
+
+function ensureMyCategorySummary(
+  summaries: CategorySummary[],
+  categoryProgress: ProgressStats["categoryProgress"],
+  useStatsCounts: boolean,
+) {
+  if (summaries.some((summary) => summary.key === MY_CATEGORY_KEY)) {
+    return summaries;
+  }
+
+  const myCategoryStat = categoryProgress.find((item) =>
+    isMyCategoryValue(item.category),
+  );
+  const total = useStatsCounts ? (myCategoryStat?.total ?? 0) : 0;
+  const mastered = useStatsCounts ? (myCategoryStat?.mastered ?? 0) : 0;
+  const progress = useStatsCounts ? (myCategoryStat?.progress ?? 0) : 0;
+
+  return [
+    ...summaries,
+    {
+      key: MY_CATEGORY_KEY,
+      label: "我的分類",
+      progress,
+      total,
+      mastered,
+      needsPracticeCount: 0,
+      words: [],
+      learningWords: [],
+    },
+  ].sort((left, right) => {
+    if (left.progress !== right.progress) {
+      return right.progress - left.progress;
+    }
+
+    return right.total - left.total;
+  });
 }
 
 function SummaryMetricCard({
@@ -269,6 +420,7 @@ function WordListItem({
   compact?: boolean;
 }) {
   const exposureCount = word.exposureCount || 0;
+  const visual = getWordVisual(word);
 
   return (
     <div
@@ -286,20 +438,56 @@ function WordListItem({
       <div className="flex min-w-0 items-center gap-3">
         <div
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-full",
+            "relative shrink-0",
             compact ? "h-10 w-10" : "h-12 w-12",
-            word.mastered ? "bg-[#E8F5E9]" : "bg-[#FFF3E0]",
           )}
         >
-          {word.mastered ? (
-            <CheckCircle
-              className={cn(compact ? "h-5 w-5" : "h-6 w-6", "text-[#66BB6A]")}
-            />
-          ) : (
-            <Clock
-              className={cn(compact ? "h-5 w-5" : "h-6 w-6", "text-[#FF9800]")}
-            />
-          )}
+          <div
+            className={cn(
+              "flex h-full w-full items-center justify-center overflow-hidden rounded-full ring-2",
+              word.mastered
+                ? "bg-[#E8F5E9] ring-[#C8E6C9]"
+                : "bg-[#FFF3E0] ring-[#FFE0B2]",
+            )}
+          >
+            {visual.imageUrl ? (
+              <img
+                src={visual.imageUrl}
+                alt={getWordLabel(word)}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className={cn(compact ? "text-lg" : "text-xl")}>
+                {visual.emoji}
+              </span>
+            )}
+          </div>
+
+          <div
+            className={cn(
+              "absolute -bottom-1 -right-1 flex items-center justify-center rounded-full border-2 border-white shadow-sm",
+              compact ? "h-5 w-5" : "h-6 w-6",
+              word.mastered ? "bg-[#66BB6A]" : "bg-[#FFB74D]",
+            )}
+            aria-label={word.mastered ? "已掌握" : "學習中"}
+            title={word.mastered ? "已掌握" : "學習中"}
+          >
+            {word.mastered ? (
+              <CheckCircle
+                className={cn(
+                  compact ? "h-3 w-3" : "h-3.5 w-3.5",
+                  "text-white",
+                )}
+              />
+            ) : (
+              <Clock
+                className={cn(
+                  compact ? "h-3 w-3" : "h-3.5 w-3.5",
+                  "text-white",
+                )}
+              />
+            )}
+          </div>
         </div>
 
         <div className="min-w-0">
@@ -371,6 +559,8 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<WordFilter>("all");
   const [view, setView] = useState<ProgressView>("focus");
+  const [learningPage, setLearningPage] = useState(1);
+  const [masteredPage, setMasteredPage] = useState(1);
   const { speak } = useSpeech();
 
   const isMockData =
@@ -394,15 +584,31 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
           return;
         }
 
-        const [wordsData, progressStats] = await Promise.allSettled([
-          getWordsWithProgress(childId),
-          getProgressStats(childId),
-        ]);
+        const [wordsData, ownWordsData, progressStats] =
+          await Promise.allSettled([
+            getWordsWithProgress(childId),
+            getWordsWithProgress(childId, undefined, true),
+            getProgressStats(childId),
+          ]);
 
-        const loadedWords =
-          wordsData.status === "fulfilled"
-            ? wordsData.value.map((word) => toWord(word, word.progress))
-            : [];
+        const mergedWordsWithProgress = new Map<
+          string,
+          ReturnType<typeof toWord>
+        >();
+
+        if (wordsData.status === "fulfilled") {
+          for (const word of wordsData.value) {
+            mergedWordsWithProgress.set(word.id, toWord(word, word.progress));
+          }
+        }
+
+        if (ownWordsData.status === "fulfilled") {
+          for (const word of ownWordsData.value) {
+            mergedWordsWithProgress.set(word.id, toWord(word, word.progress));
+          }
+        }
+
+        const loadedWords = Array.from(mergedWordsWithProgress.values());
 
         const totalWords = loadedWords.length;
         const masteredWords = loadedWords.filter(
@@ -472,19 +678,44 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
     return matchesSearch && matchesFilter;
   });
+  const hasActiveFilters = normalizedQuery.length > 0 || filter !== "all";
 
   const filteredLearningWords = filteredWords.filter((word) => !word.mastered);
   const filteredMasteredWords = filteredWords.filter((word) => word.mastered);
-  const allCategorySummaries = buildCategorySummaries(
-    realWords,
+  const learningTotalPages = Math.max(
+    1,
+    Math.ceil(filteredLearningWords.length / WORDS_PAGE_SIZE),
+  );
+  const masteredTotalPages = Math.max(
+    1,
+    Math.ceil(filteredMasteredWords.length / WORDS_PAGE_SIZE),
+  );
+  const learningPageSafe = Math.min(learningPage, learningTotalPages);
+  const masteredPageSafe = Math.min(masteredPage, masteredTotalPages);
+  const paginatedLearningWords = filteredLearningWords.slice(
+    (learningPageSafe - 1) * WORDS_PAGE_SIZE,
+    learningPageSafe * WORDS_PAGE_SIZE,
+  );
+  const paginatedMasteredWords = filteredMasteredWords.slice(
+    (masteredPageSafe - 1) * WORDS_PAGE_SIZE,
+    masteredPageSafe * WORDS_PAGE_SIZE,
+  );
+  const allCategorySummaries = ensureMyCategorySummary(
+    buildCategorySummaries(realWords, realStats.categoryProgress, true),
     realStats.categoryProgress,
     true,
   );
-  const filteredCategorySummaries = buildCategorySummaries(
-    filteredWords,
-    realStats.categoryProgress,
-    false,
-  );
+  const filteredCategorySummaries = hasActiveFilters
+    ? buildCategorySummaries(filteredWords, realStats.categoryProgress, false)
+    : ensureMyCategorySummary(
+        buildCategorySummaries(
+          filteredWords,
+          realStats.categoryProgress,
+          false,
+        ),
+        realStats.categoryProgress,
+        false,
+      );
   const wordsNeedingPractice = filteredLearningWords.filter(
     (word) => (word.exposureCount || 0) < 3,
   );
@@ -525,7 +756,22 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
 
       return right.needsPracticeCount - left.needsPracticeCount;
     })[0];
-  const hasActiveFilters = normalizedQuery.length > 0 || filter !== "all";
+  useEffect(() => {
+    setLearningPage(1);
+    setMasteredPage(1);
+  }, [normalizedQuery, filter, view]);
+
+  useEffect(() => {
+    if (learningPage > learningTotalPages) {
+      setLearningPage(learningTotalPages);
+    }
+  }, [learningPage, learningTotalPages]);
+
+  useEffect(() => {
+    if (masteredPage > masteredTotalPages) {
+      setMasteredPage(masteredTotalPages);
+    }
+  }, [masteredPage, masteredTotalPages]);
 
   const playWord = (wordText: string) => {
     speak(wordText, {
@@ -881,7 +1127,11 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                             </div>
 
                             <div className="mt-4 flex flex-wrap gap-2">
-                              {category.learningWords.length > 0 ? (
+                              {category.total === 0 ? (
+                                <span className="rounded-full bg-[#ECEFF1] px-3 py-1 text-xs font-black text-[#78909C]">
+                                  此主題暫時未有詞語
+                                </span>
+                              ) : category.learningWords.length > 0 ? (
                                 category.learningWords
                                   .slice(0, 3)
                                   .map((word) => (
@@ -934,9 +1184,11 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                                 </div>
                                 <p className="text-xs font-bold text-gray-400">
                                   {category.mastered}/{category.total} 已掌握
-                                  {category.needsPracticeCount > 0
-                                    ? ` · ${category.needsPracticeCount} 個建議優先複習`
-                                    : " · 目前節奏穩定"}
+                                  {category.total === 0
+                                    ? " · 暫時未有詞語"
+                                    : category.needsPracticeCount > 0
+                                      ? ` · ${category.needsPracticeCount} 個建議優先複習`
+                                      : " · 目前節奏穩定"}
                                 </p>
                               </div>
 
@@ -982,7 +1234,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                       </div>
 
                       {filteredLearningWords.length > 0 ? (
-                        filteredLearningWords.map((word) => (
+                        paginatedLearningWords.map((word) => (
                           <WordListItem
                             key={word.id}
                             word={word}
@@ -994,6 +1246,36 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                           <p className="font-black text-[#EF6C00]">
                             目前沒有學習中的詞語
                           </p>
+                        </div>
+                      )}
+
+                      {filteredLearningWords.length > WORDS_PAGE_SIZE && (
+                        <div className="flex items-center justify-between rounded-2xl bg-[#FFF8F1] px-4 py-2">
+                          <p className="text-xs font-bold text-[#B08968]">
+                            第 {learningPageSafe} / {learningTotalPages} 頁
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                setLearningPage((page) => Math.max(1, page - 1))
+                              }
+                              disabled={learningPageSafe <= 1}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#EF6C00] shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              上一頁
+                            </button>
+                            <button
+                              onClick={() =>
+                                setLearningPage((page) =>
+                                  Math.min(learningTotalPages, page + 1),
+                                )
+                              }
+                              disabled={learningPageSafe >= learningTotalPages}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#EF6C00] shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              下一頁
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1010,7 +1292,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                       </div>
 
                       {filteredMasteredWords.length > 0 ? (
-                        filteredMasteredWords.map((word) => (
+                        paginatedMasteredWords.map((word) => (
                           <WordListItem
                             key={word.id}
                             word={word}
@@ -1022,6 +1304,36 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                           <p className="font-black text-[#2E7D32]">
                             目前沒有已掌握詞語
                           </p>
+                        </div>
+                      )}
+
+                      {filteredMasteredWords.length > WORDS_PAGE_SIZE && (
+                        <div className="flex items-center justify-between rounded-2xl bg-[#F4FBF4] px-4 py-2">
+                          <p className="text-xs font-bold text-[#6D8A73]">
+                            第 {masteredPageSafe} / {masteredTotalPages} 頁
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                setMasteredPage((page) => Math.max(1, page - 1))
+                              }
+                              disabled={masteredPageSafe <= 1}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#2E7D32] shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              上一頁
+                            </button>
+                            <button
+                              onClick={() =>
+                                setMasteredPage((page) =>
+                                  Math.min(masteredTotalPages, page + 1),
+                                )
+                              }
+                              disabled={masteredPageSafe >= masteredTotalPages}
+                              className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#2E7D32] shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              下一頁
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

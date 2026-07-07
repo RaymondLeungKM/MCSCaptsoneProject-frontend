@@ -45,6 +45,7 @@ import {
   getParentBenchmarks,
   getWordsByDate,
 } from "@/lib/api/parent-dashboard";
+import { getCategories, type CategoryResponse } from "@/lib/api/vocabulary";
 import { API_BASE_URL, getAuthToken } from "@/lib/api/client";
 import { lookupEmojiOrFallback } from "@/lib/word-emoji";
 import type { ParentBenchmarks } from "@/lib/types";
@@ -344,7 +345,7 @@ interface AnalyticsDashboardProps {
   childId: string;
 }
 
-const BENCHMARK_RANGE_OPTIONS = [7, 28, 90] as const;
+const BENCHMARK_RANGE_OPTIONS = [7, 14, 30] as const;
 
 const BENCHMARK_BAND_META = {
   ahead: {
@@ -374,6 +375,18 @@ function getBenchmarkBandMeta(
     : never,
 ) {
   return BENCHMARK_BAND_META[band];
+}
+
+function formatAgeBandLabel(ageBand?: string | null): string {
+  if (!ageBand) {
+    return "載入中";
+  }
+
+  if (ageBand === "unknown") {
+    return "未分類";
+  }
+
+  return `${ageBand}歲`;
 }
 
 const MOCK_BENCHMARKS: ParentBenchmarks = {
@@ -439,7 +452,10 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [charts, setCharts] = useState<AnalyticsCharts | null>(null);
   const [benchmarks, setBenchmarks] = useState<ParentBenchmarks | null>(null);
-  const [benchmarkRangeDays, setBenchmarkRangeDays] = useState<number>(28);
+  const [availableCategories, setAvailableCategories] = useState<
+    CategoryResponse[]
+  >([]);
+  const [benchmarkRangeDays, setBenchmarkRangeDays] = useState<number>(14);
   const [loading, setLoading] = useState(true);
   const [benchmarksLoading, setBenchmarksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -457,13 +473,17 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
         if (!token || isMockChild) {
           setSummary(MOCK_DB.summary);
           setCharts(MOCK_DB.charts);
+          setAvailableCategories([]);
           return;
         }
 
-        const [apiSummary, apiCharts] = await Promise.all([
+        const [apiSummary, apiCharts, apiCategories] = await Promise.all([
           getDashboardSummary(childId),
           getAnalyticsCharts(childId, "all"),
+          getCategories(childId),
         ]);
+
+        setAvailableCategories(apiCategories);
 
         setSummary({
           total_words_learned: apiSummary.total_words_learned,
@@ -726,6 +746,8 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
       <BenchmarkChartsPanel
         benchmarks={benchmarks}
+        categoryProgress={summary.category_progress}
+        availableCategories={availableCategories}
         isLoading={benchmarksLoading}
         benchmarkRangeDays={benchmarkRangeDays}
         onRangeChange={setBenchmarkRangeDays}
@@ -772,11 +794,15 @@ export function AnalyticsDashboard({ childId }: AnalyticsDashboardProps) {
 
 function BenchmarkChartsPanel({
   benchmarks,
+  categoryProgress,
+  availableCategories,
   isLoading,
   benchmarkRangeDays,
   onRangeChange,
 }: {
   benchmarks: ParentBenchmarks | null;
+  categoryProgress: DashboardSummary["category_progress"];
+  availableCategories: CategoryResponse[];
   isLoading: boolean;
   benchmarkRangeDays: number;
   onRangeChange: (days: number) => void;
@@ -791,12 +817,108 @@ function BenchmarkChartsPanel({
     },
     {
       id: "engagement",
-      title: "參與度",
-      unit: "分 / 活躍日",
+      title: "學習投入時間",
+      unit: "分鐘 / 活躍日",
       metric: benchmarks?.engagement_benchmark ?? null,
       accent: "from-emerald-500 to-teal-400",
     },
   ];
+
+  const categoryItems = useMemo(() => {
+    const benchmarkRows = benchmarks?.category_benchmarks ?? [];
+    const rowsById = new Map(
+      benchmarkRows.map((row) => [row.category_id, row]),
+    );
+    const rowsByName = new Map(
+      benchmarkRows.map((row) => [row.category_name.trim().toLowerCase(), row]),
+    );
+    const progressById = new Map(
+      categoryProgress.map((row) => [row.category_id, row]),
+    );
+    const progressByName = new Map(
+      categoryProgress.map((row) => [
+        (row.category_name_cantonese || row.category_name).trim().toLowerCase(),
+        row,
+      ]),
+    );
+
+    const mergedFromCatalog = availableCategories.map((cat) => {
+      const normalizedNames = [cat.id, cat.name_cantonese, cat.name]
+        .filter(Boolean)
+        .map((value) => String(value).trim().toLowerCase());
+
+      const matchedBenchmark =
+        rowsById.get(cat.id) ??
+        normalizedNames.map((name) => rowsByName.get(name)).find(Boolean);
+      const matchedProgress =
+        progressById.get(cat.id) ??
+        normalizedNames.map((name) => progressByName.get(name)).find(Boolean);
+
+      return {
+        id: cat.id,
+        name: cat.name_cantonese || cat.name,
+        band: matchedBenchmark?.band,
+        detail: matchedBenchmark
+          ? getBenchmarkBandMeta(matchedBenchmark.band).detail
+          : "同齡組樣本不足，暫以孩子自身掌握度顯示",
+        childValue:
+          matchedBenchmark?.child_value ??
+          matchedProgress?.progress_percentage ??
+          0,
+        cohortValue: matchedBenchmark?.cohort_value,
+        hasCohort: typeof matchedBenchmark?.cohort_value === "number",
+      };
+    });
+
+    const mergedFromProgress = categoryProgress.map((cat) => {
+      const normalizedNames = [
+        cat.category_id,
+        cat.category_name_cantonese,
+        cat.category_name,
+      ]
+        .filter(Boolean)
+        .map((value) => String(value).trim().toLowerCase());
+
+      const matched =
+        rowsById.get(cat.category_id) ??
+        normalizedNames.map((name) => rowsByName.get(name)).find(Boolean);
+
+      return {
+        id: cat.category_id,
+        name: cat.category_name_cantonese || cat.category_name,
+        band: matched?.band,
+        detail: matched
+          ? getBenchmarkBandMeta(matched.band).detail
+          : "同齡組樣本不足，暫以孩子自身掌握度顯示",
+        childValue: matched?.child_value ?? cat.progress_percentage,
+        cohortValue: matched?.cohort_value,
+        hasCohort: typeof matched?.cohort_value === "number",
+      };
+    });
+
+    const existingIds = new Set([
+      ...mergedFromCatalog.map((item) => item.id),
+      ...mergedFromProgress.map((item) => item.id),
+    ]);
+    const extras = benchmarkRows
+      .filter((row) => !existingIds.has(row.category_id))
+      .map((row) => ({
+        id: row.category_id,
+        name: row.category_name,
+        band: row.band,
+        detail: getBenchmarkBandMeta(row.band).detail,
+        childValue: row.child_value,
+        cohortValue: row.cohort_value,
+        hasCohort: true,
+      }));
+
+    return [...mergedFromCatalog, ...mergedFromProgress, ...extras]
+      .filter(
+        (item, index, array) =>
+          index === array.findIndex((candidate) => candidate.id === item.id),
+      )
+      .sort((a, b) => b.childValue - a.childValue);
+  }, [availableCategories, benchmarks?.category_benchmarks, categoryProgress]);
 
   return (
     <Card className="rounded-4xl border border-sky-100/70 bg-linear-to-br from-slate-100 via-sky-50 to-white p-6 shadow-sm">
@@ -810,8 +932,12 @@ function BenchmarkChartsPanel({
             同齡學習比較圖
           </h3>
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-            用圖表查看孩子與同齡組的學習節奏、參與度，以及各主題掌握度差距。
+            用圖表查看孩子與同齡組的學習節奏、學習投入時間，以及各主題掌握度差距。
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-700 ring-1 ring-sky-100">
+            <Users className="h-3.5 w-3.5 text-sky-500" />
+            比較年齡組別：{formatAgeBandLabel(benchmarks?.age_band)}
+          </div>
         </div>
 
         <div className="w-full lg:w-72 rounded-[28px] bg-white/90 p-4 ring-1 ring-sky-100 shadow-sm">
@@ -834,7 +960,7 @@ function BenchmarkChartsPanel({
             <SelectContent>
               {BENCHMARK_RANGE_OPTIONS.map((days) => (
                 <SelectItem key={days} value={String(days)}>
-                  最近 {days} 日
+                  最近 {days} 天
                 </SelectItem>
               ))}
             </SelectContent>
@@ -855,7 +981,7 @@ function BenchmarkChartsPanel({
         <>
           <div
             className={cn(
-              "mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]",
+              "mt-6 space-y-6",
               isLoading && "opacity-75 transition-opacity",
             )}
           >
@@ -864,6 +990,9 @@ function BenchmarkChartsPanel({
                 <Users className="h-5 w-5 text-sky-500" />
                 <h4 className="text-lg font-black">重點指標比較</h4>
               </div>
+              <p className="mb-4 text-xs font-medium leading-5 text-slate-500">
+                「學習投入時間」代表每個活躍學習日的平均學習分鐘，數值越高代表每日練習時間越充足。
+              </p>
               <div className="space-y-5">
                 {metricCards.map(({ id, title, unit, metric, accent }) =>
                   metric ? (
@@ -881,28 +1010,33 @@ function BenchmarkChartsPanel({
                 )}
               </div>
             </div>
-
             <div className="rounded-[28px] bg-white p-5 ring-1 ring-slate-100 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-slate-800">
                 <BarChart3 className="h-5 w-5 text-emerald-500" />
                 <h4 className="text-lg font-black">主題掌握度比較</h4>
               </div>
-              <div className="space-y-4">
-                {(benchmarks?.category_benchmarks ?? [])
-                  .slice(0, 4)
-                  .map((item) => (
+              <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {categoryItems.map((item) => (
                     <CategoryBenchmarkBars
-                      key={item.category_id}
-                      benchmark={item}
+                      key={item.id}
+                      categoryName={item.name}
+                      band={item.band}
+                      detail={item.detail}
+                      childValue={item.childValue}
+                      cohortValue={item.cohortValue}
+                      hasCohort={item.hasCohort}
                     />
                   ))}
-                {!benchmarks?.category_benchmarks?.length && (
+                </div>
+                {!categoryItems.length && (
                   <div className="rounded-2xl bg-slate-50 px-4 py-5 text-sm font-medium text-slate-500">
                     目前主題資料仍在累積，稍後會顯示各主題對照圖。
                   </div>
                 )}
               </div>
             </div>
+            Y
           </div>
         </>
       )}
@@ -932,8 +1066,8 @@ function BenchmarkComparisonChart({
   accent: string;
 }) {
   const maxValue = Math.max(childValue, cohortValue, 1);
-  const childWidth = Math.max((childValue / maxValue) * 100, 8);
-  const cohortWidth = Math.max((cohortValue / maxValue) * 100, 8);
+  const childWidth = Math.max((childValue / maxValue) * 100, 1.5);
+  const cohortWidth = Math.max((cohortValue / maxValue) * 100, 1.5);
   const bandMeta = getBenchmarkBandMeta(band);
 
   return (
@@ -1013,70 +1147,87 @@ function ChartBarRow({
 }
 
 function CategoryBenchmarkBars({
-  benchmark,
+  categoryName,
+  band,
+  detail,
+  childValue,
+  cohortValue,
+  hasCohort,
 }: {
-  benchmark: ParentBenchmarks["category_benchmarks"][number];
+  categoryName: string;
+  band?: ParentBenchmarks["category_benchmarks"][number]["band"];
+  detail: string;
+  childValue: number;
+  cohortValue?: number;
+  hasCohort: boolean;
 }) {
-  const bandMeta = getBenchmarkBandMeta(benchmark.band);
+  const bandMeta = band ? getBenchmarkBandMeta(band) : null;
 
   return (
-    <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-100">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-black text-slate-800">
-            {benchmark.category_name}
-          </p>
-          <div
-            className={cn(
-              "mt-2 inline-flex rounded-full px-3 py-1 text-[11px] font-black tracking-[0.04em]",
-              bandMeta.badgeClassName,
-            )}
-          >
-            {bandMeta.label}
-          </div>
-          <p className="mt-2 text-[11px] font-medium text-slate-500">
-            {bandMeta.detail}
-          </p>
+          <p className="text-sm font-black text-slate-800">{categoryName}</p>
+          {bandMeta ? (
+            <div
+              className={cn(
+                "mt-1 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-[0.04em]",
+                bandMeta.badgeClassName,
+              )}
+            >
+              {bandMeta.label}
+            </div>
+          ) : (
+            <div className="mt-1 inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-black tracking-[0.04em] text-slate-600 ring-1 ring-slate-200">
+              資料觀察中
+            </div>
+          )}
         </div>
         <div className="text-right">
           <p className="text-xs font-bold text-slate-600">
-            你的孩子 {benchmark.child_value.toFixed(0)}%
+            你的孩子 {childValue.toFixed(0)}%
           </p>
-          <p className="text-xs font-bold text-slate-500">
-            同齡平均 {benchmark.cohort_value.toFixed(0)}%
-          </p>
+          {hasCohort ? (
+            <p className="text-xs font-bold text-slate-500">
+              同齡平均 {cohortValue?.toFixed(0)}%
+            </p>
+          ) : (
+            <p className="text-xs font-bold text-slate-400">同齡樣本不足</p>
+          )}
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <p className="mb-2 text-[11px] font-medium leading-5 text-slate-500">
+        {detail}
+      </p>
+
+      <div className="grid gap-2">
         <div>
           <div className="mb-1 flex items-center justify-between text-xs font-bold">
             <span className="text-slate-500">你的孩子</span>
-            <span className="text-slate-800">
-              {benchmark.child_value.toFixed(0)}%
-            </span>
+            <span className="text-slate-800">{childValue.toFixed(0)}%</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
             <div
               className="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-400 transition-[width] duration-700 ease-out motion-reduce:transition-none"
-              style={{ width: `${Math.min(benchmark.child_value, 100)}%` }}
+              style={{ width: `${Math.min(childValue, 100)}%` }}
             />
           </div>
         </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-500">同齡平均</span>
-            <span className="text-slate-600">
-              {benchmark.cohort_value.toFixed(0)}%
-            </span>
+        {hasCohort ? (
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-500">同齡平均</span>
+              <span className="text-slate-600">{cohortValue?.toFixed(0)}%</span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-slate-300 transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                style={{ width: `${Math.min(cohortValue ?? 0, 100)}%` }}
+              />
+            </div>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-slate-300 transition-[width] duration-700 ease-out motion-reduce:transition-none"
-              style={{ width: `${Math.min(benchmark.cohort_value, 100)}%` }}
-            />
-          </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );
