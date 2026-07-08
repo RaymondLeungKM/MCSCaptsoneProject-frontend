@@ -273,10 +273,11 @@ export function BedtimeStoryGenerator({
         {/* Info Row */}
         <div className="child-tab-copy px-5 pb-3 sm:px-8 sm:pb-4 flex flex-col sm:flex-row justify-between items-center gap-0.5 sm:gap-0 !text-xs sm:!text-sm !font-bold !text-purple-800 opacity-70">
           <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" /> 閱讀時間：5 分鐘
+            <Clock className="w-4 h-4" />
+            聽故事時間：5分鐘
           </div>
           <div className="flex items-center gap-1">
-            <BookOpen className="w-4 h-4" /> 故事長度：~400 字
+            <BookOpen className="w-4 h-4" /> 故事長度：~700 字
           </div>
         </div>
 

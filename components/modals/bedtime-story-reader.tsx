@@ -52,6 +52,7 @@ export function BedtimeStoryReader({
   const { speak, stop } = useSpeech();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedPageRef = useRef<number | null>(null);
+  const pageAudioEndTimeRef = useRef<number | null>(null);
   const STORY_PAGE_TARGET_CHARS = 120;
 
   // Thematic decorations shown when no AI image has been generated yet
@@ -65,20 +66,24 @@ export function BedtimeStoryReader({
   const resetPlayback = () => {
     stop();
     if (audioRef.current) {
+      audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
     }
+    pageAudioEndTimeRef.current = null;
     lastPlayedPageRef.current = null;
     setIsPlaying(false);
   };
 
   const pausePlaybackForNavigation = () => {
     if (audioRef.current) {
+      audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
     } else {
       stop();
     }
+    pageAudioEndTimeRef.current = null;
     lastPlayedPageRef.current = null;
     setIsPlaying(false);
   };
@@ -93,6 +98,25 @@ export function BedtimeStoryReader({
       resetPlayback();
     };
   }, [isOpen, story]);
+
+  const resolvedStoryAudioUrl = (() => {
+    if (!story?.audio_url) {
+      return null;
+    }
+
+    if (
+      story.audio_url.startsWith("http://") ||
+      story.audio_url.startsWith("https://")
+    ) {
+      return story.audio_url;
+    }
+
+    if (typeof window === "undefined") {
+      return story.audio_url;
+    }
+
+    return new URL(story.audio_url, window.location.origin).toString();
+  })();
 
   if (!story) return null;
 
@@ -296,23 +320,29 @@ export function BedtimeStoryReader({
     }).format(parsedDate);
   }, [story.created_at, story.generated_at, story.generation_date]);
 
-  const pageStartRatios = useMemo(() => {
+  const pageAudioRatios = useMemo(() => {
     if (pages.length === 0) {
-      return [] as number[];
+      return [] as Array<{ startRatio: number; endRatio: number }>;
     }
 
     const pageCharCounts = pages.map((page) => page.cantonese.trim().length);
     const totalChars = pageCharCounts.reduce((sum, count) => sum + count, 0);
 
     if (totalChars <= 0) {
-      return Array(pages.length).fill(0);
+      return Array.from({ length: pages.length }, (_, index) => ({
+        startRatio: index / pages.length,
+        endRatio: (index + 1) / pages.length,
+      }));
     }
 
     let cumulativeChars = 0;
     return pageCharCounts.map((count) => {
       const startRatio = cumulativeChars / totalChars;
       cumulativeChars += count;
-      return startRatio;
+      return {
+        startRatio,
+        endRatio: cumulativeChars / totalChars,
+      };
     });
   }, [pages]);
 
@@ -356,33 +386,63 @@ export function BedtimeStoryReader({
 
     const safePageIndex = Math.max(
       0,
-      Math.min(currentPage, pageStartRatios.length - 1),
+      Math.min(currentPage, pageAudioRatios.length - 1),
     );
-    const targetRatio = pageStartRatios[safePageIndex] ?? 0;
+    const pageAudioRatio = pageAudioRatios[safePageIndex] ?? {
+      startRatio: 0,
+      endRatio: 1,
+    };
     const targetTime = Math.min(
-      Math.max(targetRatio * audio.duration, 0),
+      Math.max(pageAudioRatio.startRatio * audio.duration, 0),
       Math.max(audio.duration - 0.05, 0),
+    );
+    const pageEndTime = Math.min(
+      Math.max(pageAudioRatio.endRatio * audio.duration, targetTime + 0.05),
+      audio.duration,
     );
 
     audio.currentTime = targetTime;
+    pageAudioEndTimeRef.current = pageEndTime;
+    audio.ontimeupdate = () => {
+      const currentPageEndTime = pageAudioEndTimeRef.current;
+
+      if (currentPageEndTime === null) {
+        return;
+      }
+
+      if (audio.currentTime >= currentPageEndTime - 0.05) {
+        audio.ontimeupdate = null;
+        pageAudioEndTimeRef.current = null;
+        audio.pause();
+        audio.currentTime = targetTime;
+        lastPlayedPageRef.current = null;
+      }
+    };
     lastPlayedPageRef.current = safePageIndex;
   };
 
   const createStoryAudio = () => {
-    if (!story?.audio_url) {
+    if (!resolvedStoryAudioUrl) {
       return null;
     }
 
-    const audio = new Audio(story.audio_url);
+    if (audioRef.current) {
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(resolvedStoryAudioUrl);
     audioRef.current = audio;
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
     audio.onended = () => {
+      pageAudioEndTimeRef.current = null;
       setIsPlaying(false);
       audio.currentTime = 0;
       lastPlayedPageRef.current = null;
     };
     audio.onerror = () => {
+      pageAudioEndTimeRef.current = null;
       setIsPlaying(false);
       lastPlayedPageRef.current = null;
     };
@@ -394,11 +454,11 @@ export function BedtimeStoryReader({
     if (isPlaying) {
       pausePlaybackForNavigation();
     } else {
-      if (story.audio_url) {
+      if (resolvedStoryAudioUrl) {
         try {
           let audio = audioRef.current;
 
-          if (!audio || audio.src !== story.audio_url) {
+          if (!audio || audio.src !== resolvedStoryAudioUrl) {
             audio = createStoryAudio();
           }
 
