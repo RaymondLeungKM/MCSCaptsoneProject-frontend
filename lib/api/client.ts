@@ -83,7 +83,10 @@ function sleep(ms: number): Promise<void> {
 function toFriendlyErrorMessage(message: string): string {
   const normalized = message.toLowerCase();
 
-  if (normalized.includes("incorrect email or password")) {
+  if (
+    normalized.includes("incorrect login email or password") ||
+    normalized.includes("incorrect email or password")
+  ) {
     return "登入電郵或密碼不正確。";
   }
 
