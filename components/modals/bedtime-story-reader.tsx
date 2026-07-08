@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { generateSentenceAudio } from "@/lib/api/audio";
+import { API_BASE_URL } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/lib/speech";
 import type { GeneratedStory, LanguagePreference } from "@/lib/types";
@@ -53,6 +55,8 @@ export function BedtimeStoryReader({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastPlayedPageRef = useRef<number | null>(null);
   const pageAudioEndTimeRef = useRef<number | null>(null);
+  const pageAudioCacheRef = useRef<Map<number, string>>(new Map());
+  const isGeneratingPageAudioRef = useRef(false);
   const STORY_PAGE_TARGET_CHARS = 120;
 
   // Thematic decorations shown when no AI image has been generated yet
@@ -91,6 +95,7 @@ export function BedtimeStoryReader({
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(0);
+      pageAudioCacheRef.current.clear();
       resetPlayback();
       setShowSettings(false);
     }
@@ -117,6 +122,15 @@ export function BedtimeStoryReader({
 
     return new URL(story.audio_url, window.location.origin).toString();
   })();
+
+  const resolveAudioUrl = (audioUrl: string) => {
+    if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
+      return audioUrl;
+    }
+
+    const backendOrigin = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+    return `${backendOrigin}${audioUrl.startsWith("/") ? "" : "/"}${audioUrl}`;
+  };
 
   if (!story) return null;
 
@@ -449,11 +463,69 @@ export function BedtimeStoryReader({
     return audio;
   };
 
+  const playAudioUrl = async (audioUrl: string) => {
+    resetPlayback();
+
+    const audio = new Audio(resolveAudioUrl(audioUrl));
+    audioRef.current = audio;
+    audio.onplay = () => setIsPlaying(true);
+    audio.onpause = () => setIsPlaying(false);
+    audio.onended = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+    audio.onerror = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+
+    await audio.play();
+  };
+
+  const playCurrentPageAudio = async () => {
+    const pageText = pages[currentPage]?.cantonese?.trim();
+    if (!pageText) {
+      throw new Error("Current story page has no text to play");
+    }
+
+    const cachedAudioUrl = pageAudioCacheRef.current.get(currentPage);
+    if (cachedAudioUrl) {
+      await playAudioUrl(cachedAudioUrl);
+      return;
+    }
+
+    isGeneratingPageAudioRef.current = true;
+
+    try {
+      const generated = await generateSentenceAudio({
+        text: pageText,
+        language: "cantonese",
+        speech_rate: 0.9,
+      });
+
+      pageAudioCacheRef.current.set(currentPage, generated.audio_url);
+      await playAudioUrl(generated.audio_url);
+    } finally {
+      isGeneratingPageAudioRef.current = false;
+    }
+  };
+
   // --- AUDIO ---
   const handlePlayPage = async () => {
     if (isPlaying) {
       pausePlaybackForNavigation();
     } else {
+      if (isGeneratingPageAudioRef.current) {
+        return;
+      }
+
+      try {
+        await playCurrentPageAudio();
+        return;
+      } catch {
+        // Fall through to the single-file story audio or Web Speech fallback.
+      }
+
       if (resolvedStoryAudioUrl) {
         try {
           let audio = audioRef.current;
