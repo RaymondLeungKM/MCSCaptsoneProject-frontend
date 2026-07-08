@@ -216,11 +216,13 @@ export interface StoryGenerationRequest {
 }
 
 export interface StoryGenerationResponse {
-  story: GeneratedStory;
+  story?: GeneratedStory | null;
   words_used: DailyWordSummary[];
   generation_time_seconds: number;
   success: boolean;
   message?: string;
+  pending?: boolean;
+  pending_since?: string;
 }
 
 // Parent Analytics Types
