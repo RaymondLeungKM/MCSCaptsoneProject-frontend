@@ -629,6 +629,7 @@ function ChildDashboardContent() {
           cultural_references: story.cultural_references ?? undefined,
           ai_model: story.ai_model ?? undefined,
           updated_at: story.updated_at ?? undefined,
+          page_audio_segments: story.page_audio_segments ?? undefined,
         })),
       );
     } catch (err) {

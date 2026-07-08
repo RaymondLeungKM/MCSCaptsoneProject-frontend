@@ -40,6 +40,14 @@ export interface StoryResponse {
   ai_model?: string | null;
   created_at: string;
   updated_at?: string | null;
+  page_audio_segments?: Array<{
+    page_index: number;
+    start_ratio: number;
+    end_ratio: number;
+    start_time_seconds: number;
+    end_time_seconds: number;
+    text_length: number;
+  }>;
 }
 
 export interface StoryMutationRequest {

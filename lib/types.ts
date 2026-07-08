@@ -161,6 +161,15 @@ export interface DailyWordSummary {
   story_priority: number;
 }
 
+export interface StoryPageAudioSegment {
+  page_index: number;
+  start_ratio: number;
+  end_ratio: number;
+  start_time_seconds: number;
+  end_time_seconds: number;
+  text_length: number;
+}
+
 export interface GeneratedStory {
   id: string;
   child_id?: string | null;
@@ -197,6 +206,7 @@ export interface GeneratedStory {
   updated_at?: string;
   /** AI-generated illustration URLs for each of the 4 story parts */
   part_images?: string[];
+  page_audio_segments?: StoryPageAudioSegment[];
 }
 
 export interface StoryGenerationRequest {
