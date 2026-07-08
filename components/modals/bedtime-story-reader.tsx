@@ -395,15 +395,22 @@ export function BedtimeStoryReader({
       start_ratio: 0,
       end_ratio: 1,
     };
+    const segmentStartTime =
+      typeof pageAudioSegment.start_time_seconds === "number" &&
+      pageAudioSegment.start_time_seconds > 0
+        ? pageAudioSegment.start_time_seconds
+        : (pageAudioSegment.start_ratio ?? 0) * audio.duration;
+    const segmentEndTime =
+      typeof pageAudioSegment.end_time_seconds === "number" &&
+      pageAudioSegment.end_time_seconds > segmentStartTime
+        ? pageAudioSegment.end_time_seconds
+        : (pageAudioSegment.end_ratio ?? 1) * audio.duration;
     const targetTime = Math.min(
-      Math.max(pageAudioSegment.start_time_seconds ?? 0, 0),
+      Math.max(segmentStartTime, 0),
       Math.max(audio.duration - 0.05, 0),
     );
     const pageEndTime = Math.min(
-      Math.max(
-        pageAudioSegment.end_time_seconds ?? audio.duration,
-        targetTime + 0.05,
-      ),
+      Math.max(segmentEndTime, targetTime + 0.05),
       audio.duration,
     );
 
