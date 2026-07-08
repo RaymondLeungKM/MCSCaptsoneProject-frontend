@@ -8,8 +8,6 @@ import {
   ChevronRight,
   BookOpen,
   Star,
-  Settings,
-  Type,
 } from "lucide-react";
 import {
   Dialog,
@@ -20,8 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { API_BASE_URL } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/lib/speech";
@@ -44,16 +40,15 @@ export function BedtimeStoryReader({
 }: BedtimeStoryReaderProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-
-  const [showJyutping, setShowJyutping] = useState(
-    languagePreference !== "english",
-  );
+  const showJyutping = languagePreference !== "english";
 
   const { speak, stop } = useSpeech();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentPageRef = useRef(0);
+  const pendingAutoPlayPageRef = useRef<number | null>(null);
   const lastPlayedPageRef = useRef<number | null>(null);
   const pageAudioEndTimeRef = useRef<number | null>(null);
+  const playbackMonitorRef = useRef<number | null>(null);
   const STORY_PAGE_TARGET_CHARS = 120;
 
   // Thematic decorations shown when no AI image has been generated yet
@@ -64,8 +59,17 @@ export function BedtimeStoryReader({
     { emoji: "🌙", gradient: "from-blue-100 via-sky-100 to-slate-50" },
   ] as const;
 
+  const clearPlaybackMonitor = () => {
+    if (playbackMonitorRef.current !== null) {
+      window.clearInterval(playbackMonitorRef.current);
+      playbackMonitorRef.current = null;
+    }
+  };
+
   const resetPlayback = () => {
     stop();
+    clearPlaybackMonitor();
+    pendingAutoPlayPageRef.current = null;
     if (audioRef.current) {
       audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
@@ -78,6 +82,8 @@ export function BedtimeStoryReader({
   };
 
   const pausePlaybackForNavigation = () => {
+    clearPlaybackMonitor();
+    pendingAutoPlayPageRef.current = null;
     if (audioRef.current) {
       audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
@@ -91,14 +97,18 @@ export function BedtimeStoryReader({
 
   useEffect(() => {
     if (isOpen) {
+      currentPageRef.current = 0;
       setCurrentPage(0);
       resetPlayback();
-      setShowSettings(false);
     }
     return () => {
       resetPlayback();
     };
   }, [isOpen, story]);
+
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
   const resolveAudioUrl = (audioUrl: string) => {
     if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
@@ -258,6 +268,39 @@ export function BedtimeStoryReader({
 
   const totalPages = pages.length + 1;
   const isStatsPage = currentPage === pages.length;
+  const advanceToNextPage = () => {
+    setCurrentPage((prev) => {
+      const nextPage = Math.min(prev + 1, totalPages - 1);
+      currentPageRef.current = nextPage;
+      return nextPage;
+    });
+  };
+
+  const handlePagePlaybackComplete = (
+    audio: HTMLAudioElement | null,
+    resetTime = 0,
+    shouldAdvancePage = false,
+    shouldAutoPlayNextPage = false,
+  ) => {
+    if (audio) {
+      audio.ontimeupdate = null;
+      audio.pause();
+      audio.currentTime = resetTime;
+    }
+
+    pageAudioEndTimeRef.current = null;
+    clearPlaybackMonitor();
+    lastPlayedPageRef.current = null;
+    setIsPlaying(false);
+
+    if (shouldAdvancePage) {
+      pendingAutoPlayPageRef.current = shouldAutoPlayNextPage
+        ? Math.min(currentPageRef.current + 1, totalPages - 1)
+        : null;
+      advanceToNextPage();
+    }
+  };
+
   const storyVocabulary = useMemo(() => {
     const featuredWords = story.featured_words
       .flatMap((word) => word.split(/[\n,、，]+/))
@@ -380,7 +423,10 @@ export function BedtimeStoryReader({
       }
     });
 
-  const seekAudioToCurrentPage = async (audio: HTMLAudioElement) => {
+  const seekAudioToPage = async (
+    audio: HTMLAudioElement,
+    pageIndex: number,
+  ) => {
     await waitForAudioMetadata(audio);
 
     if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
@@ -389,7 +435,7 @@ export function BedtimeStoryReader({
 
     const safePageIndex = Math.max(
       0,
-      Math.min(currentPage, pageAudioSegments.length - 1),
+      Math.min(pageIndex, pageAudioSegments.length - 1),
     );
     const pageAudioSegment = pageAudioSegments[safePageIndex] ?? {
       start_ratio: 0,
@@ -424,13 +470,60 @@ export function BedtimeStoryReader({
       }
 
       if (audio.currentTime >= currentPageEndTime - 0.05) {
-        audio.ontimeupdate = null;
-        pageAudioEndTimeRef.current = null;
-        audio.pause();
-        audio.currentTime = targetTime;
-        lastPlayedPageRef.current = null;
+        handlePagePlaybackComplete(
+          audio,
+          targetTime,
+          safePageIndex < totalPages - 1,
+          safePageIndex < pages.length - 1,
+        );
       }
     };
+
+    await new Promise<void>((resolve, reject) => {
+      const completeSeek = () => {
+        audio.removeEventListener("seeked", handleSeeked);
+        audio.removeEventListener("error", handleSeekError);
+      };
+
+      const handleSeeked = () => {
+        completeSeek();
+        resolve();
+      };
+
+      const handleSeekError = () => {
+        completeSeek();
+        reject(new Error("Failed to seek story audio to page segment"));
+      };
+
+      if (Math.abs(audio.currentTime - targetTime) <= 0.05) {
+        resolve();
+        return;
+      }
+
+      audio.addEventListener("seeked", handleSeeked, { once: true });
+      audio.addEventListener("error", handleSeekError, { once: true });
+      audio.currentTime = targetTime;
+    });
+
+    clearPlaybackMonitor();
+    playbackMonitorRef.current = window.setInterval(() => {
+      const currentPageEndTime = pageAudioEndTimeRef.current;
+
+      if (currentPageEndTime === null) {
+        clearPlaybackMonitor();
+        return;
+      }
+
+      if (audio.currentTime >= currentPageEndTime - 0.05) {
+        handlePagePlaybackComplete(
+          audio,
+          targetTime,
+          safePageIndex < totalPages - 1,
+          safePageIndex < pages.length - 1,
+        );
+      }
+    }, 100);
+
     lastPlayedPageRef.current = safePageIndex;
   };
 
@@ -440,6 +533,7 @@ export function BedtimeStoryReader({
     }
 
     if (audioRef.current) {
+      clearPlaybackMonitor();
       audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
     }
@@ -449,15 +543,15 @@ export function BedtimeStoryReader({
     audio.onplay = () => setIsPlaying(true);
     audio.onpause = () => setIsPlaying(false);
     audio.onended = () => {
-      pageAudioEndTimeRef.current = null;
-      setIsPlaying(false);
-      audio.currentTime = 0;
-      lastPlayedPageRef.current = null;
+      handlePagePlaybackComplete(
+        audio,
+        0,
+        currentPageRef.current < totalPages - 1,
+        currentPageRef.current < pages.length - 1,
+      );
     };
     audio.onerror = () => {
-      pageAudioEndTimeRef.current = null;
-      setIsPlaying(false);
-      lastPlayedPageRef.current = null;
+      handlePagePlaybackComplete(audio);
     };
     return audio;
   };
@@ -467,7 +561,14 @@ export function BedtimeStoryReader({
     setIsPlaying(true);
     speak(textToRead, {
       rate: 0.9,
-      onEnd: () => setIsPlaying(false),
+      onEnd: () => {
+        handlePagePlaybackComplete(
+          null,
+          0,
+          currentPageRef.current < totalPages - 1,
+          currentPageRef.current < pages.length - 1,
+        );
+      },
       onError: () => setIsPlaying(false),
     });
   };
@@ -489,8 +590,9 @@ export function BedtimeStoryReader({
             throw new Error("Story audio is not available");
           }
 
-          if (lastPlayedPageRef.current !== currentPage) {
-            await seekAudioToCurrentPage(audio);
+          const targetPageIndex = currentPageRef.current;
+          if (lastPlayedPageRef.current !== targetPageIndex) {
+            await seekAudioToPage(audio, targetPageIndex);
           }
 
           await audio.play();
@@ -507,10 +609,23 @@ export function BedtimeStoryReader({
     }
   };
 
+  useEffect(() => {
+    if (
+      pendingAutoPlayPageRef.current !== currentPage ||
+      currentPage >= pages.length
+    ) {
+      return;
+    }
+
+    pendingAutoPlayPageRef.current = null;
+    void handlePlayPage();
+  }, [currentPage, pages.length]);
+
   // --- NAVIGATION ---
   const handleNext = () => {
     pausePlaybackForNavigation();
     if (currentPage < totalPages - 1) {
+      currentPageRef.current = currentPage + 1;
       setCurrentPage((prev) => prev + 1);
     } else {
       if (onComplete) onComplete(story.id);
@@ -520,6 +635,7 @@ export function BedtimeStoryReader({
 
   const handlePrev = () => {
     pausePlaybackForNavigation();
+    currentPageRef.current = Math.max(0, currentPage - 1);
     setCurrentPage((prev) => Math.max(0, prev - 1));
   };
 
@@ -557,19 +673,6 @@ export function BedtimeStoryReader({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Settings Toggle */}
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                  showSettings
-                    ? "bg-white text-[#5D4037]"
-                    : "bg-white/10 hover:bg-white/20",
-                )}
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-
               {/* Close Button */}
               <button
                 onClick={onClose}
@@ -577,31 +680,6 @@ export function BedtimeStoryReader({
               >
                 <X className="w-5 h-5 text-white" />
               </button>
-            </div>
-          </div>
-
-          {/* SETTINGS DRAWER */}
-          <div
-            className={cn(
-              "bg-[#EFEBE9] border-b border-[#D7CCC8] overflow-hidden transition-all duration-300 ease-in-out",
-              showSettings ? "max-h-32 p-4" : "max-h-0 p-0",
-            )}
-          >
-            <div className="flex flex-wrap gap-6 justify-center">
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-[#D7CCC8]">
-                <Type className="w-4 h-4 text-slate-400" />
-                <Label
-                  htmlFor="jyutping"
-                  className="text-sm font-bold text-slate-600"
-                >
-                  拼音 (Jyutping)
-                </Label>
-                <Switch
-                  id="jyutping"
-                  checked={showJyutping}
-                  onCheckedChange={setShowJyutping}
-                />
-              </div>
             </div>
           </div>
 
