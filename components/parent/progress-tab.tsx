@@ -64,7 +64,7 @@ const FILTER_OPTIONS = [
 const VIEW_OPTIONS = [
   { id: "focus", label: "重點整理", icon: Sparkles },
   { id: "categories", label: "按主題", icon: FolderKanban },
-  { id: "allWords", label: "全部詞語", icon: BookOpen },
+  { id: "allWords", label: "已接觸詞語", icon: BookOpen },
 ] as const;
 
 type WordFilter = (typeof FILTER_OPTIONS)[number]["id"];
@@ -212,6 +212,10 @@ function sortWordsForDisplay(words: Word[]) {
 
     return getWordLabel(left).localeCompare(getWordLabel(right), "zh-HK");
   });
+}
+
+function hasRecordedExposure(word: Word) {
+  return (word.exposureCount || 0) >= 1;
 }
 
 function getProgressTone(progress: number) {
@@ -609,22 +613,23 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
         }
 
         const loadedWords = Array.from(mergedWordsWithProgress.values());
+        const encounteredWords = loadedWords.filter(hasRecordedExposure);
 
-        const totalWords = loadedWords.length;
-        const masteredWords = loadedWords.filter(
+        const totalWords = encounteredWords.length;
+        const masteredWords = encounteredWords.filter(
           (word) => word.mastered,
         ).length;
 
-        setRealWords(loadedWords);
+        setRealWords(encounteredWords);
 
         if (progressStats.status === "fulfilled") {
           const progress = progressStats.value;
           setRealStats({
-            totalWords: progress.total_words || totalWords,
-            masteredWords: progress.mastered_words || masteredWords,
-            weeklyProgress: progress.weekly_progress || [],
-            streakDays: progress.streak_days || 0,
-            categoryProgress: (progress.category_progress || []).map(
+            totalWords: progress.total_words ?? totalWords,
+            masteredWords: progress.mastered_words ?? masteredWords,
+            weeklyProgress: progress.weekly_progress ?? [],
+            streakDays: progress.streak_days ?? 0,
+            categoryProgress: (progress.category_progress ?? []).map(
               (category) => ({
                 category: category.category,
                 progress: category.progress,
@@ -632,10 +637,10 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                 total: category.total,
               }),
             ),
-            averageExposuresPerWord: progress.average_exposures_per_word || 0,
-            activeVocabulary: progress.active_vocabulary || 0,
-            passiveVocabulary: progress.passive_vocabulary || 0,
-            multiSensoryEngagement: progress.multi_sensory_engagement || 0,
+            averageExposuresPerWord: progress.average_exposures_per_word ?? 0,
+            activeVocabulary: progress.active_vocabulary ?? 0,
+            passiveVocabulary: progress.passive_vocabulary ?? 0,
+            multiSensoryEngagement: progress.multi_sensory_engagement ?? 0,
           });
           console.log(
             `[Progress] Stats loaded: ${progress.total_words} words, streak ${progress.streak_days}`,
@@ -903,7 +908,7 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                 生字進度
               </h3>
               <p className="text-sm font-medium text-gray-500">
-                先看重點，再按主題或全部詞語深入查看。
+                先看重點，再按主題或已接觸詞語深入查看。
               </p>
             </div>
 
@@ -966,12 +971,12 @@ export function ProgressTab({ childId, stats, words }: ProgressTabProps) {
                 <p className="text-base font-black text-gray-500">
                   {hasActiveFilters
                     ? "目前篩選條件下找不到詞語"
-                    : "暫時還沒有詞語資料"}
+                    : "暫時還沒有已接觸詞語資料"}
                 </p>
                 <p className="mt-2 text-sm font-medium text-gray-400">
                   {hasActiveFilters
                     ? "可嘗試清除搜尋內容，或切換到其他篩選條件。"
-                    : "當孩子開始累積詞語後，這裡會顯示主題重點和複習方向。"}
+                    : "當孩子開始接觸詞語後，這裡會顯示主題重點和複習方向。"}
                 </p>
               </div>
             ) : (

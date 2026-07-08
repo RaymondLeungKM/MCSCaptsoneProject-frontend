@@ -5,8 +5,11 @@
 
 # next.js
 /.next/
+/.next-*/
+/.next-fresh/
 /.open-next/
 /out/
+/Users/
 
 # production
 /build

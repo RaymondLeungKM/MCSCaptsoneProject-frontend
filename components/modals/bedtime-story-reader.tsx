@@ -684,7 +684,7 @@ export function BedtimeStoryReader({
           </div>
 
           {/* MAIN PAGE AREA */}
-          <div className="flex-1 p-4 md:p-6 overflow-hidden overscroll-contain min-h-0 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]">
+          <div className="flex-1 p-4 md:p-6 overflow-hidden overscroll-contain min-h-0 flex flex-col relative bg-[url(https://www.transparenttextures.com/patterns/cream-paper.png)]">
             {!isStatsPage ? (
               // --- STORY PAGES ---
               <div
