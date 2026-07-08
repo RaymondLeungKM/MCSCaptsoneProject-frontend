@@ -80,21 +80,88 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function toFriendlyErrorMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("incorrect email or password")) {
+    return "登入電郵或密碼不正確。";
+  }
+
+  if (normalized.includes("not a valid email address")) {
+    return "請輸入有效的電郵地址（例如：name@example.com）。";
+  }
+
+  return message;
+}
+
 /**
  * Parse error response from server
  */
 async function parseErrorResponse(
   response: Response,
 ): Promise<{ detail: string; [key: string]: any }> {
+  const fallbackDetail = `HTTP ${response.status}: ${response.statusText}`;
+
+  const normalizeDetail = (value: unknown): string => {
+    if (typeof value === "string" && value.trim()) {
+      return toFriendlyErrorMessage(value);
+    }
+
+    if (Array.isArray(value)) {
+      const messages = value
+        .map((item) => {
+          if (typeof item === "string" && item.trim()) return item;
+          if (
+            item &&
+            typeof item === "object" &&
+            "msg" in item &&
+            typeof item.msg === "string" &&
+            item.msg.trim()
+          ) {
+            return item.msg;
+          }
+          return null;
+        })
+        .filter((msg): msg is string => Boolean(msg));
+
+      if (messages.length > 0) {
+        return toFriendlyErrorMessage(messages.join(" "));
+      }
+    }
+
+    if (value && typeof value === "object") {
+      if ("message" in value && typeof value.message === "string") {
+        return toFriendlyErrorMessage(value.message);
+      }
+      if ("msg" in value && typeof value.msg === "string") {
+        return toFriendlyErrorMessage(value.msg);
+      }
+    }
+
+    return fallbackDetail;
+  };
+
   const contentType = response.headers.get("content-type");
   if (contentType?.includes("application/json")) {
     try {
-      return await response.json();
+      const data: unknown = await response.json();
+
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        const jsonData = data as Record<string, unknown>;
+        return {
+          ...jsonData,
+          detail: normalizeDetail(jsonData.detail),
+        };
+      }
+
+      return {
+        detail: normalizeDetail(data),
+      };
     } catch {
-      return { detail: `HTTP ${response.status}: ${response.statusText}` };
+      return { detail: fallbackDetail };
     }
   }
-  return { detail: `HTTP ${response.status}: ${response.statusText}` };
+  return { detail: fallbackDetail };
 }
 
 /**
@@ -105,6 +172,7 @@ export async function apiRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getAuthToken();
+  const isAuthEndpoint = endpoint.startsWith("/auth/");
   const allowRetry = isRetryableMethod(options.method);
   let lastError: Error | null = null;
   let delayMs = RETRY_CONFIG.initialDelayMs;
@@ -134,22 +202,29 @@ export async function apiRequest<T>(
 
         // Handle 401 Unauthorized
         if (response.status === 401) {
-          logDebug("Unauthorized (401) - clearing token");
-          clearAuthToken();
-          if (typeof window !== "undefined") {
-            // Redirect to login only if we're in browser
-            const currentPath = window.location.pathname;
-            if (
-              !currentPath.includes("/login") &&
-              !currentPath.includes("/register")
-            ) {
-              window.location.href = "/login";
+          if (!isAuthEndpoint) {
+            logDebug("Unauthorized (401) - clearing token");
+            clearAuthToken();
+            if (typeof window !== "undefined") {
+              // Redirect to login only if we're in browser
+              const currentPath = window.location.pathname;
+              if (
+                !currentPath.includes("/login") &&
+                !currentPath.includes("/register")
+              ) {
+                window.location.href = "/login";
+              }
             }
+            throw new APIError(
+              response.status,
+              errorData.detail || "Unauthorized",
+              "Your session has expired. Please login again.",
+            );
           }
+
           throw new APIError(
             response.status,
             errorData.detail || "Unauthorized",
-            "Your session has expired. Please login again.",
           );
         }
 

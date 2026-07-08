@@ -79,7 +79,7 @@ flowchart TD
 
         LOGIN_FAIL["`401 Unauthorized
         → Show error:
-        'Incorrect email or password'`"]
+        'Incorrect login email or password'`"]
 
         LOGIN_PAGE --> LOGIN_BTN --> LOGIN_API
         LOGIN_API -->|Success| LOGIN_OK
