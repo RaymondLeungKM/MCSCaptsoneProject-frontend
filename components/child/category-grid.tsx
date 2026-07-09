@@ -16,6 +16,7 @@ import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 import { updateWordProgress } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -77,6 +78,7 @@ export function CategoryGrid({
   const [wordsError, setWordsError] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const { playWord, isPlaying, isLoading: isAudioLoading } = useWordAudio();
+  const { toast } = useToast();
 
   // Fetch words (with progress when childId is available) whenever a category is selected
   useEffect(() => {
@@ -210,6 +212,14 @@ export function CategoryGrid({
           } catch {
             // Keep audio playback and progress UI non-blocking when daily tracking fails.
           }
+        } else {
+          const isAtMaxStars = progress.exposure_count >= 6;
+          toast({
+            title: isAtMaxStars ? "已經 6/6 粒星" : "今日已加過星星",
+            description: isAtMaxStars
+              ? "呢個詞語已經滿星啦，繼續聽都好叻！"
+              : "同一個詞語今日只可以加 1 粒星，聽日再加油！",
+          });
         }
       })
       .catch(() => {

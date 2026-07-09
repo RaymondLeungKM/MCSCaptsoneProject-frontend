@@ -27,6 +27,7 @@ import {
   requestActiveVocabApproval,
 } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
+import { useToast } from "@/components/ui/use-toast";
 
 interface WordDetailModalProps {
   word: Word | null;
@@ -134,6 +135,7 @@ export function WordDetailModal({
   onProgressUpdate,
 }: WordDetailModalProps) {
   const { playWord, playSentence, isPlaying, isLoading } = useWordAudio();
+  const { toast } = useToast();
   const [mastered, setMastered] = useState(false);
   const [pendingParentApproval, setPendingParentApproval] = useState(false);
   const [requestingParentApproval, setRequestingParentApproval] =
@@ -190,6 +192,14 @@ export function WordDetailModal({
         } catch (trackingError) {
           console.warn("Failed to track exposure", trackingError);
         }
+      } else {
+        const isAtMaxStars = progress.exposure_count >= EXPOSURE_GOAL;
+        toast({
+          title: isAtMaxStars ? "已經 6/6 粒星" : "今日已加過星星",
+          description: isAtMaxStars
+            ? "呢個詞語已經滿星啦，繼續聽都好叻！"
+            : "同一個詞語今日只可以加 1 粒星，聽日再加油！",
+        });
       }
     } catch {
       /* silent */
