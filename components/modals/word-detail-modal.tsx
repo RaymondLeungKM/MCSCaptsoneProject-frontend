@@ -27,7 +27,7 @@ import {
   requestActiveVocabApproval,
 } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface WordDetailModalProps {
   word: Word | null;

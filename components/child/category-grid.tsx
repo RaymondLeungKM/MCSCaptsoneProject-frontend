@@ -16,7 +16,7 @@ import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 import { updateWordProgress } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface CategoryGridProps {
   categories: Category[];
