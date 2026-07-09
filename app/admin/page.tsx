@@ -9,6 +9,7 @@ import {
   GitBranch,
   Loader2,
   Lock,
+  LogOut,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -362,7 +363,7 @@ function getMissionUpdatedAt(mission: MissionResponse): string {
 }
 
 export default function AdminPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("missions");
@@ -442,6 +443,10 @@ export default function AdminPage() {
     setSelectedMissionId(null);
     setForm(createEmptyMissionForm());
     setIsMissionDialogOpen(true);
+  }
+
+  function handleLogout() {
+    logout();
   }
 
   function handleCreateFromMission(
@@ -763,19 +768,30 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <Button
-                type="button"
-                onClick={() => void loadMissions()}
-                disabled={loading}
-                className="h-11 rounded-full bg-slate-800 px-5 font-bold text-white hover:bg-slate-700"
-              >
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                重新整理
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={() => void loadMissions()}
+                  disabled={loading}
+                  className="h-11 rounded-full bg-slate-800 px-5 font-bold text-white hover:bg-slate-700"
+                >
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  重新整理
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="h-11 rounded-full border-slate-300 bg-white/80 px-5 font-bold text-slate-700 hover:bg-white"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  登出
+                </Button>
+              </div>
             </div>
           </div>
 
