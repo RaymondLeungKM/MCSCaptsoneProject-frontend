@@ -15,6 +15,7 @@ import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 import { updateWordProgress } from "@/lib/api/vocabulary";
+import { trackDailyWord } from "@/lib/api/bedtime-stories";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -173,7 +174,10 @@ export function CategoryGrid({
     void updateWordProgress(word.id, childId, {
       exposure_count: nextExposureCount,
     })
-      .then((progress) => {
+      .then(async (progress) => {
+        const didIncreaseExposure =
+          progress.exposure_count > (word.exposureCount || 0);
+
         setCategoryWords((prev) =>
           prev.map((candidate) =>
             candidate.id === word.id
@@ -186,6 +190,27 @@ export function CategoryGrid({
           ),
         );
         onWordLearned?.();
+
+        if (didIncreaseExposure) {
+          try {
+            await trackDailyWord({
+              child_id: childId,
+              word_id: word.id,
+              date: new Date().toISOString(),
+              exposure_count: 1,
+              used_actively: false,
+              mastery_confidence: 0.35,
+              learned_context: {
+                activity: "listen_pronunciation",
+                source: "learn_category_grid",
+              },
+              include_in_story: true,
+              story_priority: 5,
+            });
+          } catch {
+            // Keep audio playback and progress UI non-blocking when daily tracking fails.
+          }
+        }
       })
       .catch(() => {
         // Keep audio playback non-blocking when progress sync fails.

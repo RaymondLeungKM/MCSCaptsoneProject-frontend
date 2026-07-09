@@ -82,32 +82,37 @@ export function WordLearningModal({
         try {
           // Update general word progress
           // Note: Ensure these API functions handle errors gracefully if backend is offline
+          let didIncreaseExposure = false;
           try {
-            await updateWordProgress(word.id, childId, {
+            const progress = await updateWordProgress(word.id, childId, {
               exposure_count: (word.exposureCount || 0) + 1,
             });
+            didIncreaseExposure =
+              progress.exposure_count > (word.exposureCount || 0);
           } catch (e) {
             console.warn("Failed to update progress", e);
           }
 
           // Track word for daily story generation
-          try {
-            await trackDailyWord({
-              child_id: childId,
-              word_id: word.id,
-              date: new Date().toISOString(),
-              exposure_count: 1,
-              used_actively: false,
-              mastery_confidence: 0.5,
-              learned_context: {
-                activity: "word_learning",
-                source: "vocabulary_explorer",
-              },
-              include_in_story: true,
-              story_priority: 5,
-            });
-          } catch (e) {
-            console.warn("Failed to track daily word", e);
+          if (didIncreaseExposure) {
+            try {
+              await trackDailyWord({
+                child_id: childId,
+                word_id: word.id,
+                date: new Date().toISOString(),
+                exposure_count: 1,
+                used_actively: false,
+                mastery_confidence: 0.5,
+                learned_context: {
+                  activity: "word_learning",
+                  source: "vocabulary_explorer",
+                },
+                include_in_story: true,
+                story_priority: 5,
+              });
+            } catch (e) {
+              console.warn("Failed to track daily word", e);
+            }
           }
 
           console.log("Progress recorded successfully");
