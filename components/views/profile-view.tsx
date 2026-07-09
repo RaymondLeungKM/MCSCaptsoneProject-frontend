@@ -185,9 +185,7 @@ export function ProfileView({
       ? Math.min((profile.todayProgress / profile.dailyGoal) * 100, 100)
       : 0;
   const hasAvatarChange = selectedAvatar !== profile.avatar;
-  const interests = profile.interests.length
-    ? profile.interests
-    : ["探索更多主題"];
+  const hasInterests = profile.interests.length > 0;
   const preferredTime = timeOfDayMeta[profile.preferredTimeOfDay];
   const PreferredTimeIcon = preferredTime.icon;
   const learningStyle = learningStyleMeta[profile.learningStyle];
@@ -389,33 +387,35 @@ export function ProfileView({
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/60 bg-white/75 p-6 shadow-sm backdrop-blur-md">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                  <Sparkles className="h-6 w-6" />
+            {hasInterests && (
+              <div className="rounded-[32px] border border-white/60 bg-white/75 p-6 shadow-sm backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                    <Sparkles className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="child-tab-section-title !text-xl">
+                      我喜歡的主題
+                    </h3>
+                    <p className="child-tab-section-copy !text-sm">
+                      系統會用這些興趣來安排更貼近你的內容。
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="child-tab-section-title !text-xl">
-                    我喜歡的主題
-                  </h3>
-                  <p className="child-tab-section-copy !text-sm">
-                    系統會用這些興趣來安排更貼近你的內容。
-                  </p>
-                </div>
-              </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                {interests.map((interest) => (
-                  <Badge
-                    key={interest}
-                    className="rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-sm font-black text-pink-600 hover:bg-pink-50"
-                    variant="outline"
-                  >
-                    {interest}
-                  </Badge>
-                ))}
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {profile.interests.map((interest) => (
+                    <Badge
+                      key={interest}
+                      className="rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-sm font-black text-pink-600 hover:bg-pink-50"
+                      variant="outline"
+                    >
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-6">
