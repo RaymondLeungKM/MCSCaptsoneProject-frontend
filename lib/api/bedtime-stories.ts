@@ -11,8 +11,17 @@ import {
 } from "../types";
 
 const EXTERNAL_STORY_POLL_INTERVAL_MS = 5000;
-const EXTERNAL_STORY_POLL_ATTEMPTS = 24;
-const STORY_MATCH_SKEW_MS = 15000;
+// Real external generation measured at ~78s (story + evaluation + TTS + save).
+// Poll for 3 min (36 x 5s) so we comfortably outlast a normal run plus margin,
+// while still under the backend's EXTERNAL_STORY_TIMEOUT_SECONDS (1200s).
+const EXTERNAL_STORY_POLL_ATTEMPTS = 36;
+// Only accept a story generated at/after this request started. `pending_since`
+// comes from the SERVER clock (same source as the story's generation_date), so
+// a large backward window is unnecessary and harmful: it let the poller match a
+// recent PREVIOUS story on the first poll and finish in ~10s, showing a stale
+// story while the real one was still generating. Keep a tiny 1s tolerance only
+// for same-second rounding.
+const STORY_MATCH_SKEW_MS = 1000;
 
 /**
  * Real progress signal for story generation. There is no backend-reported
