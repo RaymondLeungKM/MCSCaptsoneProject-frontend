@@ -119,8 +119,7 @@ const IDLE_CHECK_INTERVAL_MS = 15_000;
 const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
 const RECENT_STORIES_LIMIT = 3;
 const ARCHIVE_PREVIEW_LIMIT = 2;
-const CURATED_STORIES_INITIAL_LIMIT = 6;
-const CURATED_STORIES_STEP = 6;
+const CURATED_STORIES_PER_PAGE = 6;
 
 interface StoryArchiveGroup {
   key: string;
@@ -371,9 +370,7 @@ function ChildDashboardContent() {
   const [curatedStoriesError, setCuratedStoriesError] = useState<string | null>(
     null,
   );
-  const [curatedStoriesVisibleCount, setCuratedStoriesVisibleCount] = useState(
-    CURATED_STORIES_INITIAL_LIMIT,
-  );
+  const [curatedStoriesPage, setCuratedStoriesPage] = useState(1);
   const [storyShelfFilter, setStoryShelfFilter] =
     useState<StoryShelfFilter>("all");
   const [expandedArchiveGroups, setExpandedArchiveGroups] = useState<string[]>(
@@ -726,25 +723,23 @@ function ChildDashboardContent() {
     />
   );
 
-  const visibleCuratedStories = curatedStories.slice(
-    0,
-    curatedStoriesVisibleCount,
+  const curatedStoriesTotalPages = Math.max(
+    1,
+    Math.ceil(curatedStories.length / CURATED_STORIES_PER_PAGE),
   );
-  const hasMoreCuratedStories =
-    curatedStoriesVisibleCount < curatedStories.length;
-  const canCollapseCuratedStories =
-    curatedStories.length > CURATED_STORIES_INITIAL_LIMIT &&
-    curatedStoriesVisibleCount > CURATED_STORIES_INITIAL_LIMIT;
-
-  const handleShowMoreCuratedStories = () => {
-    setCuratedStoriesVisibleCount((count) =>
-      Math.min(count + CURATED_STORIES_STEP, curatedStories.length),
-    );
-  };
-
-  const handleCollapseCuratedStories = () => {
-    setCuratedStoriesVisibleCount(CURATED_STORIES_INITIAL_LIMIT);
-  };
+  const safeCuratedStoriesPage = Math.min(
+    curatedStoriesPage,
+    curatedStoriesTotalPages,
+  );
+  const curatedStoriesStartIndex =
+    (safeCuratedStoriesPage - 1) * CURATED_STORIES_PER_PAGE;
+  const visibleCuratedStories = curatedStories.slice(
+    curatedStoriesStartIndex,
+    curatedStoriesStartIndex + CURATED_STORIES_PER_PAGE,
+  );
+  const canGoToPreviousCuratedPage = safeCuratedStoriesPage > 1;
+  const canGoToNextCuratedPage =
+    safeCuratedStoriesPage < curatedStoriesTotalPages;
 
   const resolveAudioUrl = (audioUrl: string): string => {
     if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
@@ -821,9 +816,7 @@ function ChildDashboardContent() {
   }, [learningControl?.limitReached, sessionStartedAt]);
 
   useEffect(() => {
-    setCuratedStoriesVisibleCount(
-      Math.min(CURATED_STORIES_INITIAL_LIMIT, curatedStories.length),
-    );
+    setCuratedStoriesPage(1);
   }, [curatedStories]);
 
   useEffect(() => {
@@ -1672,31 +1665,38 @@ function ChildDashboardContent() {
                         ))}
                       </div>
 
-                      {(hasMoreCuratedStories || canCollapseCuratedStories) && (
-                        <div className="mt-5 flex justify-center">
-                          {hasMoreCuratedStories ? (
-                            <button
-                              type="button"
-                              onClick={handleShowMoreCuratedStories}
-                              className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-amber-500"
-                            >
-                              再睇{" "}
-                              {Math.min(
-                                CURATED_STORIES_STEP,
-                                curatedStories.length -
-                                  curatedStoriesVisibleCount,
-                              )}{" "}
-                              本
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={handleCollapseCuratedStories}
-                              className="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-black text-slate-600 shadow-sm transition-colors hover:bg-slate-200"
-                            >
-                              收起到精選前 6 本
-                            </button>
-                          )}
+                      {curatedStoriesTotalPages > 1 && (
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCuratedStoriesPage((page) =>
+                                Math.max(page - 1, 1),
+                              )
+                            }
+                            disabled={!canGoToPreviousCuratedPage}
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-colors enabled:hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            上一頁
+                          </button>
+
+                          <span className="rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-700">
+                            第 {safeCuratedStoriesPage} /{" "}
+                            {curatedStoriesTotalPages} 頁
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCuratedStoriesPage((page) =>
+                                Math.min(page + 1, curatedStoriesTotalPages),
+                              )
+                            }
+                            disabled={!canGoToNextCuratedPage}
+                            className="rounded-full bg-amber-400 px-4 py-2 text-sm font-black text-white shadow-sm transition-colors enabled:hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            下一頁
+                          </button>
                         </div>
                       )}
                     </>
