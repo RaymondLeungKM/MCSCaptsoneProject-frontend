@@ -22,6 +22,7 @@ import { updateWordProgress } from "@/lib/api/vocabulary";
 import { trackDailyWord } from "@/lib/api/bedtime-stories";
 import { AISentences } from "@/components/child/ai-sentences";
 import { getWordText, getDefinition, getExample } from "@/lib/language-utils";
+import { useToast } from "@/hooks/use-toast";
 import {
   isBackendImageUrl,
   resolveBackendAssetUrl,
@@ -52,6 +53,7 @@ export function WordLearningModal({
 }: WordLearningModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>("intro");
   const { playWord, playSentence, isPlaying, isLoading, stop } = useWordAudio();
+  const { toast } = useToast();
   const progressRecorded = useRef(false);
 
   // --- LANGUAGE UTILS ---
@@ -82,32 +84,47 @@ export function WordLearningModal({
         try {
           // Update general word progress
           // Note: Ensure these API functions handle errors gracefully if backend is offline
+          let didIncreaseExposure = false;
+          let latestExposureCount = word.exposureCount || 0;
           try {
-            await updateWordProgress(word.id, childId, {
+            const progress = await updateWordProgress(word.id, childId, {
               exposure_count: (word.exposureCount || 0) + 1,
             });
+            latestExposureCount = progress.exposure_count;
+            didIncreaseExposure =
+              progress.exposure_count > (word.exposureCount || 0);
           } catch (e) {
             console.warn("Failed to update progress", e);
           }
 
           // Track word for daily story generation
-          try {
-            await trackDailyWord({
-              child_id: childId,
-              word_id: word.id,
-              date: new Date().toISOString(),
-              exposure_count: 1,
-              used_actively: false,
-              mastery_confidence: 0.5,
-              learned_context: {
-                activity: "word_learning",
-                source: "vocabulary_explorer",
-              },
-              include_in_story: true,
-              story_priority: 5,
+          if (didIncreaseExposure) {
+            try {
+              await trackDailyWord({
+                child_id: childId,
+                word_id: word.id,
+                date: new Date().toISOString(),
+                exposure_count: 1,
+                used_actively: false,
+                mastery_confidence: 0.5,
+                learned_context: {
+                  activity: "word_learning",
+                  source: "vocabulary_explorer",
+                },
+                include_in_story: true,
+                story_priority: 5,
+              });
+            } catch (e) {
+              console.warn("Failed to track daily word", e);
+            }
+          } else {
+            const isAtMaxStars = latestExposureCount >= 6;
+            toast({
+              title: isAtMaxStars ? "已經 6/6 粒星" : "今日已加過星星",
+              description: isAtMaxStars
+                ? "呢個詞語已經滿星啦，繼續聽都好叻！"
+                : "同一個詞語今日只可以加 1 粒星，聽日再加油！",
             });
-          } catch (e) {
-            console.warn("Failed to track daily word", e);
           }
 
           console.log("Progress recorded successfully");

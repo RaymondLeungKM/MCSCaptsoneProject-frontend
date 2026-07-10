@@ -15,6 +15,8 @@ import { useWordAudio } from "@/hooks/use-word-audio";
 import { WordDetailModal } from "@/components/modals/word-detail-modal";
 import { MemoryStarsProgress } from "@/components/child/memory-stars-progress";
 import { updateWordProgress } from "@/lib/api/vocabulary";
+import { trackDailyWord } from "@/lib/api/bedtime-stories";
+import { useToast } from "@/hooks/use-toast";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -76,6 +78,7 @@ export function CategoryGrid({
   const [wordsError, setWordsError] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const { playWord, isPlaying, isLoading: isAudioLoading } = useWordAudio();
+  const { toast } = useToast();
 
   // Fetch words (with progress when childId is available) whenever a category is selected
   useEffect(() => {
@@ -173,7 +176,10 @@ export function CategoryGrid({
     void updateWordProgress(word.id, childId, {
       exposure_count: nextExposureCount,
     })
-      .then((progress) => {
+      .then(async (progress) => {
+        const didIncreaseExposure =
+          progress.exposure_count > (word.exposureCount || 0);
+
         setCategoryWords((prev) =>
           prev.map((candidate) =>
             candidate.id === word.id
@@ -186,6 +192,35 @@ export function CategoryGrid({
           ),
         );
         onWordLearned?.();
+
+        if (didIncreaseExposure) {
+          try {
+            await trackDailyWord({
+              child_id: childId,
+              word_id: word.id,
+              date: new Date().toISOString(),
+              exposure_count: 1,
+              used_actively: false,
+              mastery_confidence: 0.35,
+              learned_context: {
+                activity: "listen_pronunciation",
+                source: "learn_category_grid",
+              },
+              include_in_story: true,
+              story_priority: 5,
+            });
+          } catch {
+            // Keep audio playback and progress UI non-blocking when daily tracking fails.
+          }
+        } else {
+          const isAtMaxStars = progress.exposure_count >= 6;
+          toast({
+            title: isAtMaxStars ? "已經 6/6 粒星" : "今日已加過星星",
+            description: isAtMaxStars
+              ? "呢個詞語已經滿星啦，繼續聽都好叻！"
+              : "同一個詞語今日只可以加 1 粒星，聽日再加油！",
+          });
+        }
       })
       .catch(() => {
         // Keep audio playback non-blocking when progress sync fails.

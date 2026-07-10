@@ -17,15 +17,16 @@ export function MemoryStarsProgress({
   variant = "compact",
   className,
 }: MemoryStarsProgressProps) {
-  const progress = Math.min(exposureCount, MEMORY_STARS_GOAL);
-  const remaining = Math.max(MEMORY_STARS_GOAL - exposureCount, 0);
-  const reachedGoal = exposureCount >= MEMORY_STARS_GOAL;
+  const cappedExposureCount = Math.min(exposureCount, MEMORY_STARS_GOAL);
+  const progress = cappedExposureCount;
+  const remaining = Math.max(MEMORY_STARS_GOAL - cappedExposureCount, 0);
+  const reachedGoal = cappedExposureCount >= MEMORY_STARS_GOAL;
 
-  const countText = `${exposureCount}/${MEMORY_STARS_GOAL}`;
+  const countText = `${cappedExposureCount}/${MEMORY_STARS_GOAL}`;
   const label = "記憶小星星";
   const encouragement = reachedGoal
     ? "已達目標！"
-    : exposureCount === 0
+    : cappedExposureCount === 0
       ? "點亮第一粒星"
       : `再差 ${remaining} 粒星`;
 

@@ -119,6 +119,8 @@ const IDLE_CHECK_INTERVAL_MS = 15_000;
 const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
 const RECENT_STORIES_LIMIT = 3;
 const ARCHIVE_PREVIEW_LIMIT = 2;
+const CURATED_STORIES_INITIAL_LIMIT = 6;
+const CURATED_STORIES_STEP = 6;
 
 interface StoryArchiveGroup {
   key: string;
@@ -368,6 +370,9 @@ function ChildDashboardContent() {
   const [storiesError, setStoriesError] = useState<string | null>(null);
   const [curatedStoriesError, setCuratedStoriesError] = useState<string | null>(
     null,
+  );
+  const [curatedStoriesVisibleCount, setCuratedStoriesVisibleCount] = useState(
+    CURATED_STORIES_INITIAL_LIMIT,
   );
   const [storyShelfFilter, setStoryShelfFilter] =
     useState<StoryShelfFilter>("all");
@@ -721,6 +726,26 @@ function ChildDashboardContent() {
     />
   );
 
+  const visibleCuratedStories = curatedStories.slice(
+    0,
+    curatedStoriesVisibleCount,
+  );
+  const hasMoreCuratedStories =
+    curatedStoriesVisibleCount < curatedStories.length;
+  const canCollapseCuratedStories =
+    curatedStories.length > CURATED_STORIES_INITIAL_LIMIT &&
+    curatedStoriesVisibleCount > CURATED_STORIES_INITIAL_LIMIT;
+
+  const handleShowMoreCuratedStories = () => {
+    setCuratedStoriesVisibleCount((count) =>
+      Math.min(count + CURATED_STORIES_STEP, curatedStories.length),
+    );
+  };
+
+  const handleCollapseCuratedStories = () => {
+    setCuratedStoriesVisibleCount(CURATED_STORIES_INITIAL_LIMIT);
+  };
+
   const resolveAudioUrl = (audioUrl: string): string => {
     if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
       return audioUrl;
@@ -794,6 +819,12 @@ function ChildDashboardContent() {
       window.clearInterval(intervalId);
     };
   }, [learningControl?.limitReached, sessionStartedAt]);
+
+  useEffect(() => {
+    setCuratedStoriesVisibleCount(
+      Math.min(CURATED_STORIES_INITIAL_LIMIT, curatedStories.length),
+    );
+  }, [curatedStories]);
 
   useEffect(() => {
     return () => {
@@ -1590,51 +1621,96 @@ function ChildDashboardContent() {
                 </div>
               </section>
 
-              <section className="px-2">
-                <div className="flex items-center gap-3 mb-4 pl-2">
-                  <div className="bg-amber-400 p-2 rounded-xl rotate-3 shadow-sm">
-                    <BookMarked className="w-5 h-5 text-white" />
+              <section className="px-1 sm:px-2">
+                <div className="rounded-[30px] border border-white/50 bg-white/60 p-3 shadow-sm backdrop-blur-md sm:rounded-[34px] sm:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3 sm:items-center">
+                      <div className="rounded-xl bg-amber-400 p-2 shadow-sm sm:rotate-3">
+                        <BookMarked className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+                          精選故事
+                        </h2>
+                        <p className="mt-1 text-sm font-semibold leading-snug text-slate-500">
+                          精選合集改用卡片牆展示，唔使再左右拉動長捲軸
+                        </p>
+                      </div>
+                    </div>
+
+                    {!curatedStoriesLoading && curatedStories.length > 0 && (
+                      <div className="self-start rounded-full bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-700 sm:self-auto sm:text-sm">
+                        共 {curatedStories.length} 本
+                      </div>
+                    )}
                   </div>
-                  <h2 className="text-3xl font-black text-slate-700">
-                    精選故事
-                  </h2>
-                </div>
 
-                {curatedStoriesError && (
-                  <Alert variant="destructive" className="mb-3 rounded-2xl">
-                    <AlertDescription>{curatedStoriesError}</AlertDescription>
-                  </Alert>
-                )}
+                  {curatedStoriesError && (
+                    <Alert variant="destructive" className="mb-3 rounded-2xl">
+                      <AlertDescription>{curatedStoriesError}</AlertDescription>
+                    </Alert>
+                  )}
 
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {!curatedStoriesLoading &&
-                    curatedStories.length > 0 &&
-                    curatedStories.map((story) => (
-                      <StoryCard
-                        key={story.id}
-                        story={toStoryCard(story, "yellow")}
-                        onRead={(cardStory) =>
-                          void handleReadStory(cardStory.id)
-                        }
-                        onPlayAudio={
-                          story.audio_url
-                            ? () => void handlePlayStoryAudio(story.id)
-                            : undefined
-                        }
-                        isAudioPlaying={playingStoryId === story.id}
-                        isAudioLoading={storyAudioLoadingId === story.id}
-                      />
-                    ))}
+                  {!curatedStoriesLoading && curatedStories.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {visibleCuratedStories.map((story) => (
+                          <StoryCard
+                            key={story.id}
+                            story={toStoryCard(story, "yellow")}
+                            onRead={(cardStory) =>
+                              void handleReadStory(cardStory.id)
+                            }
+                            onPlayAudio={
+                              story.audio_url
+                                ? () => void handlePlayStoryAudio(story.id)
+                                : undefined
+                            }
+                            isAudioPlaying={playingStoryId === story.id}
+                            isAudioLoading={storyAudioLoadingId === story.id}
+                          />
+                        ))}
+                      </div>
+
+                      {(hasMoreCuratedStories || canCollapseCuratedStories) && (
+                        <div className="mt-5 flex justify-center">
+                          {hasMoreCuratedStories ? (
+                            <button
+                              type="button"
+                              onClick={handleShowMoreCuratedStories}
+                              className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-black text-white shadow-sm transition-colors hover:bg-amber-500"
+                            >
+                              再睇{" "}
+                              {Math.min(
+                                CURATED_STORIES_STEP,
+                                curatedStories.length -
+                                  curatedStoriesVisibleCount,
+                              )}{" "}
+                              本
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleCollapseCuratedStories}
+                              className="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-black text-slate-600 shadow-sm transition-colors hover:bg-slate-200"
+                            >
+                              收起到精選前 6 本
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
 
                   {!curatedStoriesLoading && curatedStories.length === 0 && (
-                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                    <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
                       <BookMarked className="w-10 h-10 mb-3 opacity-50" />
                       <span className="font-bold text-base">未有精選故事</span>
                     </div>
                   )}
 
                   {curatedStoriesLoading && (
-                    <div className="min-w-52 h-72 rounded-4xl border-4 border-dashed border-white/50 flex flex-col items-center justify-center text-slate-400 bg-white/20">
+                    <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
                       <span className="font-bold text-base">
                         載入精選故事中...
                       </span>

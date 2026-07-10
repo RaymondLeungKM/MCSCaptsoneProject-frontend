@@ -1036,7 +1036,6 @@ function BenchmarkChartsPanel({
                 )}
               </div>
             </div>
-            Y
           </div>
         </>
       )}
