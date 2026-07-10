@@ -289,22 +289,71 @@ export function BedtimeStoryGenerator({
   return (
     <div className="w-full space-y-8">
       {currentIsGenerating && (
-        <div className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="pointer-events-auto w-full max-w-[560px] overflow-hidden rounded-[24px] bg-black shadow-[0_24px_80px_rgba(15,23,42,0.55)]">
-            <video
-              ref={generationVideoRef}
-              src="/story-generating.mp4"
-              autoPlay
-              loop
-              playsInline
-              className="block aspect-video w-full bg-black object-cover"
-            />
-            <div className="bg-slate-950 px-4 py-3">
-              <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden px-5 py-8">
+          {/* Dreamy branded backdrop */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,#f5e6ff_0%,transparent_45%),radial-gradient(circle_at_85%_80%,#ffe4f2_0%,transparent_45%),linear-gradient(160deg,#efe0ff_0%,#f7e8ff_40%,#ffe9f6_100%)]" />
+          {/* Soft floating orbs */}
+          <div className="pointer-events-none absolute -left-16 top-10 h-64 w-64 rounded-full bg-purple-300/30 blur-3xl [animation:mm-orb_9s_ease-in-out_infinite]" />
+          <div className="pointer-events-none absolute -right-16 bottom-16 h-72 w-72 rounded-full bg-pink-300/30 blur-3xl [animation:mm-orb_11s_ease-in-out_infinite_reverse]" />
+          {/* Twinkling stars */}
+          <div className="pointer-events-none absolute inset-0">
+            {[
+              { top: "12%", left: "16%", s: 18, d: "0s" },
+              { top: "22%", left: "82%", s: 14, d: "0.6s" },
+              { top: "68%", left: "10%", s: 16, d: "1.1s" },
+              { top: "78%", left: "88%", s: 20, d: "0.3s" },
+              { top: "40%", left: "6%", s: 12, d: "1.5s" },
+              { top: "55%", left: "92%", s: 14, d: "0.9s" },
+            ].map((star, i) => (
+              <span
+                key={i}
+                className="absolute text-amber-300 [animation:mm-twinkle_2.4s_ease-in-out_infinite]"
+                style={{
+                  top: star.top,
+                  left: star.left,
+                  fontSize: star.s,
+                  animationDelay: star.d,
+                }}
+              >
+                ✦
+              </span>
+            ))}
+          </div>
+
+          <style>{`
+            @keyframes mm-orb { 0%,100%{transform:translate3d(0,0,0) scale(1);} 50%{transform:translate3d(0,-22px,0) scale(1.08);} }
+            @keyframes mm-twinkle { 0%,100%{opacity:.3;transform:scale(.8);} 50%{opacity:1;transform:scale(1.25);} }
+            @keyframes mm-float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+          `}</style>
+
+          {/* Centered content */}
+          <div className="relative z-10 flex w-full max-w-[440px] flex-col items-center text-center">
+            <p className="mb-1 text-xs font-black uppercase tracking-[0.3em] text-purple-400">
+              Story Magic
+            </p>
+            <h3 className="mb-5 text-2xl font-black text-purple-900 sm:text-3xl [animation:mm-float_4s_ease-in-out_infinite]">
+              ✨ 正在為{childName}創作故事…
+            </h3>
+
+            {/* Video hero */}
+            <div className="w-full overflow-hidden rounded-[28px] bg-black shadow-[0_20px_60px_rgba(147,51,234,0.35)] ring-4 ring-white/70">
+              <video
+                ref={generationVideoRef}
+                src="/story-generating.mp4"
+                autoPlay
+                loop
+                playsInline
+                className="block aspect-video w-full bg-black object-cover"
+              />
+            </div>
+
+            {/* Progress */}
+            <div className="mt-5 w-full">
+              <div className="mb-1.5 flex items-center justify-between text-xs font-black uppercase tracking-[0.18em] text-purple-500">
                 <span>創作進度</span>
                 <span>{Math.round(genProgress)}%</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
+              <div className="h-3 overflow-hidden rounded-full bg-white/70 shadow-inner">
                 <div
                   className="h-full rounded-full transition-[width] duration-200 ease-linear"
                   style={{
@@ -314,6 +363,9 @@ export function BedtimeStoryGenerator({
                   }}
                 />
               </div>
+              <p className="mt-3 text-sm font-bold text-purple-500/80">
+                魔法小精靈努力寫緊故事，請耐心等一等 🪄
+              </p>
             </div>
           </div>
         </div>
