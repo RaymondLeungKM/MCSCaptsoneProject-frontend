@@ -144,15 +144,15 @@ export function BedtimeStoryGenerator({
   // Map a real progress signal onto a 0-100 target. Progress advances only on
   // real events, but the curve is calibrated to the TYPICAL completion window
   // (~6-9 polls / ~30-45s) rather than the 24-poll max, so a normal run reaches
-  // ~80-90% before the story arrives instead of stalling low and then jumping.
-  // It eases toward a 96% ceiling for slower runs.
-  const PROGRESS_TIME_CONSTANT = 4; // in poll units (~5s each) => ~86% by ~40s
+  // ~90%+ before the story arrives, keeping the final snap to 100% small.
+  // It eases toward a 97% ceiling for slower runs.
+  const PROGRESS_TIME_CONSTANT = 2.8; // in poll units (~5s each) => ~90%+ by ~30s
   const progressFromSignal = (signal: StoryProgress): number => {
     if (signal.phase === "done") return 100;
     if (signal.phase === "invoking") return 8;
-    // Ease-out curve: rises quickly early, then approaches a 96% ceiling.
+    // Ease-out curve: rises quickly early, then approaches a 97% ceiling.
     const eased = 1 - Math.exp(-signal.attempt / PROGRESS_TIME_CONSTANT);
-    return Math.min(96, Math.round(8 + eased * 90));
+    return Math.min(97, Math.round(8 + eased * 92));
   };
 
   // Glide the displayed progress toward the target while generating.
@@ -292,7 +292,7 @@ export function BedtimeStoryGenerator({
               >
                 <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
                   <span>創作進度</span>
-                  <span>{genProgress}%</span>
+                  <span>{Math.round(genProgress)}%</span>
                 </div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
                   <div
