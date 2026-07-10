@@ -12,7 +12,11 @@ import {
   LanguagePreference,
   StoryGenerationRequest,
 } from "@/lib/types";
-import { generateStoryWithExternalProgram } from "@/lib/api/bedtime-stories";
+import {
+  generateStoryWithExternalProgram,
+  type StoryProgress,
+  type StoryProgressCallback,
+} from "@/lib/api/bedtime-stories";
 
 export type BedtimeStoryTheme = NonNullable<StoryGenerationRequest["theme"]>;
 
@@ -28,7 +32,10 @@ interface BedtimeStoryGeneratorProps {
   onIsGeneratingChange?: (isGenerating: boolean) => void;
   onGeneratedStoryChange?: (story: GeneratedStory | null) => void;
   onErrorChange?: (error: string | null) => void;
-  onGenerateStory?: (request: StoryGenerationRequest) => Promise<void>;
+  onGenerateStory?: (
+    request: StoryGenerationRequest,
+    onProgress?: StoryProgressCallback,
+  ) => Promise<void>;
   onStoryGenerated?: (story: GeneratedStory) => void;
   onReadStory?: (story: GeneratedStory) => void;
 }
@@ -126,6 +133,61 @@ export function BedtimeStoryGenerator({
   const setCurrentError = onErrorChange ?? setInternalError;
   const inlineError = isNoWordsLearnedError(currentError) ? null : currentError;
 
+  // Real-progress for the generation overlay. There is no backend-reported
+  // percentage, so we derive a TARGET from the actual generation signals (the
+  // invoke call and each poll attempt; see generateStoryWithExternalProgram).
+  // The displayed bar (`genProgress`) then glides smoothly toward that target,
+  // so it moves continuously between the ~5s poll events instead of stepping.
+  const [genProgress, setGenProgress] = useState(0);
+  const progressTargetRef = useRef(0);
+
+  // Map a real progress signal onto a 0-100 target. Progress advances only on
+  // real events, but the curve is calibrated to the TYPICAL completion window
+  // (~6-9 polls / ~30-45s) rather than the 24-poll max, so a normal run reaches
+  // ~80-90% before the story arrives instead of stalling low and then jumping.
+  // It eases toward a 96% ceiling for slower runs.
+  const PROGRESS_TIME_CONSTANT = 4; // in poll units (~5s each) => ~86% by ~40s
+  const progressFromSignal = (signal: StoryProgress): number => {
+    if (signal.phase === "done") return 100;
+    if (signal.phase === "invoking") return 8;
+    // Ease-out curve: rises quickly early, then approaches a 96% ceiling.
+    const eased = 1 - Math.exp(-signal.attempt / PROGRESS_TIME_CONSTANT);
+    return Math.min(96, Math.round(8 + eased * 90));
+  };
+
+  // Glide the displayed progress toward the target while generating.
+  useEffect(() => {
+    if (!currentIsGenerating) return;
+    const id = window.setInterval(() => {
+      setGenProgress((current) => {
+        const target = progressTargetRef.current;
+        if (current >= target) return current;
+        // Ease ~12% of the remaining gap each tick for a smooth approach.
+        const next = current + Math.max(0.4, (target - current) * 0.12);
+        return next >= target ? target : next;
+      });
+    }, 60);
+    return () => window.clearInterval(id);
+  }, [currentIsGenerating]);
+
+  useEffect(() => {
+    // When generation stops, snap the bar to 100% briefly, then reset.
+    if (!currentIsGenerating && genProgress > 0 && genProgress < 100) {
+      progressTargetRef.current = 100;
+      setGenProgress(100);
+      const resetTimer = setTimeout(() => {
+        progressTargetRef.current = 0;
+        setGenProgress(0);
+      }, 600);
+      return () => clearTimeout(resetTimer);
+    }
+    if (!currentIsGenerating) {
+      progressTargetRef.current = 0;
+      setGenProgress(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIsGenerating]);
+
   useEffect(() => {
     if (!isNoWordsLearnedError(currentError)) {
       lastHandledErrorRef.current = null;
@@ -158,18 +220,32 @@ export function BedtimeStoryGenerator({
     setCurrentIsGenerating(true);
     setCurrentError(null);
     setCurrentGeneratedStory(null);
+    progressTargetRef.current = 0;
+    setGenProgress(0);
 
     // Keep the generation overlay visible long enough for the transition to register.
     const MIN_OVERLAY_MS = 3000;
     const startTime = Date.now();
 
     try {
+      // Real poll/invoke events set the TARGET; the glide effect eases the
+      // displayed bar toward it. Completion is applied immediately so the bar
+      // finishes without waiting for the easing loop.
+      const reportProgress: StoryProgressCallback = (signal) => {
+        const value = progressFromSignal(signal);
+        progressTargetRef.current = value;
+        if (signal.phase === "done") setGenProgress(value);
+      };
+
       if (onGenerateStory) {
-        await onGenerateStory(request);
+        await onGenerateStory(request, reportProgress);
         return;
       }
 
-      const story = await generateStoryWithExternalProgram(request);
+      const story = await generateStoryWithExternalProgram(
+        request,
+        reportProgress,
+      );
 
       setCurrentGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
@@ -193,7 +269,7 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
-      {isGenerating && (
+      {currentIsGenerating && (
         <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
           <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center sm:gap-6 sm:px-8">
@@ -210,6 +286,25 @@ export function BedtimeStoryGenerator({
                   maxHeight: "min(62vh, 720px)",
                 }}
               />
+              <div
+                className="px-3 pb-2 pt-3 sm:px-4"
+                style={{ width: "min(94vw, 110vh, 1280px)" }}
+              >
+                <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
+                  <span>創作進度</span>
+                  <span>{genProgress}%</span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-200 ease-linear"
+                    style={{
+                      width: `${genProgress}%`,
+                      background:
+                        "linear-gradient(90deg, #f97316, #facc15, #84cc16, #38bdf8, #a78bfa, #f472b6)",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
               <div className="mb-3 flex items-center justify-center gap-3">
