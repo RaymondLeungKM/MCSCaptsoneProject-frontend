@@ -118,6 +118,7 @@ export function BedtimeStoryGenerator({
   const [internalError, setInternalError] = useState<string | null>(null);
   const { toast } = useToast();
   const lastHandledErrorRef = useRef<string | null>(null);
+  const generationVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const currentIsGenerating = isGenerating ?? internalIsGenerating;
   const currentSelectedTheme = selectedTheme ?? internalSelectedTheme;
@@ -154,6 +155,24 @@ export function BedtimeStoryGenerator({
     const eased = 1 - Math.exp(-signal.attempt / PROGRESS_TIME_CONSTANT);
     return Math.min(97, Math.round(8 + eased * 92));
   };
+
+  // Play the generation video WITH sound. Generation starts from a user click
+  // (a valid user gesture), so browsers allow unmuted autoplay. If a browser
+  // still blocks it, fall back to muted so the video always plays.
+  useEffect(() => {
+    if (!currentIsGenerating) return;
+    const video = generationVideoRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.volume = 0.6;
+    const tryPlay = video.play();
+    if (tryPlay && typeof tryPlay.catch === "function") {
+      tryPlay.catch(() => {
+        video.muted = true;
+        void video.play().catch(() => {});
+      });
+    }
+  }, [currentIsGenerating]);
 
   // Glide the displayed progress toward the target while generating.
   useEffect(() => {
@@ -270,53 +289,31 @@ export function BedtimeStoryGenerator({
   return (
     <div className="w-full space-y-8">
       {currentIsGenerating && (
-        <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
-          <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center sm:gap-6 sm:px-8">
-            <div className="rounded-[28px] border border-white/15 bg-white/5 p-1 shadow-[0_24px_80px_rgba(15,23,42,0.45)] sm:rounded-[36px]">
-              <video
-                src="/story-generating.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="block h-auto rounded-[24px] bg-black object-contain sm:rounded-[32px]"
-                style={{
-                  width: "min(94vw, 110vh, 1280px)",
-                  maxHeight: "min(62vh, 720px)",
-                }}
-              />
-              <div
-                className="px-3 pb-2 pt-3 sm:px-4"
-                style={{ width: "min(94vw, 110vh, 1280px)" }}
-              >
-                <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
-                  <span>創作進度</span>
-                  <span>{Math.round(genProgress)}%</span>
-                </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-200 ease-linear"
-                    style={{
-                      width: `${genProgress}%`,
-                      background:
-                        "linear-gradient(90deg, #f97316, #facc15, #84cc16, #38bdf8, #a78bfa, #f472b6)",
-                    }}
-                  />
-                </div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-slate-950/90 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-[560px] overflow-hidden rounded-[24px] bg-black shadow-[0_24px_80px_rgba(15,23,42,0.55)]">
+            <video
+              ref={generationVideoRef}
+              src="/story-generating.mp4"
+              autoPlay
+              loop
+              playsInline
+              className="block aspect-video w-full bg-black object-cover"
+            />
+            <div className="bg-slate-950 px-4 py-3">
+              <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
+                <span>創作進度</span>
+                <span>{Math.round(genProgress)}%</span>
               </div>
-            </div>
-            <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
-              <div className="mb-3 flex items-center justify-center gap-3">
-                <Sparkles className="w-7 h-7 animate-spin text-yellow-300" />
-                <span className="text-2xl font-black text-white sm:text-3xl">
-                  正在施展魔法...
-                </span>
-                <Sparkles className="w-7 h-7 animate-spin text-yellow-300 [animation-direction:reverse]" />
+              <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
+                <div
+                  className="h-full rounded-full transition-[width] duration-200 ease-linear"
+                  style={{
+                    width: `${genProgress}%`,
+                    background:
+                      "linear-gradient(90deg, #f97316, #facc15, #84cc16, #38bdf8, #a78bfa, #f472b6)",
+                  }}
+                />
               </div>
-              <p className="text-base font-semibold text-white/80 sm:text-lg">
-                為{childName}創作專屬故事，請稍候
-              </p>
             </div>
           </div>
         </div>
