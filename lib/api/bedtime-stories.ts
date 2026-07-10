@@ -14,6 +14,20 @@ const EXTERNAL_STORY_POLL_INTERVAL_MS = 5000;
 const EXTERNAL_STORY_POLL_ATTEMPTS = 24;
 const STORY_MATCH_SKEW_MS = 15000;
 
+/**
+ * Real progress signal for story generation. There is no backend-reported
+ * percentage; the only genuine progress signals are the invoke call and the
+ * poll loop, so we report those. `attempt`/`maxAttempts` describe the poll
+ * cycle; `phase` distinguishes the initial invoke from polling and completion.
+ */
+export interface StoryProgress {
+  phase: "invoking" | "polling" | "done";
+  attempt: number;
+  maxAttempts: number;
+}
+
+export type StoryProgressCallback = (progress: StoryProgress) => void;
+
 function toMediaProxyUrl(audioUrl: string): string {
   if (!audioUrl) {
     return audioUrl;
@@ -106,8 +120,15 @@ function findMatchingGeneratedStory(
 async function waitForExternalStoryResult(
   request: StoryGenerationRequest,
   pendingSince: string,
+  onProgress?: StoryProgressCallback,
 ): Promise<GeneratedStory> {
   for (let attempt = 0; attempt < EXTERNAL_STORY_POLL_ATTEMPTS; attempt += 1) {
+    onProgress?.({
+      phase: "polling",
+      attempt: attempt + 1,
+      maxAttempts: EXTERNAL_STORY_POLL_ATTEMPTS,
+    });
+
     const stories = await getChildStories(request.child_id, 10);
     const matchingStory = findMatchingGeneratedStory(
       stories,
@@ -116,6 +137,11 @@ async function waitForExternalStoryResult(
     );
 
     if (matchingStory) {
+      onProgress?.({
+        phase: "done",
+        attempt: attempt + 1,
+        maxAttempts: EXTERNAL_STORY_POLL_ATTEMPTS,
+      });
       return matchingStory;
     }
 
@@ -198,8 +224,15 @@ export async function generateStory(
  */
 export async function generateStoryWithExternalProgram(
   request: StoryGenerationRequest,
+  onProgress?: StoryProgressCallback,
 ): Promise<GeneratedStory> {
   const pendingSince = new Date().toISOString();
+
+  onProgress?.({
+    phase: "invoking",
+    attempt: 0,
+    maxAttempts: EXTERNAL_STORY_POLL_ATTEMPTS,
+  });
 
   try {
     const response = normalizeStoryGenerationResponse(
@@ -207,6 +240,11 @@ export async function generateStoryWithExternalProgram(
     );
 
     if (response.story) {
+      onProgress?.({
+        phase: "done",
+        attempt: EXTERNAL_STORY_POLL_ATTEMPTS,
+        maxAttempts: EXTERNAL_STORY_POLL_ATTEMPTS,
+      });
       return response.story;
     }
 
@@ -214,13 +252,14 @@ export async function generateStoryWithExternalProgram(
       return waitForExternalStoryResult(
         request,
         response.pending_since || pendingSince,
+        onProgress,
       );
     }
 
     throw new Error(response.message || "生成故事失敗，請稍後再試。");
   } catch (error) {
     if (error instanceof APIError && error.status === 504) {
-      return waitForExternalStoryResult(request, pendingSince);
+      return waitForExternalStoryResult(request, pendingSince, onProgress);
     }
 
     throw error;

@@ -54,6 +54,7 @@ import {
   generateStoryWithExternalProgram,
   getChildStories,
   getStory,
+  type StoryProgressCallback,
 } from "@/lib/api/bedtime-stories";
 import { listPublicCuratedStories } from "@/lib/api/stories";
 import {
@@ -842,8 +843,11 @@ function ChildDashboardContent() {
     setIsReaderOpen(true);
   };
 
-  const handleGenerateStory = async (request: StoryGenerationRequest) => {
-    const story = await generateStoryWithExternalProgram(request);
+  const handleGenerateStory = async (
+    request: StoryGenerationRequest,
+    onProgress?: StoryProgressCallback,
+  ) => {
+    const story = await generateStoryWithExternalProgram(request, onProgress);
 
     if (currentChildIdRef.current !== request.child_id) {
       return;

@@ -12,7 +12,11 @@ import {
   LanguagePreference,
   StoryGenerationRequest,
 } from "@/lib/types";
-import { generateStoryWithExternalProgram } from "@/lib/api/bedtime-stories";
+import {
+  generateStoryWithExternalProgram,
+  type StoryProgress,
+  type StoryProgressCallback,
+} from "@/lib/api/bedtime-stories";
 
 export type BedtimeStoryTheme = NonNullable<StoryGenerationRequest["theme"]>;
 
@@ -28,7 +32,10 @@ interface BedtimeStoryGeneratorProps {
   onIsGeneratingChange?: (isGenerating: boolean) => void;
   onGeneratedStoryChange?: (story: GeneratedStory | null) => void;
   onErrorChange?: (error: string | null) => void;
-  onGenerateStory?: (request: StoryGenerationRequest) => Promise<void>;
+  onGenerateStory?: (
+    request: StoryGenerationRequest,
+    onProgress?: StoryProgressCallback,
+  ) => Promise<void>;
   onStoryGenerated?: (story: GeneratedStory) => void;
   onReadStory?: (story: GeneratedStory) => void;
 }
@@ -126,6 +133,35 @@ export function BedtimeStoryGenerator({
   const setCurrentError = onErrorChange ?? setInternalError;
   const inlineError = isNoWordsLearnedError(currentError) ? null : currentError;
 
+  // Real-progress for the generation overlay. There is no backend-reported
+  // percentage, so we derive progress from the actual generation signals:
+  // the invoke call and each poll attempt (see generateStoryWithExternalProgram).
+  // The bar advances only when those real events fire, and snaps to 100% when
+  // the story actually arrives.
+  const [genProgress, setGenProgress] = useState(0);
+
+  // Map a real progress signal onto a 0-100 bar. Invoke ~ 8%; each poll attempt
+  // climbs toward a 95% ceiling; completion is 100%.
+  const progressFromSignal = (signal: StoryProgress): number => {
+    if (signal.phase === "done") return 100;
+    if (signal.phase === "invoking") return 8;
+    const ratio = signal.attempt / signal.maxAttempts;
+    return Math.min(95, Math.round(8 + ratio * 87));
+  };
+
+  useEffect(() => {
+    // When generation stops, briefly show 100% then reset for the next run.
+    if (!currentIsGenerating && genProgress > 0 && genProgress < 100) {
+      setGenProgress(100);
+      const resetTimer = setTimeout(() => setGenProgress(0), 600);
+      return () => clearTimeout(resetTimer);
+    }
+    if (!currentIsGenerating) {
+      setGenProgress(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIsGenerating]);
+
   useEffect(() => {
     if (!isNoWordsLearnedError(currentError)) {
       lastHandledErrorRef.current = null;
@@ -158,18 +194,25 @@ export function BedtimeStoryGenerator({
     setCurrentIsGenerating(true);
     setCurrentError(null);
     setCurrentGeneratedStory(null);
+    setGenProgress(0);
 
     // Keep the generation overlay visible long enough for the transition to register.
     const MIN_OVERLAY_MS = 3000;
     const startTime = Date.now();
 
     try {
+      const reportProgress: StoryProgressCallback = (signal) =>
+        setGenProgress(progressFromSignal(signal));
+
       if (onGenerateStory) {
-        await onGenerateStory(request);
+        await onGenerateStory(request, reportProgress);
         return;
       }
 
-      const story = await generateStoryWithExternalProgram(request);
+      const story = await generateStoryWithExternalProgram(
+        request,
+        reportProgress,
+      );
 
       setCurrentGeneratedStory(story);
       if (onStoryGenerated) onStoryGenerated(story);
@@ -193,7 +236,7 @@ export function BedtimeStoryGenerator({
 
   return (
     <div className="w-full space-y-8">
-      {isGenerating && (
+      {currentIsGenerating && (
         <div className="fixed inset-0 z-[9999] overflow-hidden bg-slate-950/90 backdrop-blur-sm">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.82))]" />
           <div className="relative z-10 flex min-h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center sm:gap-6 sm:px-8">
@@ -210,6 +253,25 @@ export function BedtimeStoryGenerator({
                   maxHeight: "min(62vh, 720px)",
                 }}
               />
+              <div
+                className="px-3 pb-2 pt-3 sm:px-4"
+                style={{ width: "min(94vw, 110vh, 1280px)" }}
+              >
+                <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.18em] text-white/70 sm:text-xs">
+                  <span>創作進度</span>
+                  <span>{genProgress}%</span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-white/15 shadow-inner">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-200 ease-linear"
+                    style={{
+                      width: `${genProgress}%`,
+                      background:
+                        "linear-gradient(90deg, #f97316, #facc15, #84cc16, #38bdf8, #a78bfa, #f472b6)",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="w-full max-w-xl rounded-3xl border border-white/20 bg-white/10 px-5 py-4 backdrop-blur-md sm:px-8 sm:py-6">
               <div className="mb-3 flex items-center justify-center gap-3">
