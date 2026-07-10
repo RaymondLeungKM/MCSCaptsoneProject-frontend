@@ -289,8 +289,8 @@ export function BedtimeStoryGenerator({
   return (
     <div className="w-full space-y-8">
       {currentIsGenerating && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-slate-950/90 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-[560px] overflow-hidden rounded-[24px] bg-black shadow-[0_24px_80px_rgba(15,23,42,0.55)]">
+        <div className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="pointer-events-auto w-full max-w-[560px] overflow-hidden rounded-[24px] bg-black shadow-[0_24px_80px_rgba(15,23,42,0.55)]">
             <video
               ref={generationVideoRef}
               src="/story-generating.mp4"
