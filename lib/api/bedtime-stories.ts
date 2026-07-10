@@ -15,13 +15,6 @@ const EXTERNAL_STORY_POLL_INTERVAL_MS = 5000;
 // Poll for 3 min (36 x 5s) so we comfortably outlast a normal run plus margin,
 // while still under the backend's EXTERNAL_STORY_TIMEOUT_SECONDS (1200s).
 const EXTERNAL_STORY_POLL_ATTEMPTS = 36;
-// Only accept a story generated at/after this request started. `pending_since`
-// comes from the SERVER clock (same source as the story's generation_date), so
-// a large backward window is unnecessary and harmful: it let the poller match a
-// recent PREVIOUS story on the first poll and finish in ~10s, showing a stale
-// story while the real one was still generating. Keep a tiny 1s tolerance only
-// for same-second rounding.
-const STORY_MATCH_SKEW_MS = 1000;
 
 /**
  * Real progress signal for story generation. There is no backend-reported
@@ -94,13 +87,12 @@ function normalizeTheme(theme?: string | null): string {
   return (theme || "bedtime").toLowerCase();
 }
 
-function findMatchingGeneratedStory(
+function findNewGeneratedStory(
   stories: GeneratedStory[],
   request: StoryGenerationRequest,
-  pendingSince: string,
+  knownStoryIds: Set<string>,
 ): GeneratedStory | undefined {
   const requestedTheme = normalizeTheme(request.theme);
-  const pendingSinceMs = Date.parse(pendingSince);
 
   return stories.find((story) => {
     if (story.child_id !== request.child_id) {
@@ -111,24 +103,29 @@ function findMatchingGeneratedStory(
       return false;
     }
 
-    if (Number.isNaN(pendingSinceMs)) {
-      return true;
-    }
-
-    const storyTimestampMs = Date.parse(
-      story.generated_at || story.generation_date,
-    );
-    if (Number.isNaN(storyTimestampMs)) {
-      return true;
-    }
-
-    return storyTimestampMs >= pendingSinceMs - STORY_MATCH_SKEW_MS;
+    // A story is "new" only if its id was not present before we started
+    // generating. This is timezone-proof, unlike comparing timestamps: the
+    // backend and the external program persist timestamps in different time
+    // zones (UTC vs local), so timestamp comparison falsely matched old
+    // stories and finished instantly.
+    return story.id != null && !knownStoryIds.has(story.id);
   });
+}
+
+async function snapshotExistingStoryIds(
+  childId: string,
+): Promise<Set<string>> {
+  try {
+    const existing = await getChildStories(childId, 20);
+    return new Set(existing.map((story) => story.id).filter(Boolean));
+  } catch {
+    return new Set<string>();
+  }
 }
 
 async function waitForExternalStoryResult(
   request: StoryGenerationRequest,
-  pendingSince: string,
+  knownStoryIds: Set<string>,
   onProgress?: StoryProgressCallback,
 ): Promise<GeneratedStory> {
   for (let attempt = 0; attempt < EXTERNAL_STORY_POLL_ATTEMPTS; attempt += 1) {
@@ -138,11 +135,11 @@ async function waitForExternalStoryResult(
       maxAttempts: EXTERNAL_STORY_POLL_ATTEMPTS,
     });
 
-    const stories = await getChildStories(request.child_id, 10);
-    const matchingStory = findMatchingGeneratedStory(
+    const stories = await getChildStories(request.child_id, 20);
+    const matchingStory = findNewGeneratedStory(
       stories,
       request,
-      pendingSince,
+      knownStoryIds,
     );
 
     if (matchingStory) {
@@ -235,7 +232,9 @@ export async function generateStoryWithExternalProgram(
   request: StoryGenerationRequest,
   onProgress?: StoryProgressCallback,
 ): Promise<GeneratedStory> {
-  const pendingSince = new Date().toISOString();
+  // Snapshot the stories that already exist BEFORE we start generating, so we
+  // can detect the genuinely new one by id (timezone-proof).
+  const knownStoryIds = await snapshotExistingStoryIds(request.child_id);
 
   onProgress?.({
     phase: "invoking",
@@ -258,17 +257,13 @@ export async function generateStoryWithExternalProgram(
     }
 
     if (response.pending) {
-      return waitForExternalStoryResult(
-        request,
-        response.pending_since || pendingSince,
-        onProgress,
-      );
+      return waitForExternalStoryResult(request, knownStoryIds, onProgress);
     }
 
     throw new Error(response.message || "生成故事失敗，請稍後再試。");
   } catch (error) {
     if (error instanceof APIError && error.status === 504) {
-      return waitForExternalStoryResult(request, pendingSince, onProgress);
+      return waitForExternalStoryResult(request, knownStoryIds, onProgress);
     }
 
     throw error;
