@@ -134,29 +134,55 @@ export function BedtimeStoryGenerator({
   const inlineError = isNoWordsLearnedError(currentError) ? null : currentError;
 
   // Real-progress for the generation overlay. There is no backend-reported
-  // percentage, so we derive progress from the actual generation signals:
-  // the invoke call and each poll attempt (see generateStoryWithExternalProgram).
-  // The bar advances only when those real events fire, and snaps to 100% when
-  // the story actually arrives.
+  // percentage, so we derive a TARGET from the actual generation signals (the
+  // invoke call and each poll attempt; see generateStoryWithExternalProgram).
+  // The displayed bar (`genProgress`) then glides smoothly toward that target,
+  // so it moves continuously between the ~5s poll events instead of stepping.
   const [genProgress, setGenProgress] = useState(0);
+  const progressTargetRef = useRef(0);
 
-  // Map a real progress signal onto a 0-100 bar. Invoke ~ 8%; each poll attempt
-  // climbs toward a 95% ceiling; completion is 100%.
+  // Map a real progress signal onto a 0-100 target. Progress advances only on
+  // real events, but the curve is calibrated to the TYPICAL completion window
+  // (~6-9 polls / ~30-45s) rather than the 24-poll max, so a normal run reaches
+  // ~80-90% before the story arrives instead of stalling low and then jumping.
+  // It eases toward a 96% ceiling for slower runs.
+  const PROGRESS_TIME_CONSTANT = 4; // in poll units (~5s each) => ~86% by ~40s
   const progressFromSignal = (signal: StoryProgress): number => {
     if (signal.phase === "done") return 100;
     if (signal.phase === "invoking") return 8;
-    const ratio = signal.attempt / signal.maxAttempts;
-    return Math.min(95, Math.round(8 + ratio * 87));
+    // Ease-out curve: rises quickly early, then approaches a 96% ceiling.
+    const eased = 1 - Math.exp(-signal.attempt / PROGRESS_TIME_CONSTANT);
+    return Math.min(96, Math.round(8 + eased * 90));
   };
 
+  // Glide the displayed progress toward the target while generating.
   useEffect(() => {
-    // When generation stops, briefly show 100% then reset for the next run.
+    if (!currentIsGenerating) return;
+    const id = window.setInterval(() => {
+      setGenProgress((current) => {
+        const target = progressTargetRef.current;
+        if (current >= target) return current;
+        // Ease ~12% of the remaining gap each tick for a smooth approach.
+        const next = current + Math.max(0.4, (target - current) * 0.12);
+        return next >= target ? target : next;
+      });
+    }, 60);
+    return () => window.clearInterval(id);
+  }, [currentIsGenerating]);
+
+  useEffect(() => {
+    // When generation stops, snap the bar to 100% briefly, then reset.
     if (!currentIsGenerating && genProgress > 0 && genProgress < 100) {
+      progressTargetRef.current = 100;
       setGenProgress(100);
-      const resetTimer = setTimeout(() => setGenProgress(0), 600);
+      const resetTimer = setTimeout(() => {
+        progressTargetRef.current = 0;
+        setGenProgress(0);
+      }, 600);
       return () => clearTimeout(resetTimer);
     }
     if (!currentIsGenerating) {
+      progressTargetRef.current = 0;
       setGenProgress(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,6 +220,7 @@ export function BedtimeStoryGenerator({
     setCurrentIsGenerating(true);
     setCurrentError(null);
     setCurrentGeneratedStory(null);
+    progressTargetRef.current = 0;
     setGenProgress(0);
 
     // Keep the generation overlay visible long enough for the transition to register.
@@ -201,8 +228,14 @@ export function BedtimeStoryGenerator({
     const startTime = Date.now();
 
     try {
-      const reportProgress: StoryProgressCallback = (signal) =>
-        setGenProgress(progressFromSignal(signal));
+      // Real poll/invoke events set the TARGET; the glide effect eases the
+      // displayed bar toward it. Completion is applied immediately so the bar
+      // finishes without waiting for the easing loop.
+      const reportProgress: StoryProgressCallback = (signal) => {
+        const value = progressFromSignal(signal);
+        progressTargetRef.current = value;
+        if (signal.phase === "done") setGenProgress(value);
+      };
 
       if (onGenerateStory) {
         await onGenerateStory(request, reportProgress);
