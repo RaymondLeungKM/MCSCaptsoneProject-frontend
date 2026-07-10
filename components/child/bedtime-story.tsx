@@ -142,11 +142,11 @@ export function BedtimeStoryGenerator({
   const progressTargetRef = useRef(0);
 
   // Map a real progress signal onto a 0-100 target. Progress advances only on
-  // real events, but the curve is calibrated to the TYPICAL completion window
-  // (~6-9 polls / ~30-45s) rather than the 24-poll max, so a normal run reaches
-  // ~90%+ before the story arrives, keeping the final snap to 100% small.
-  // It eases toward a 97% ceiling for slower runs.
-  const PROGRESS_TIME_CONSTANT = 2.8; // in poll units (~5s each) => ~90%+ by ~30s
+  // real events, but the curve is calibrated to the measured TYPICAL generation
+  // time (~78s / ~16 polls), so a normal run reaches ~90%+ right as the story
+  // arrives, keeping the final snap to 100% small. Eases toward a 97% ceiling
+  // for slower runs.
+  const PROGRESS_TIME_CONSTANT = 6.5; // in poll units (~5s each) => ~92% by ~80s
   const progressFromSignal = (signal: StoryProgress): number => {
     if (signal.phase === "done") return 100;
     if (signal.phase === "invoking") return 8;
