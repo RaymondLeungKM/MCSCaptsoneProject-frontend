@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Volume2, Star, RotateCcw, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
-import { getWords } from "@/lib/api/vocabulary";
+
 import { recordGameSession } from "@/lib/api/games";
+import {
+  selectGameWords,
+  type GameWord,
+} from "@/lib/games/select-game-words";
+import { submitGameReviews } from "@/lib/games/submit-game-reviews";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { Confetti } from "./confetti";
 import { CartoonWordImage } from "./cartoon-word-image";
@@ -226,7 +231,7 @@ function MascotPanda({ mood, size = 110 }: { mood: MascotMood; size?: number }) 
 }
 
 export function QuizGame({ childId, onClose }: QuizGameProps) {
-  const [words, setWords] = useState<WordResponse[]>([]);
+  const [words, setWords] = useState<GameWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
@@ -249,19 +254,20 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
 
   useEffect(() => {
     void (async () => {
-
-      const data = await getWords({
-        childId,
-        includeExternal: true,
-        includeMongodb: true,
-        limit: 200,
-      });
-      const filtered = data.filter((w) => w.image_url && w.word_cantonese && w.word_cantonese.trim() !== "" && w.word_cantonese !== w.word && isValidJyutping(w.jyutping));
-      // Prioritise words the child captured themselves (with their own photos)
-      const captured = shuffle(filtered.filter((w) => !!w.created_by_child_id));
-      const defaults = shuffle(filtered.filter((w) => !w.created_by_child_id));
-      const capturedSlots = Math.min(captured.length, 10);
-      const selected = [...captured.slice(0, capturedSlots), ...defaults].slice(0, 20);
+      // Personalized selection: SM-2 review-priority words first, random backfill.
+      const selected = (
+        await selectGameWords({
+          childId,
+          count: 20,
+          requires: ["image", "cantonese"],
+        })
+      ).filter(
+        (w) =>
+          w.word_cantonese &&
+          w.word_cantonese.trim() !== "" &&
+          w.word_cantonese !== w.word &&
+          isValidJyutping(w.jyutping),
+      );
 
       // Pre-load all images so they appear instantly in the game
 
@@ -398,9 +404,22 @@ export function QuizGame({ childId, onClose }: QuizGameProps) {
       words_correct: wordsCorrect.current,
       stars,
     });
+    // Advance the SM-2 review schedule for the words practised this round.
+    const correctSet = new Set(wordsCorrect.current);
+    const fromQueue = new Set(
+      words.filter((w) => w.fromReviewQueue).map((w) => w.id),
+    );
+    void submitGameReviews(
+      childId,
+      wordsSeen.current.map((wordId) => ({
+        wordId,
+        correct: correctSet.has(wordId),
+        fromReviewQueue: fromQueue.has(wordId),
+      })),
+    );
     setXpEarned(resp?.xp_earned ?? null);
     setSaving(false);
-  }, [childId]);
+  }, [childId, words]);
 
   useEffect(() => {
     if (round >= TOTAL_ROUNDS && words.length > 0) void saveSession(score);

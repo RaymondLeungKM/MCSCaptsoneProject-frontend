@@ -4,8 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, MicOff, RotateCcw, Star, Volume2, X, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
 import { API_BASE_URL } from "@/lib/api/client";
-import { getWords } from "@/lib/api/vocabulary";
 import { recordGameSession } from "@/lib/api/games";
+import {
+  selectGameWords,
+  type GameWord,
+} from "@/lib/games/select-game-words";
+import { submitGameReviews } from "@/lib/games/submit-game-reviews";
 import { Confetti } from "./confetti";
 import { CartoonWordImage } from "./cartoon-word-image";
 import { preloadGameImages } from "@/lib/cartoon-image";
@@ -95,7 +99,7 @@ function getAudioExtension(mimeType: string): string {
 const TOTAL_ROUNDS = 8;
 
 export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
-  const [words, setWords] = useState<WordResponse[]>([]);
+  const [words, setWords] = useState<GameWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
@@ -175,16 +179,22 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
 
   useEffect(() => {
     void (async () => {
-      const data = await getWords({
-        childId,
-        includeExternal: true,
-        includeMongodb: true,
-        limit: 200,
-      });
-      const selected = shuffle(data.filter((w) => w.image_url && w.word_cantonese && w.word_cantonese.trim() !== "" && w.word_cantonese !== w.word && isValidJyutping(w.jyutping))).slice(0, TOTAL_ROUNDS);
+      // Personalized selection: SM-2 review-priority words first, random backfill.
+      const selected = (
+        await selectGameWords({
+          childId,
+          count: TOTAL_ROUNDS,
+          requires: ["image", "cantonese"],
+        })
+      ).filter(
+        (w) =>
+          w.word_cantonese &&
+          w.word_cantonese.trim() !== "" &&
+          w.word_cantonese !== w.word &&
+          isValidJyutping(w.jyutping),
+      );
 
       // Pre-load images
-
       await preloadGameImages(
         selected.map((w) => ({
           id: w.id,
@@ -673,6 +683,19 @@ export function SpeakingGame({ childId, onClose }: SpeakingGameProps) {
         setXpEarned(resp?.xp_earned ?? 0);
         setSaving(false);
       });
+      // Advance SM-2 schedule for practised words (speaking: correct=Good, else Again).
+      const correctSet = new Set(wordsCorrectRef.current);
+      const fromQueue = new Set(
+        words.filter((w) => w.fromReviewQueue).map((w) => w.id),
+      );
+      void submitGameReviews(
+        childId,
+        wordsSeenRef.current.map((wordId) => ({
+          wordId,
+          correct: correctSet.has(wordId),
+          fromReviewQueue: fromQueue.has(wordId),
+        })),
+      );
     }
     return (
       <div className="fixed inset-0 z-[60] bg-gradient-to-b from-orange-100 to-amber-100 flex items-center justify-center p-6">

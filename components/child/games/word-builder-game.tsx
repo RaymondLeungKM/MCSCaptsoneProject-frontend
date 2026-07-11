@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Volume2, Star, RotateCcw, Zap, HelpCircle } from "lucide-react";
 import confetti from "canvas-confetti";
-import { getWords, getCapturedWords } from "@/lib/api/vocabulary";
+import { getCapturedWords } from "@/lib/api/vocabulary";
 import { recordGameSession } from "@/lib/api/games";
+import {
+  selectGameWords,
+  type GameWord,
+} from "@/lib/games/select-game-words";
+import { submitGameReviews } from "@/lib/games/submit-game-reviews";
 import { useWordAudio } from "@/hooks/use-word-audio";
 import { Confetti } from "./confetti";
 import { CartoonWordImage } from "./cartoon-word-image";
@@ -122,7 +127,7 @@ function pickDistractors(
 /* ── Component ── */
 export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
   // Word pool
-  const [words, setWords] = useState<WordResponse[]>([]);
+  const [words, setWords] = useState<GameWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
@@ -188,27 +193,32 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
         }
         const validCaptured = captured.filter(hasCantoData);
 
-        let pool: WordResponse[] = [];
+        let pool: GameWord[] = [];
 
         if (validCaptured.length >= TOTAL_ROUNDS) {
           // Enough camera-captured words
-          pool = shuffle(validCaptured).slice(0, TOTAL_ROUNDS);
+          pool = shuffle(validCaptured)
+            .slice(0, TOTAL_ROUNDS)
+            .map((w) => ({ ...w, fromReviewQueue: false }));
         } else {
-          // Backfill with system words
-          const systemWords = await getWords({
-            childId,
-            includeExternal: false,
-            limit: 200,
-          });
-          const validSystem = systemWords.filter(hasCantoData);
+          // Backfill with SM-2 review-prioritized words (random fallback inside).
+          const reviewWords = (
+            await selectGameWords({
+              childId,
+              count: TOTAL_ROUNDS,
+              requires: ["cantonese"],
+            })
+          ).filter(hasCantoData);
 
-          // Prefer multi-char words first (more interesting for character arrangement)
-          const capturedShuffled = shuffle(validCaptured);
-          const systemShuffled = shuffle(validSystem).filter(
-            (sw) => !capturedShuffled.find((cw) => cw.id === sw.id),
+          // Prefer multi-char words first (more interesting for arrangement)
+          const capturedTagged: GameWord[] = shuffle(validCaptured).map((w) => ({
+            ...w,
+            fromReviewQueue: false,
+          }));
+          const reviewFiltered = reviewWords.filter(
+            (rw) => !capturedTagged.find((cw) => cw.id === rw.id),
           );
-          // Sort: 2+ char words first, then 1-char
-          const sortByCharCount = (a: WordResponse, b: WordResponse) => {
+          const sortByCharCount = (a: GameWord, b: GameWord) => {
             const aLen = (a.word_cantonese || "").length;
             const bLen = (b.word_cantonese || "").length;
             if (aLen >= 2 && bLen < 2) return -1;
@@ -216,8 +226,8 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
             return 0;
           };
           const combined = [
-            ...capturedShuffled.sort(sortByCharCount),
-            ...systemShuffled.sort(sortByCharCount),
+            ...capturedTagged.sort(sortByCharCount),
+            ...reviewFiltered.sort(sortByCharCount),
           ];
           pool = combined.slice(0, TOTAL_ROUNDS);
         }
@@ -514,9 +524,22 @@ export function WordBuilderGame({ childId, onClose }: WordBuilderGameProps) {
       } catch (err) {
         console.error("Failed to save game session:", err);
       }
+      // Advance SM-2 schedule for the words practised this round.
+      const correctSet = new Set(wordsCorrect.current);
+      const fromQueue = new Set(
+        words.filter((w) => w.fromReviewQueue).map((w) => w.id),
+      );
+      void submitGameReviews(
+        childId,
+        wordsSeen.current.map((wordId) => ({
+          wordId,
+          correct: correctSet.has(wordId),
+          fromReviewQueue: fromQueue.has(wordId),
+        })),
+      );
       setSaving(false);
     },
-    [childId],
+    [childId, words],
   );
 
   // Save when game ends
