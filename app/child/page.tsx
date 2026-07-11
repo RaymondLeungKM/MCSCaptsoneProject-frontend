@@ -376,6 +376,7 @@ function ChildDashboardContent() {
   const sessionIdRef = useRef<string | null>(null);
   const sessionChildIdRef = useRef<string | null>(null);
   const currentChildIdRef = useRef<string | null>(null);
+  const activeTabRef = useRef<string>("home");
   const sessionStartPendingRef = useRef(false);
   const sessionShouldRemainOpenRef = useRef(false);
   const lastInteractionAtRef = useRef<number>(Date.now());
@@ -418,6 +419,12 @@ function ChildDashboardContent() {
       setActiveTab(requestedTab);
     }
   }, [requestedTab]);
+
+  // Keep a ref of the active tab in sync so async callbacks (e.g. story
+  // generation completing) can read the current tab without a stale closure.
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -793,7 +800,17 @@ function ChildDashboardContent() {
   const handleStoryGenerated = (story: GeneratedStory) => {
     setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)]);
     setSelectedStory(story);
-    setIsReaderOpen(true);
+    // Only auto-open the story reader if the user is still on the stories tab.
+    // If they've navigated away (e.g. community/learning), let them keep working
+    // and notify them instead so the result doesn't interrupt them.
+    if (activeTabRef.current === "stories") {
+      setIsReaderOpen(true);
+    } else {
+      toast({
+        title: "故事生成完成",
+        description: `「${story.title}」已準備好，去「故事」頁面就可以開始閱讀。`,
+      });
+    }
   };
 
   const handleGenerateStory = async (
