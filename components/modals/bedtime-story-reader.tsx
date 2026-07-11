@@ -47,6 +47,7 @@ export function BedtimeStoryReader({
   const currentPageRef = useRef(0);
   const pendingAutoPlayPageRef = useRef<number | null>(null);
   const lastPlayedPageRef = useRef<number | null>(null);
+  const playbackRequestIdRef = useRef(0);
   const pageAudioEndTimeRef = useRef<number | null>(null);
   const playbackMonitorRef = useRef<number | null>(null);
   const STORY_PAGE_TARGET_CHARS = 120;
@@ -67,6 +68,7 @@ export function BedtimeStoryReader({
   };
 
   const resetPlayback = () => {
+    playbackRequestIdRef.current += 1;
     stop();
     clearPlaybackMonitor();
     pendingAutoPlayPageRef.current = null;
@@ -82,6 +84,7 @@ export function BedtimeStoryReader({
   };
 
   const pausePlaybackForNavigation = () => {
+    playbackRequestIdRef.current += 1;
     clearPlaybackMonitor();
     pendingAutoPlayPageRef.current = null;
     if (audioRef.current) {
@@ -399,7 +402,11 @@ export function BedtimeStoryReader({
         return;
       }
 
-      const handleLoadedMetadata = () => {
+      const tryResolve = () => {
+        if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
+          return;
+        }
+
         cleanup();
         resolve();
       };
@@ -410,17 +417,17 @@ export function BedtimeStoryReader({
       };
 
       const cleanup = () => {
-        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.removeEventListener("loadedmetadata", tryResolve);
+        audio.removeEventListener("durationchange", tryResolve);
+        audio.removeEventListener("canplay", tryResolve);
         audio.removeEventListener("error", handleError);
       };
 
-      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.addEventListener("loadedmetadata", tryResolve);
+      audio.addEventListener("durationchange", tryResolve);
+      audio.addEventListener("canplay", tryResolve);
       audio.addEventListener("error", handleError);
-
-      if (audio.readyState >= 1) {
-        cleanup();
-        resolve();
-      }
+      tryResolve();
     });
 
   const seekAudioToPage = async (
@@ -433,11 +440,10 @@ export function BedtimeStoryReader({
       return;
     }
 
-    const safePageIndex = Math.max(
-      0,
-      Math.min(pageIndex, pageAudioSegments.length - 1),
-    );
-    const pageAudioSegment = pageAudioSegments[safePageIndex] ?? {
+    const safePageIndex = Math.max(0, Math.min(pageIndex, pages.length - 1));
+    const pageAudioSegment = pageAudioSegments.find(
+      (segment) => segment.page_index === safePageIndex,
+    ) ?? pageAudioSegments[safePageIndex] ?? {
       start_ratio: 0,
       end_ratio: 1,
     };
@@ -460,7 +466,35 @@ export function BedtimeStoryReader({
       audio.duration,
     );
 
-    audio.currentTime = targetTime;
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        audio.removeEventListener("seeked", handleSeeked);
+        audio.removeEventListener("error", handleSeekError);
+      };
+
+      const handleSeeked = () => {
+        cleanup();
+        resolve();
+      };
+
+      const handleSeekError = () => {
+        cleanup();
+        reject(new Error("Failed to seek story audio to page segment"));
+      };
+
+      if (
+        Math.abs(audio.currentTime - targetTime) <= 0.05 &&
+        !audio.seeking
+      ) {
+        resolve();
+        return;
+      }
+
+      audio.addEventListener("seeked", handleSeeked, { once: true });
+      audio.addEventListener("error", handleSeekError, { once: true });
+      audio.currentTime = targetTime;
+    });
+
     pageAudioEndTimeRef.current = pageEndTime;
     audio.ontimeupdate = () => {
       const currentPageEndTime = pageAudioEndTimeRef.current;
@@ -478,32 +512,6 @@ export function BedtimeStoryReader({
         );
       }
     };
-
-    await new Promise<void>((resolve, reject) => {
-      const completeSeek = () => {
-        audio.removeEventListener("seeked", handleSeeked);
-        audio.removeEventListener("error", handleSeekError);
-      };
-
-      const handleSeeked = () => {
-        completeSeek();
-        resolve();
-      };
-
-      const handleSeekError = () => {
-        completeSeek();
-        reject(new Error("Failed to seek story audio to page segment"));
-      };
-
-      if (Math.abs(audio.currentTime - targetTime) <= 0.05) {
-        resolve();
-        return;
-      }
-
-      audio.addEventListener("seeked", handleSeeked, { once: true });
-      audio.addEventListener("error", handleSeekError, { once: true });
-      audio.currentTime = targetTime;
-    });
 
     clearPlaybackMonitor();
     playbackMonitorRef.current = window.setInterval(() => {
@@ -579,6 +587,9 @@ export function BedtimeStoryReader({
       pausePlaybackForNavigation();
     } else {
       if (resolvedStoryAudioUrl) {
+        const playbackRequestId = ++playbackRequestIdRef.current;
+        const targetPageIndex = currentPageRef.current;
+
         try {
           let audio = audioRef.current;
 
@@ -590,14 +601,24 @@ export function BedtimeStoryReader({
             throw new Error("Story audio is not available");
           }
 
-          const targetPageIndex = currentPageRef.current;
           if (lastPlayedPageRef.current !== targetPageIndex) {
             await seekAudioToPage(audio, targetPageIndex);
+          }
+
+          if (
+            playbackRequestId !== playbackRequestIdRef.current ||
+            targetPageIndex !== currentPageRef.current
+          ) {
+            return;
           }
 
           await audio.play();
           return;
         } catch (error) {
+          if (playbackRequestId !== playbackRequestIdRef.current) {
+            return;
+          }
+
           console.warn(
             "Full story audio playback failed; falling back to browser speech",
             error,
