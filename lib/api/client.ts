@@ -37,6 +37,22 @@ function isRetryableMethod(method?: string): boolean {
   return normalized === "GET" || normalized === "HEAD";
 }
 
+function getClientLocalTimeHeaders(): Record<string, string> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const now = new Date();
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
+
+  return {
+    "X-Client-Local-Date": localDate,
+    "X-Client-Timezone-Offset-Minutes": String(now.getTimezoneOffset()),
+  };
+}
+
 /**
  * Get stored auth token
  */
@@ -184,6 +200,7 @@ export async function apiRequest<T>(
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        ...getClientLocalTimeHeaders(),
         ...(options.headers as Record<string, string>),
       };
 
