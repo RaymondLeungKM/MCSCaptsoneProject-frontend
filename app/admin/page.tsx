@@ -24,7 +24,6 @@ import {
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 import { CategoryManager } from "@/components/admin/category-manager";
 import { PublicChallengeManager } from "@/components/admin/public-challenge-manager";
-import { StoryManager } from "@/components/admin/story-manager";
 import { AdminAnalyticsPanel } from "../../components/admin/admin-analytics-panel";
 import { LoginCard } from "@/components/auth/login-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -899,13 +898,6 @@ export default function AdminPage() {
                   <span className="font-black">公共挑戰</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  value="stories"
-                  className="justify-start gap-3 rounded-3xl border border-violet-100 bg-white/80 px-4 py-3 text-left data-[state=active]:border-violet-200 data-[state=active]:bg-violet-50 data-[state=active]:text-violet-700 data-[state=active]:shadow-none"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span className="font-black">故事內容</span>
-                </TabsTrigger>
-                <TabsTrigger
                   value="vocabulary"
                   className="justify-start gap-3 rounded-3xl border border-sky-100 bg-white/80 px-4 py-3 text-left data-[state=active]:border-sky-200 data-[state=active]:bg-sky-50 data-[state=active]:text-sky-700 data-[state=active]:shadow-none"
                 >
@@ -1574,10 +1566,6 @@ export default function AdminPage() {
 
           <TabsContent value="analytics-overview" className="mt-0">
             <AdminAnalyticsPanel />
-          </TabsContent>
-
-          <TabsContent value="stories" className="mt-0">
-            <StoryManager />
           </TabsContent>
 
           <TabsContent value="vocabulary" className="mt-0">
