@@ -38,6 +38,10 @@ interface BedtimeStoryGeneratorProps {
   ) => Promise<void>;
   onStoryGenerated?: (story: GeneratedStory) => void;
   onReadStory?: (story: GeneratedStory) => void;
+  // When true, the fullscreen generation overlay is hidden and the generation
+  // video is muted, so a new story generates quietly "in the background" while
+  // the user is doing something that shouldn't be interrupted (e.g. reading).
+  suppressGenerationOverlay?: boolean;
 }
 
 const themes: Array<{
@@ -109,6 +113,7 @@ export function BedtimeStoryGenerator({
   onGenerateStory,
   onStoryGenerated,
   onReadStory,
+  suppressGenerationOverlay = false,
 }: BedtimeStoryGeneratorProps) {
   const [internalIsGenerating, setInternalIsGenerating] = useState(false);
   const [internalSelectedTheme, setInternalSelectedTheme] =
@@ -159,10 +164,21 @@ export function BedtimeStoryGenerator({
   // Play the generation video WITH sound. Generation starts from a user click
   // (a valid user gesture), so browsers allow unmuted autoplay. If a browser
   // still blocks it, fall back to muted so the video always plays.
+  // While the overlay is suppressed (e.g. the reader is open), keep it muted so
+  // the story generates quietly in the background without competing audio.
   useEffect(() => {
     if (!currentIsGenerating) return;
     const video = generationVideoRef.current;
     if (!video) return;
+    // When suppressed (e.g. the reader is open), fully stop the generation
+    // video: pause it and mute it so no animation audio leaks behind the story
+    // the user is reading. Just muting is not enough — a looping <video> keeps
+    // its media session alive, so it must be paused as well.
+    if (suppressGenerationOverlay) {
+      video.muted = true;
+      video.pause();
+      return;
+    }
     video.muted = false;
     video.volume = 0.6;
     const tryPlay = video.play();
@@ -172,7 +188,7 @@ export function BedtimeStoryGenerator({
         void video.play().catch(() => {});
       });
     }
-  }, [currentIsGenerating]);
+  }, [currentIsGenerating, suppressGenerationOverlay]);
 
   // Glide the displayed progress toward the target while generating.
   useEffect(() => {
@@ -289,7 +305,15 @@ export function BedtimeStoryGenerator({
   return (
     <div className="w-full space-y-8">
       {currentIsGenerating && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden px-5 py-8">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden px-5 py-8"
+          style={
+            suppressGenerationOverlay
+              ? { visibility: "hidden", pointerEvents: "none" }
+              : undefined
+          }
+          aria-hidden={suppressGenerationOverlay}
+        >
           {/* Dreamy branded backdrop */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,#f5e6ff_0%,transparent_45%),radial-gradient(circle_at_85%_80%,#ffe4f2_0%,transparent_45%),linear-gradient(160deg,#efe0ff_0%,#f7e8ff_40%,#ffe9f6_100%)]" />
           {/* Soft floating orbs */}
