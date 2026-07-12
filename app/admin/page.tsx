@@ -854,7 +854,7 @@ export default function AdminPage() {
                 數據與統計
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                查看平台活躍度、任務漏斗與主要功能使用情況，這一區只放管理決策需要的統計頁面。
+                查看平台活躍度、任務狀態與主要功能使用情況，這一區只放管理決策需要的統計頁面。
               </p>
             </div>
 

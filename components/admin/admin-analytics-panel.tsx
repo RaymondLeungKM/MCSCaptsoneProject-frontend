@@ -398,7 +398,9 @@ export function AdminAnalyticsPanel() {
     lines.push(
       `摘要,平均週活躍兒童,${csvEscape(participation.summary.average_wau)}`,
     );
-    lines.push(`摘要,漏斗完成率,${csvEscape(funnel.overall.completion_rate)}`);
+    lines.push(
+      `摘要,已指派任務完成率,${csvEscape(funnel.overall.completion_rate)}`,
+    );
     lines.push(
       `摘要,平均互動分鐘,${csvEscape(engagement.summary.average_session_minutes)}`,
     );
@@ -588,7 +590,7 @@ export function AdminAnalyticsPanel() {
                 tone="emerald"
               />
               <SnapshotCard
-                label="漏斗完成率"
+                label="已指派任務完成率"
                 value={`${(funnel.overall.completion_rate * 100).toFixed(1)}%`}
                 tone="amber"
               />
@@ -666,14 +668,14 @@ export function AdminAnalyticsPanel() {
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-base font-black text-slate-800">
-                      任務漏斗總覽
+                      任務狀態總覽
                     </CardTitle>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
                           className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                          aria-label="查看任務漏斗說明"
+                          aria-label="查看任務狀態說明"
                         >
                           <CircleHelp className="h-4 w-4" />
                         </button>
@@ -682,7 +684,7 @@ export function AdminAnalyticsPanel() {
                         align="end"
                         className="w-96 text-xs text-slate-700"
                       >
-                        <p className="font-bold text-slate-900">任務漏斗說明</p>
+                        <p className="font-bold text-slate-900">任務狀態說明</p>
                         <p className="mt-2">
                           顯示已指派、已開始、已完成、已跳過與已逾期的任務數量。
                         </p>
