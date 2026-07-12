@@ -376,6 +376,8 @@ function ChildDashboardContent() {
   const sessionIdRef = useRef<string | null>(null);
   const sessionChildIdRef = useRef<string | null>(null);
   const currentChildIdRef = useRef<string | null>(null);
+  const activeTabRef = useRef<string>("home");
+  const isReaderOpenRef = useRef(false);
   const sessionStartPendingRef = useRef(false);
   const sessionShouldRemainOpenRef = useRef(false);
   const lastInteractionAtRef = useRef<number>(Date.now());
@@ -418,6 +420,19 @@ function ChildDashboardContent() {
       setActiveTab(requestedTab);
     }
   }, [requestedTab]);
+
+  // Keep a ref of the active tab in sync so async callbacks (e.g. story
+  // generation completing) can read the current tab without a stale closure.
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // Mirror the reader-open state into a ref for the same stale-closure reason:
+  // if the user is already reading a story when a new one finishes generating,
+  // we must not hijack the reader out from under them.
+  useEffect(() => {
+    isReaderOpenRef.current = isReaderOpen;
+  }, [isReaderOpen]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -792,8 +807,30 @@ function ChildDashboardContent() {
 
   const handleStoryGenerated = (story: GeneratedStory) => {
     setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)]);
+
+    // If the user is already reading a story, do NOT interrupt them: keep the
+    // current story in the reader, don't switch selection, and just let them
+    // know the new one is ready in their story shelf.
+    if (isReaderOpenRef.current) {
+      toast({
+        title: "故事生成完成",
+        description: `「${story.title}」已加入故事書，睇完手上呢個就可以睇。`,
+      });
+      return;
+    }
+
     setSelectedStory(story);
-    setIsReaderOpen(true);
+    // Only auto-open the story reader if the user is still on the stories tab.
+    // If they've navigated away (e.g. community/learning), let them keep working
+    // and notify them instead so the result doesn't interrupt them.
+    if (activeTabRef.current === "stories") {
+      setIsReaderOpen(true);
+    } else {
+      toast({
+        title: "故事生成完成",
+        description: `「${story.title}」已準備好，去「故事」頁面就可以開始閱讀。`,
+      });
+    }
   };
 
   const handleGenerateStory = async (
@@ -1321,6 +1358,7 @@ function ChildDashboardContent() {
                   onErrorChange={setStoryGenerationError}
                   onGenerateStory={handleGenerateStory}
                   onReadStory={handleReadGeneratedStory}
+                  suppressGenerationOverlay={isReaderOpen}
                 />
               </section>
 
