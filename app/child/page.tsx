@@ -143,11 +143,13 @@ function persistSelectedChildId(childId: string) {
   window.localStorage.setItem(SELECTED_CHILD_STORAGE_KEY, childId);
 }
 
-function getLocalDateString(value: Date = new Date()): string {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function getHktDateString(value: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
 }
 
 function getStoryDisplayDate(story: GeneratedStory): Date | null {
@@ -250,11 +252,29 @@ function hasReachedReminderTime(now: Date, reminderTime: string): boolean {
     return false;
   }
 
-  if (now.getHours() > hours) {
+  const hktTimeParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Hong_Kong",
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(now);
+
+  const hktHour = Number(
+    hktTimeParts.find((part) => part.type === "hour")?.value ?? "NaN",
+  );
+  const hktMinute = Number(
+    hktTimeParts.find((part) => part.type === "minute")?.value ?? "NaN",
+  );
+
+  if (Number.isNaN(hktHour) || Number.isNaN(hktMinute)) {
+    return false;
+  }
+
+  if (hktHour > hours) {
     return true;
   }
 
-  return now.getHours() === hours && now.getMinutes() >= minutes;
+  return hktHour === hours && hktMinute >= minutes;
 }
 
 function getReminderStorageKey(childId: string, localDate: string): string {
@@ -530,10 +550,7 @@ function ChildDashboardContent() {
 
   const loadLearningStatus = async (childId: string) => {
     try {
-      const status = await getLearningControlStatus(childId, {
-        localDate: getLocalDateString(new Date()),
-        timezoneOffsetMinutes: new Date().getTimezoneOffset(),
-      });
+      const status = await getLearningControlStatus(childId);
       setLearningControl(toLearningControlStatus(status));
       return status;
     } catch (statusError) {
@@ -1020,7 +1037,7 @@ function ChildDashboardContent() {
 
     const maybeNotify = () => {
       const now = new Date();
-      const localDate = getLocalDateString(now);
+      const localDate = getHktDateString(now);
       const storageKey = getReminderStorageKey(profile.id, localDate);
 
       if (localStorage.getItem(storageKey) === "sent") {

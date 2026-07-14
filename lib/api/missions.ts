@@ -123,7 +123,7 @@ export interface ParentMicroMissionCreateRequest {
   conversation_prompts: string[];
 }
 
-export interface MissionProgressResponse {
+export interface MissionCompletionResponse {
   mission_id: string;
   completed: boolean;
   completed_date: string | null;
@@ -164,18 +164,20 @@ export interface MissionSummaryResponse {
 // ─── Public helper ───────────────────────────────────────────────────────────
 
 /**
- * Map backend MissionResponse + optional progress into the frontend OfflineMission type.
+ * Map backend MissionResponse + optional completion into the frontend OfflineMission type.
  */
 export function toOfflineMission(
   m: MissionResponse,
-  progress?: MissionProgressResponse,
+  completion?: MissionCompletionResponse,
 ): OfflineMission {
   const assignmentCompleted = m.assignment
     ? m.assignment.status === "completed"
     : undefined;
-  const completed = assignmentCompleted ?? progress?.completed ?? false;
-  const completedDate = m.assignment?.completed_at ?? progress?.completed_date;
-  const parentNotes = m.assignment?.completion_notes ?? progress?.parent_notes;
+  const completed = assignmentCompleted ?? completion?.completed ?? false;
+  const completedDate =
+    m.assignment?.completed_at ?? completion?.completed_date;
+  const parentNotes =
+    m.assignment?.completion_notes ?? completion?.parent_notes;
   const metadata = m.assignment?.selection_metadata ?? {};
   const isClusterMission = Boolean(metadata?.is_cluster);
 
@@ -239,8 +241,8 @@ export async function completeMission(
   childId: string,
   completed: boolean,
   parentNotes?: string,
-): Promise<MissionProgressResponse> {
-  return apiRequest<MissionProgressResponse>(
+): Promise<MissionCompletionResponse> {
+  return apiRequest<MissionCompletionResponse>(
     `/missions/${missionId}/complete/${childId}`,
     {
       method: "POST",

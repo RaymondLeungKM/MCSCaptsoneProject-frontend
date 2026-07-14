@@ -121,27 +121,9 @@ export async function getProgressStats(
  */
 export async function getLearningControlStatus(
   childId: string,
-  options?: {
-    localDate?: string;
-    timezoneOffsetMinutes?: number;
-  },
 ): Promise<LearningControlStatusResponse> {
-  const params = new URLSearchParams();
-
-  if (options?.localDate) {
-    params.set("local_date", options.localDate);
-  }
-
-  if (options?.timezoneOffsetMinutes !== undefined) {
-    params.set(
-      "timezone_offset_minutes",
-      String(options.timezoneOffsetMinutes),
-    );
-  }
-
-  const query = params.toString();
   return apiRequest<LearningControlStatusResponse>(
-    `/progress/${childId}/usage-status${query ? `?${query}` : ""}`,
+    `/progress/${childId}/usage-status`,
   );
 }
 

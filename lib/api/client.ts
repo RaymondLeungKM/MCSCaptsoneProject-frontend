@@ -42,14 +42,16 @@ function getClientLocalTimeHeaders(): Record<string, string> {
     return {};
   }
 
-  const now = new Date();
-  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
+  const hktDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
   return {
-    "X-Client-Local-Date": localDate,
-    "X-Client-Timezone-Offset-Minutes": String(now.getTimezoneOffset()),
+    "X-Client-Local-Date": hktDate,
+    "X-Client-Timezone-Offset-Minutes": "-480",
   };
 }
 

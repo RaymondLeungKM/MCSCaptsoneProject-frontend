@@ -1,5 +1,8 @@
 import { toOfflineMission } from "./api/missions";
-import type { MissionProgressResponse, MissionResponse } from "./api/missions";
+import type {
+  MissionCompletionResponse,
+  MissionResponse,
+} from "./api/missions";
 import type {
   ChildProfile,
   DailyMission,
@@ -279,7 +282,7 @@ export function buildPersonalizedDailyMissions({
   profile: ChildProfile;
   stats: ProgressStats;
   apiMissions?: MissionResponse[];
-  progress?: MissionProgressResponse[];
+  progress?: MissionCompletionResponse[];
 }): DailyMission[] {
   const focusWords = buildFocusWords(profile, apiMissions);
   const progressMap = new Map(progress.map((item) => [item.mission_id, item]));
@@ -349,7 +352,7 @@ export function buildPersonalizedOfflineMissions({
   profile: ChildProfile;
   stats: ProgressStats;
   apiMissions?: MissionResponse[];
-  progress?: MissionProgressResponse[];
+  progress?: MissionCompletionResponse[];
 }): OfflineMission[] {
   const focusWords = buildFocusWords(profile, apiMissions);
   const progressMap = new Map(progress.map((item) => [item.mission_id, item]));
