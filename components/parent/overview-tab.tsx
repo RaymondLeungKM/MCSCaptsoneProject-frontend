@@ -399,7 +399,7 @@ export function OverviewTab({
               </div>
               {weeklyDelta && (
                 <div className="rounded-3xl bg-linear-to-r from-sky-50 to-white p-4 ring-1 ring-slate-100">
-                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-500">
                         相比上週
@@ -408,7 +408,7 @@ export function OverviewTab({
                         這一列由後端摘要直接提供，避免前端各自計算不同週期。
                       </p>
                     </div>
-                    <div className="w-full rounded-2xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-slate-100 sm:w-auto sm:text-right">
+                    <div className="w-full rounded-2xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-slate-100 sm:mt-0.5 sm:w-auto sm:min-w-38 sm:flex-none sm:text-right">
                       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
                         比較時間
                       </p>
