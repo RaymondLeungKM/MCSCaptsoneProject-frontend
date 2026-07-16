@@ -483,50 +483,45 @@ function ParentDashboardContent() {
 
             {/* Tab bar row */}
             <div className="overflow-x-auto scrollbar-hide px-1.5 py-2 sm:px-2">
-              <TabsList className="bg-transparent p-0 h-auto flex-nowrap inline-flex w-max mx-auto gap-0.5 min-w-full justify-start md:gap-2 md:justify-center">
-                <TabItem
-                  value="overview"
-                  icon={<LayoutGrid className="w-4 h-4" />}
-                  label="概覽"
-                  mobileLabel="總覽"
-                />
-                <TabItem
-                  value="progress"
-                  icon={<TrendingUp className="w-4 h-4" />}
-                  label="進度"
-                  mobileLabel="追蹤"
-                />
-                <TabItem
-                  value="charts"
-                  icon={<PieChart className="w-4 h-4" />}
-                  label="圖表"
-                  mobileLabel="統計"
-                />
-                <TabItem
-                  value="missions"
-                  icon={<Target className="w-4 h-4" />}
-                  label="任務"
-                  mobileLabel="目標"
-                />
-                <TabItem
-                  value="insights"
-                  icon={<BarChart3 className="w-4 h-4" />}
-                  label="分析"
-                  mobileLabel="洞察"
-                />
-                <TabItem
-                  value="settings"
-                  icon={<Settings className="w-4 h-4" />}
-                  label="設定"
-                  mobileLabel="偏好"
-                />
-                <TabItem
-                  value="social"
-                  icon={<Users className="w-4 h-4" />}
-                  label="社群"
-                  mobileLabel="互動"
-                />
-              </TabsList>
+              <div className="flex min-w-full justify-center">
+                <TabsList className="bg-transparent p-0 h-auto flex w-max shrink-0 flex-nowrap gap-0.5 md:gap-2">
+                  <TabItem
+                    value="overview"
+                    icon={<LayoutGrid className="w-4 h-4" />}
+                    label="概覽"
+                  />
+                  <TabItem
+                    value="progress"
+                    icon={<TrendingUp className="w-4 h-4" />}
+                    label="進度"
+                  />
+                  <TabItem
+                    value="charts"
+                    icon={<PieChart className="w-4 h-4" />}
+                    label="圖表"
+                  />
+                  <TabItem
+                    value="missions"
+                    icon={<Target className="w-4 h-4" />}
+                    label="任務"
+                  />
+                  <TabItem
+                    value="insights"
+                    icon={<BarChart3 className="w-4 h-4" />}
+                    label="分析"
+                  />
+                  <TabItem
+                    value="settings"
+                    icon={<Settings className="w-4 h-4" />}
+                    label="設定"
+                  />
+                  <TabItem
+                    value="social"
+                    icon={<Users className="w-4 h-4" />}
+                    label="社群"
+                  />
+                </TabsList>
+              </div>
             </div>
           </div>
 
@@ -637,12 +632,10 @@ function TabItem({
   value,
   icon,
   label,
-  mobileLabel,
 }: {
   value: string;
   icon: React.ReactNode;
   label: string;
-  mobileLabel?: string;
 }) {
   return (
     <TabsTrigger
@@ -650,7 +643,7 @@ function TabItem({
       className="rounded-full px-2.5 py-1.5 md:px-5 md:py-2.5 data-[state=active]:bg-[#38BDF8] data-[state=active]:text-white data-[state=active]:shadow-md transition-all font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 gap-1 md:gap-2 data-[state=active]:scale-105 text-[11px] leading-none md:text-sm whitespace-nowrap [&_svg]:size-3.5 md:[&_svg]:size-4"
     >
       {icon}
-      <span className="md:hidden">{mobileLabel ?? label}</span>
+      <span className="md:hidden">{label}</span>
       <span className="hidden md:inline">{label}</span>
     </TabsTrigger>
   );
