@@ -56,6 +56,7 @@ import {
   getStory,
   type StoryProgressCallback,
 } from "@/lib/api/bedtime-stories";
+import { listPublicCuratedStories } from "@/lib/api/stories";
 import {
   endLearningSession,
   getLearningControlStatus,
@@ -118,6 +119,7 @@ const IDLE_CHECK_INTERVAL_MS = 15_000;
 const SELECTED_CHILD_STORAGE_KEY = "parent-dashboard:selected-child-id";
 const RECENT_STORIES_LIMIT = 3;
 const ARCHIVE_PREVIEW_LIMIT = 2;
+const CURATED_STORIES_PER_PAGE = 6;
 
 interface StoryArchiveGroup {
   key: string;
@@ -143,13 +145,11 @@ function persistSelectedChildId(childId: string) {
   window.localStorage.setItem(SELECTED_CHILD_STORAGE_KEY, childId);
 }
 
-function getHktDateString(value: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Hong_Kong",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(value);
+function getLocalDateString(value: Date = new Date()): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getStoryDisplayDate(story: GeneratedStory): Date | null {
@@ -252,29 +252,11 @@ function hasReachedReminderTime(now: Date, reminderTime: string): boolean {
     return false;
   }
 
-  const hktTimeParts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Hong_Kong",
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-  }).formatToParts(now);
-
-  const hktHour = Number(
-    hktTimeParts.find((part) => part.type === "hour")?.value ?? "NaN",
-  );
-  const hktMinute = Number(
-    hktTimeParts.find((part) => part.type === "minute")?.value ?? "NaN",
-  );
-
-  if (Number.isNaN(hktHour) || Number.isNaN(hktMinute)) {
-    return false;
-  }
-
-  if (hktHour > hours) {
+  if (now.getHours() > hours) {
     return true;
   }
 
-  return hktHour === hours && hktMinute >= minutes;
+  return now.getHours() === hours && now.getMinutes() >= minutes;
 }
 
 function getReminderStorageKey(childId: string, localDate: string): string {
@@ -378,11 +360,17 @@ function ChildDashboardContent() {
     string | null
   >(null);
   const [stories, setStories] = useState<GeneratedStory[]>([]);
+  const [curatedStories, setCuratedStories] = useState<GeneratedStory[]>([]);
   const [selectedStory, setSelectedStory] = useState<GeneratedStory | null>(
     null,
   );
   const [storiesLoading, setStoriesLoading] = useState(false);
+  const [curatedStoriesLoading, setCuratedStoriesLoading] = useState(false);
   const [storiesError, setStoriesError] = useState<string | null>(null);
+  const [curatedStoriesError, setCuratedStoriesError] = useState<string | null>(
+    null,
+  );
+  const [curatedStoriesPage, setCuratedStoriesPage] = useState(1);
   const [storyShelfFilter, setStoryShelfFilter] =
     useState<StoryShelfFilter>("all");
   const [expandedArchiveGroups, setExpandedArchiveGroups] = useState<string[]>(
@@ -396,8 +384,6 @@ function ChildDashboardContent() {
   const sessionIdRef = useRef<string | null>(null);
   const sessionChildIdRef = useRef<string | null>(null);
   const currentChildIdRef = useRef<string | null>(null);
-  const activeTabRef = useRef<string>("home");
-  const isReaderOpenRef = useRef(false);
   const sessionStartPendingRef = useRef(false);
   const sessionShouldRemainOpenRef = useRef(false);
   const lastInteractionAtRef = useRef<number>(Date.now());
@@ -440,19 +426,6 @@ function ChildDashboardContent() {
       setActiveTab(requestedTab);
     }
   }, [requestedTab]);
-
-  // Keep a ref of the active tab in sync so async callbacks (e.g. story
-  // generation completing) can read the current tab without a stale closure.
-  useEffect(() => {
-    activeTabRef.current = activeTab;
-  }, [activeTab]);
-
-  // Mirror the reader-open state into a ref for the same stale-closure reason:
-  // if the user is already reading a story when a new one finishes generating,
-  // we must not hijack the reader out from under them.
-  useEffect(() => {
-    isReaderOpenRef.current = isReaderOpen;
-  }, [isReaderOpen]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -550,7 +523,10 @@ function ChildDashboardContent() {
 
   const loadLearningStatus = async (childId: string) => {
     try {
-      const status = await getLearningControlStatus(childId);
+      const status = await getLearningControlStatus(childId, {
+        localDate: getLocalDateString(new Date()),
+        timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      });
       setLearningControl(toLearningControlStatus(status));
       return status;
     } catch (statusError) {
@@ -623,15 +599,52 @@ function ChildDashboardContent() {
 
   const loadStories = async (childId: string) => {
     setStoriesLoading(true);
+    setCuratedStoriesLoading(true);
     setStoriesError(null);
+    setCuratedStoriesError(null);
 
     try {
-      setStories((await getChildStories(childId, 20)) || []);
+      const [childStories, curated] = await Promise.all([
+        getChildStories(childId, 20),
+        listPublicCuratedStories(),
+      ]);
+
+      setStories(childStories || []);
+      setCuratedStories(
+        (curated || []).map((story) => ({
+          ...story,
+          child_id: story.child_id ?? null,
+          title_english: story.title_english ?? undefined,
+          theme: story.theme ?? undefined,
+          generated_by: story.generated_by ?? undefined,
+          content_english: story.content_english ?? undefined,
+          jyutping: story.jyutping ?? undefined,
+          vocab_used: story.vocab_used ?? undefined,
+          story_generate_provdier: story.story_generate_provdier ?? undefined,
+          story_generate_model: story.story_generate_model ?? undefined,
+          word_usage: story.word_usage ?? undefined,
+          audio_url: story.audio_url ?? undefined,
+          audio_duration_seconds: story.audio_duration_seconds ?? undefined,
+          audio_generate_provider: story.audio_generate_provider ?? undefined,
+          audio_generate_voice_name:
+            story.audio_generate_voice_name ?? undefined,
+          word_count: story.word_count ?? undefined,
+          cultural_references: story.cultural_references ?? undefined,
+          ai_model: story.ai_model ?? undefined,
+          updated_at: story.updated_at ?? undefined,
+          page_audio_segments: story.page_audio_segments ?? undefined,
+        })),
+      );
     } catch (err) {
       setStoriesError(err instanceof Error ? err.message : "載入故事失敗");
       setStories([]);
+      setCuratedStoriesError(
+        err instanceof Error ? err.message : "載入精選故事失敗",
+      );
+      setCuratedStories([]);
     } finally {
       setStoriesLoading(false);
+      setCuratedStoriesLoading(false);
     }
   };
 
@@ -710,6 +723,24 @@ function ChildDashboardContent() {
     />
   );
 
+  const curatedStoriesTotalPages = Math.max(
+    1,
+    Math.ceil(curatedStories.length / CURATED_STORIES_PER_PAGE),
+  );
+  const safeCuratedStoriesPage = Math.min(
+    curatedStoriesPage,
+    curatedStoriesTotalPages,
+  );
+  const curatedStoriesStartIndex =
+    (safeCuratedStoriesPage - 1) * CURATED_STORIES_PER_PAGE;
+  const visibleCuratedStories = curatedStories.slice(
+    curatedStoriesStartIndex,
+    curatedStoriesStartIndex + CURATED_STORIES_PER_PAGE,
+  );
+  const canGoToPreviousCuratedPage = safeCuratedStoriesPage > 1;
+  const canGoToNextCuratedPage =
+    safeCuratedStoriesPage < curatedStoriesTotalPages;
+
   const resolveAudioUrl = (audioUrl: string): string => {
     if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
       return audioUrl;
@@ -729,7 +760,9 @@ function ChildDashboardContent() {
   };
 
   const handlePlayStoryAudio = async (storyId: string) => {
-    const targetStory = stories.find((story) => story.id === storyId);
+    const targetStory =
+      stories.find((story) => story.id === storyId) ||
+      curatedStories.find((story) => story.id === storyId);
     if (!targetStory?.audio_url) return;
 
     if (playingStoryId === storyId) {
@@ -783,6 +816,10 @@ function ChildDashboardContent() {
   }, [learningControl?.limitReached, sessionStartedAt]);
 
   useEffect(() => {
+    setCuratedStoriesPage(1);
+  }, [curatedStories]);
+
+  useEffect(() => {
     return () => {
       stopStoryAudio();
       void endActiveSession(new Date());
@@ -807,7 +844,9 @@ function ChildDashboardContent() {
   const handleReadStory = async (storyId: string) => {
     if (!profile) return;
     try {
-      const existing = stories.find((story) => story.id === storyId);
+      const existing =
+        stories.find((s) => s.id === storyId) ||
+        curatedStories.find((s) => s.id === storyId);
       if (existing?.content_cantonese) {
         setSelectedStory(existing);
         setIsReaderOpen(true);
@@ -824,30 +863,8 @@ function ChildDashboardContent() {
 
   const handleStoryGenerated = (story: GeneratedStory) => {
     setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)]);
-
-    // If the user is already reading a story, do NOT interrupt them: keep the
-    // current story in the reader, don't switch selection, and just let them
-    // know the new one is ready in their story shelf.
-    if (isReaderOpenRef.current) {
-      toast({
-        title: "故事生成完成",
-        description: `「${story.title}」已加入故事書，睇完手上呢個就可以睇。`,
-      });
-      return;
-    }
-
     setSelectedStory(story);
-    // Only auto-open the story reader if the user is still on the stories tab.
-    // If they've navigated away (e.g. community/learning), let them keep working
-    // and notify them instead so the result doesn't interrupt them.
-    if (activeTabRef.current === "stories") {
-      setIsReaderOpen(true);
-    } else {
-      toast({
-        title: "故事生成完成",
-        description: `「${story.title}」已準備好，去「故事」頁面就可以開始閱讀。`,
-      });
-    }
+    setIsReaderOpen(true);
   };
 
   const handleGenerateStory = async (
@@ -1037,7 +1054,7 @@ function ChildDashboardContent() {
 
     const maybeNotify = () => {
       const now = new Date();
-      const localDate = getHktDateString(now);
+      const localDate = getLocalDateString(now);
       const storageKey = getReminderStorageKey(profile.id, localDate);
 
       if (localStorage.getItem(storageKey) === "sent") {
@@ -1375,7 +1392,6 @@ function ChildDashboardContent() {
                   onErrorChange={setStoryGenerationError}
                   onGenerateStory={handleGenerateStory}
                   onReadStory={handleReadGeneratedStory}
-                  suppressGenerationOverlay={isReaderOpen}
                 />
               </section>
 
@@ -1595,6 +1611,111 @@ function ChildDashboardContent() {
                       </div>
                     )}
                   </div>
+                </div>
+              </section>
+
+              <section className="px-1 sm:px-2">
+                <div className="rounded-[30px] border border-white/50 bg-white/60 p-3 shadow-sm backdrop-blur-md sm:rounded-[34px] sm:p-6">
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3 sm:items-center">
+                      <div className="rounded-xl bg-amber-400 p-2 shadow-sm sm:rotate-3">
+                        <BookMarked className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <h2 className="text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+                          精選故事
+                        </h2>
+                        <p className="mt-1 text-sm font-semibold leading-snug text-slate-500">
+                          精選合集改用卡片牆展示，唔使再左右拉動長捲軸
+                        </p>
+                      </div>
+                    </div>
+
+                    {!curatedStoriesLoading && curatedStories.length > 0 && (
+                      <div className="self-start rounded-full bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-700 sm:self-auto sm:text-sm">
+                        共 {curatedStories.length} 本
+                      </div>
+                    )}
+                  </div>
+
+                  {curatedStoriesError && (
+                    <Alert variant="destructive" className="mb-3 rounded-2xl">
+                      <AlertDescription>{curatedStoriesError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {!curatedStoriesLoading && curatedStories.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {visibleCuratedStories.map((story) => (
+                          <StoryCard
+                            key={story.id}
+                            story={toStoryCard(story, "yellow")}
+                            onRead={(cardStory) =>
+                              void handleReadStory(cardStory.id)
+                            }
+                            onPlayAudio={
+                              story.audio_url
+                                ? () => void handlePlayStoryAudio(story.id)
+                                : undefined
+                            }
+                            isAudioPlaying={playingStoryId === story.id}
+                            isAudioLoading={storyAudioLoadingId === story.id}
+                          />
+                        ))}
+                      </div>
+
+                      {curatedStoriesTotalPages > 1 && (
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCuratedStoriesPage((page) =>
+                                Math.max(page - 1, 1),
+                              )
+                            }
+                            disabled={!canGoToPreviousCuratedPage}
+                            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-colors enabled:hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            上一頁
+                          </button>
+
+                          <span className="rounded-full bg-amber-100 px-4 py-2 text-sm font-black text-amber-700">
+                            第 {safeCuratedStoriesPage} /{" "}
+                            {curatedStoriesTotalPages} 頁
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCuratedStoriesPage((page) =>
+                                Math.min(page + 1, curatedStoriesTotalPages),
+                              )
+                            }
+                            disabled={!canGoToNextCuratedPage}
+                            className="rounded-full bg-amber-400 px-4 py-2 text-sm font-black text-white shadow-sm transition-colors enabled:hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            下一頁
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {!curatedStoriesLoading && curatedStories.length === 0 && (
+                    <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <BookMarked className="w-10 h-10 mb-3 opacity-50" />
+                      <span className="font-bold text-base">未有精選故事</span>
+                    </div>
+                  )}
+
+                  {curatedStoriesLoading && (
+                    <div className="rounded-4xl border-4 border-dashed border-white/50 flex min-h-72 flex-col items-center justify-center text-slate-400 bg-white/20">
+                      <span className="font-bold text-base">
+                        載入精選故事中...
+                      </span>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>

@@ -24,6 +24,7 @@ import {
 import CozyPageWrapper from "@/components/CozyPageWrapper";
 import { CategoryManager } from "@/components/admin/category-manager";
 import { PublicChallengeManager } from "@/components/admin/public-challenge-manager";
+import { StoryManager } from "@/components/admin/story-manager";
 import { AdminAnalyticsPanel } from "../../components/admin/admin-analytics-panel";
 import { LoginCard } from "@/components/auth/login-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -854,7 +855,7 @@ export default function AdminPage() {
                 數據與統計
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                查看平台活躍度、任務狀態與主要功能使用情況，這一區只放管理決策需要的統計頁面。
+                查看平台活躍度、任務漏斗與主要功能使用情況，這一區只放管理決策需要的統計頁面。
               </p>
             </div>
 
@@ -896,6 +897,13 @@ export default function AdminPage() {
                 >
                   <Trophy className="h-4 w-4" />
                   <span className="font-black">公共挑戰</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="stories"
+                  className="justify-start gap-3 rounded-3xl border border-violet-100 bg-white/80 px-4 py-3 text-left data-[state=active]:border-violet-200 data-[state=active]:bg-violet-50 data-[state=active]:text-violet-700 data-[state=active]:shadow-none"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className="font-black">故事內容</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="vocabulary"
@@ -1566,6 +1574,10 @@ export default function AdminPage() {
 
           <TabsContent value="analytics-overview" className="mt-0">
             <AdminAnalyticsPanel />
+          </TabsContent>
+
+          <TabsContent value="stories" className="mt-0">
+            <StoryManager />
           </TabsContent>
 
           <TabsContent value="vocabulary" className="mt-0">
