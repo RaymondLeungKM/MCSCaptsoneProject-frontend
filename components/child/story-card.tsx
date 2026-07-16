@@ -29,6 +29,7 @@ interface StoryCardProps {
   isAudioPlaying?: boolean;
   isAudioLoading?: boolean;
   variant?: "default" | "compact";
+  className?: string;
 }
 
 // --- HELPER: Pastel Color Mapping ---
@@ -105,6 +106,7 @@ export function StoryCard({
   isAudioPlaying = false,
   isAudioLoading = false,
   variant = "default",
+  className,
 }: StoryCardProps) {
   // Emoji Fallbacks if not in DB
   const storyEmojis: Record<string, string> = {
@@ -171,6 +173,7 @@ export function StoryCard({
           story.completed
             ? "border-emerald-300 hover:border-emerald-400"
             : "border-white hover:border-purple-200",
+          className,
         )}
       >
         <div
@@ -260,6 +263,7 @@ export function StoryCard({
           ? "border-emerald-400"
           : "border-white hover:border-purple-200",
         "bg-white",
+        className,
       )}
     >
       <div

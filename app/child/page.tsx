@@ -1646,14 +1646,12 @@ function ChildDashboardContent() {
 
                   {!curatedStoriesLoading && curatedStories.length > 0 && (
                     <>
-                      <div className="flex flex-wrap justify-center gap-4">
+                      <div className="grid grid-cols-[repeat(auto-fit,minmax(17rem,1fr))] gap-4">
                         {visibleCuratedStories.map((story) => (
-                          <div
-                            key={story.id}
-                            className="w-full max-w-[17rem] shrink-0 sm:w-[17rem] sm:max-w-none"
-                          >
+                          <div key={story.id} className="min-w-0">
                             <StoryCard
                               story={toStoryCard(story, "yellow")}
+                              className="h-full sm:w-full sm:min-w-0"
                               onRead={(cardStory) =>
                                 void handleReadStory(cardStory.id)
                               }
