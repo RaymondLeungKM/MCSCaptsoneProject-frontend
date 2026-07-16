@@ -16,3 +16,4 @@ export * from "./games";
 export * from "./parent-dashboard";
 export * from "./community";
 export * from "./word-personalization";
+export * from "./stories";
