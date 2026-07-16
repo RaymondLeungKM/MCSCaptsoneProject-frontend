@@ -1646,22 +1646,26 @@ function ChildDashboardContent() {
 
                   {!curatedStoriesLoading && curatedStories.length > 0 && (
                     <>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      <div className="flex flex-wrap justify-center gap-4">
                         {visibleCuratedStories.map((story) => (
-                          <StoryCard
+                          <div
                             key={story.id}
-                            story={toStoryCard(story, "yellow")}
-                            onRead={(cardStory) =>
-                              void handleReadStory(cardStory.id)
-                            }
-                            onPlayAudio={
-                              story.audio_url
-                                ? () => void handlePlayStoryAudio(story.id)
-                                : undefined
-                            }
-                            isAudioPlaying={playingStoryId === story.id}
-                            isAudioLoading={storyAudioLoadingId === story.id}
-                          />
+                            className="w-full max-w-[17rem] shrink-0 sm:w-[17rem] sm:max-w-none"
+                          >
+                            <StoryCard
+                              story={toStoryCard(story, "yellow")}
+                              onRead={(cardStory) =>
+                                void handleReadStory(cardStory.id)
+                              }
+                              onPlayAudio={
+                                story.audio_url
+                                  ? () => void handlePlayStoryAudio(story.id)
+                                  : undefined
+                              }
+                              isAudioPlaying={playingStoryId === story.id}
+                              isAudioLoading={storyAudioLoadingId === story.id}
+                            />
+                          </div>
                         ))}
                       </div>
 
